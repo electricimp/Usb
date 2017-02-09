@@ -26,21 +26,28 @@ function onDisconnected(devicetype) {
 // UART 'data arrived' function
 function readback() {
     local data = uart.readstring();
-    logs.log("recieved");
-}
+    dataString += data;
+    if (data.find("\n")) {
+        logs.log("Received message: " + dataString);
+        dataString = "";
+    }
 
-server.log("initilized")
+}
 
 // UART on imp005
 uart <- hardware.uart1;
-
-// Configure with timing
-uart.configure(115200, 8, PARITY_NONE, 1, 0, readback);
-logs <- UartLogger(uart);
+dataString <- "";
 
 // power.
 loadPin <- hardware.pinS;
 loadPin.configure(DIGITAL_OUT);
 loadPin.write(1);
 
-usbHost <- UsbHost(hardware.usb, onConnected, onDisconnected);
+usbHost <- UsbHost(hardware.usb);
+usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
+
+usbHost.on(USB_DEVICE_CONNECTED, onConnected);
+
+// Configure with timing
+uart.configure(115200, 8, PARITY_NONE, 1, 0, readback);
+logs <- UartLogger(uart);

@@ -156,26 +156,43 @@ class BulkOutEndpoint extends BulkEndpoint {
 }
 
 class DriverBase {
+    _usb = null;
+
+    _eventHandlers = {};
+
+    constructor(usb) {
+        _usb = usb;
+
+    }
+
     function connect(address, speed, descriptors) {}
+
+    function getIdentifiers() {}
 
     function transferComplete(eventdetails) {}
 
-    function getDeviceType() {}
+    function getClassName() {}
+
+    function on(eventName, cb) {
+        _eventHandlers[eventName] <- cb;
+    }
+
+    function _sendEvent(eventName, eventdetails) {
+        _eventHandlers[eventName](eventdetails);
+    }
 };
 
 class FtdiDriver extends DriverBase {
-    _usb = null;
     _deviceAddress = null;
     _controlEndpoint = null;
     _bulkIn = null;
     _bulkOut = null;
+    // FTDI vid and pid
+    _vid = 0x0403;
+    _pid = 0x6001;
 
-    constructor(usb) {
-        _usb = usb;
-    }
-
-    function getDeviceType() {
-        return "Ftdi";
+    function getClassName() {
+        return "FtdiDriver";
     }
 
     function _setupEndpoints(deviceAddress, speed, descriptors) {
@@ -204,6 +221,12 @@ class FtdiDriver extends DriverBase {
 
             }
         }
+    }
+
+    function getIdentifiers() {
+        identifiers <- {};
+        identifiers[_vid] <- _pid;
+        return identifiers;
     }
 
     function _configure(device) {
@@ -282,11 +305,15 @@ class FtdiDriver extends DriverBase {
                 _bulkIn.read(blob(64 + 2));
             } else {
                 readData.seek(2);
+                server.log(readData.tostring());
+
                 local writeData = blob(readData.len() + 3);
                 writeData.writestring("ACK: ");
                 writeData.writeblob(readData);
+                // server.log("write data "+writeData);
                 // local writeData = readData.readblob(readData.len()-2);
                 _bulkOut.write(writeData);
+
                 readData.seek(0);
                 _bulkIn.read(blob(64 + 2));
             }
@@ -296,42 +323,21 @@ class FtdiDriver extends DriverBase {
     }
 };
 
-class DriverFactory {
-    _usb = null;
-
-    constructor(usb) {
-        _usb = usb;
-    }
-
-    function create(descriptors) {
-        // FTDI vid and pid
-        local vid = 0x0403;
-        local pid = 0x6001;
-        if ((descriptors["vendorid"] == vid) && (descriptors["productid"] == pid)) {
-            return FtdiDriver(_usb);
-        }
-        return null;
-    }
-}
-
 // Supports only one device at the moment.
 class UsbHost {
     _eventHandlers = {};
+    _customEventHandlers = {};
     _driver = null;
     _address = 1;
-    _factory = null;
+    _registeredDrivers = null;
     _usb = null
     _driverCallback = null;
-    _onConnectedCb = null;
-    _onDisconnectedCb = null;
     _DEBUG = false;
 
 
-    constructor(usb, onConnected = null, onDisconnected = null) {
+    constructor(usb) {
         _usb = usb;
-        _onConnectedCb = onConnected;
-        _onDisconnectedCb = onDisconnected;
-        _factory = DriverFactory(this);
+        _registeredDrivers = {};
         _eventHandlers[USB_DEVICE_CONNECTED] <- UsbHost.onDeviceConnected.bindenv(this);
         _eventHandlers[USB_DEVICE_DISCONNECTED] <- UsbHost.onDeviceDisconnected.bindenv(this);
         _eventHandlers[USB_TRANSFER_COMPLETED] <- UsbHost.onTransferCompleted.bindenv(this);
@@ -379,6 +385,30 @@ class UsbHost {
                 server.log(format("      interval = 0x%02x", endpoint["interval"]));
             }
         }
+    }
+
+    function registerDriver(className, identifiers) {
+        if (typeof identifiers != "table") {
+            server.error("Identifier for driver must be a Table.")
+        }
+
+        foreach (VID, PIDS in identifiers) {
+            if (typeof PIDS != "array") {
+                PIDS = [PIDS];
+            }
+
+            if (!(VID in _registeredDrivers)) {
+                _registeredDrivers[VID] <- {};
+            }
+
+            foreach (vidIndex, PID in PIDS) {
+                if (!(PID in _registeredDrivers[VID])) {
+                    _registeredDrivers[VID][PID] <- {};
+                }
+                _registeredDrivers[VID][PID] = className;
+            }
+        }
+
     }
 
     function controlTransfer(speed, deviceAddress, requestType, request, value, index, maxPacketSize) {
@@ -473,6 +503,16 @@ class UsbHost {
         _usb.openendpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress);
     }
 
+    function create(descriptors) {
+        local vid = descriptors["vendorid"];
+        local pid = descriptors["productid"];
+
+        if ((vid in _registeredDrivers) && (pid in _registeredDrivers[vid]) && _registeredDrivers[vid][pid] != null) {
+            return _registeredDrivers[vid][pid](this);
+        }
+        return null;
+    }
+
     function onDeviceConnected(eventdetails) {
         if (_driver != null) {
             server.log("Device already connected");
@@ -486,7 +526,7 @@ class UsbHost {
             logDescriptors(speed, descriptors);
         }
 
-        _driver = _factory.create(descriptors);
+        _driver = create(descriptors);
         if (_driver == null) {
             server.log("No driver found for device");
             return;
@@ -496,16 +536,10 @@ class UsbHost {
         setAddress(_address, speed, maxPacketSize);
         _driver.connect(_address, speed, descriptors);
 
-        if (_onConnectedCb != null) {
-            _onConnectedCb(_driver);
-        }
     }
 
     function onDeviceDisconnected(eventdetails) {
         server.log("Device:" + _driver.getDeviceType + " gone");
-        if (_onDisconnectedCb != null) {
-            _onDisconnectedCb(_driver.getDriverType);
-        }
         _driver = null;
     }
 
@@ -513,7 +547,15 @@ class UsbHost {
         _driver.transferComplete(eventdetails);
     }
 
+    function on(eventName, cb) {
+        _customEventHandlers[eventName] = cb
+    }
+
     function onEvent(eventtype, eventdetails) {
-        _eventHandlers[eventtype](eventdetails);
+        if (eventtype in _eventHandlers) {
+            _eventHandlers[eventtype](eventdetails);
+        } else if (eventtype in _customEventHandlers) {
+            _customEventHandlers[eventtype](eventdetails);
+        }
     }
 };
