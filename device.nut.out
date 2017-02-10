@@ -156,13 +156,14 @@ class BulkOutEndpoint extends BulkEndpoint {
 }
 
 class DriverBase {
+    static isUSBDriver = true;
+
     _usb = null;
 
     _eventHandlers = {};
 
     constructor(usb) {
         _usb = usb;
-
     }
 
     function connect(address, speed, descriptors) {}
@@ -197,10 +198,14 @@ class UsbHost {
     constructor(usb) {
         _usb = usb;
         _registeredDrivers = {};
-        _eventHandlers[USB_DEVICE_CONNECTED] <- UsbHost.onDeviceConnected.bindenv(this);
-        _eventHandlers[USB_DEVICE_DISCONNECTED] <- UsbHost.onDeviceDisconnected.bindenv(this);
-        _eventHandlers[USB_TRANSFER_COMPLETED] <- UsbHost.onTransferCompleted.bindenv(this);
-        _usb.configure(UsbHost.onEvent.bindenv(this));
+        _eventHandlers[USB_DEVICE_CONNECTED] <- onDeviceConnected.bindenv(this);
+        _eventHandlers[USB_DEVICE_DISCONNECTED] <- onDeviceDisconnected.bindenv(this);
+        _eventHandlers[USB_TRANSFER_COMPLETED] <- onTransferCompleted.bindenv(this);
+        _usb.configure(onEvent.bindenv(this));
+    }
+
+    function _typeof() {
+        return "UsbHost";
     }
 
     function logDescriptors(speed, descriptor) {
@@ -247,6 +252,8 @@ class UsbHost {
     }
 
     function registerDriver(className, identifiers) {
+        
+        
         if (typeof identifiers != "table") {
             server.error("Identifier for driver must be a Table.")
         }
@@ -394,20 +401,25 @@ class UsbHost {
     }
 
     function onDeviceDisconnected(eventdetails) {
-        server.log("Device:" + _driver.getDeviceType + " gone");
-        _driver = null;
+        server.log("Device:" + typeof _driver + " gone");
         onEvent("disconnected", _driver);
+        _driver = null;
     }
 
     function onTransferCompleted(eventdetails) {
-        _driver.transferComplete(eventdetails);
+        if (_driver) {
+            _driver.transferComplete(eventdetails);
+        }
     }
 
     function on(eventName, cb) {
-        if (typeof cb != "function") {
-            server.error("Callback on event must be of type function");
+        _customEventHandlers[eventName] <- cb;
+    }
+
+    function off(eventName) {
+        if (eventName in _customEventHandlers) {
+            delete _customEventHandlers[eventName];
         }
-        _customEventHandlers[eventName] <- cb
     }
 
     function onEvent(eventtype, eventdetails) {
@@ -422,6 +434,7 @@ class UsbHost {
 };
 
 class FtdiDriver extends DriverBase {
+
     _deviceAddress = null;
     _controlEndpoint = null;
     _bulkIn = null;
@@ -430,7 +443,7 @@ class FtdiDriver extends DriverBase {
     _vid = 0x0403;
     _pid = 0x6001;
 
-    function getClassName() {
+    function _typeof() {
         return "FtdiDriver";
     }
 
@@ -463,8 +476,8 @@ class FtdiDriver extends DriverBase {
     }
 
     function getIdentifiers() {
-        identifiers <- {};
-        identifiers[_vid] <- _pid;
+        local identifiers = {};
+        identifiers[_vid] <-[_pid];
         return identifiers;
     }
 
@@ -531,15 +544,17 @@ class FtdiDriver extends DriverBase {
     }
 
     function on(eventType, cb) {
-        if (typeof cb != "function") {
-            server.error("Callback on event must be of type function");
-        } else {
-            _eventHandlers[eventType] <- cb;
+        _eventHandlers[eventType] <- cb;
+    }
+
+    function off(eventName) {
+        if (eventName in _eventHandlers) {
+            delete _eventHandlers[eventName];
         }
     }
 
     function onEvent(eventType, eventdetails) {
-        server.log("ftdi event"+eventType)
+        server.log("ftdi event" + eventType)
         if (eventType in _eventHandlers) {
             server.log("ftdi event cb")
             _eventHandlers[eventType](eventdetails);
@@ -556,19 +571,12 @@ class FtdiDriver extends DriverBase {
         local direction = (eventdetails["endpoint"] & 0x80) >> 7;
         if (direction == USB_DIRECTION_IN) {
             local readData = _bulkIn.done(eventdetails);
-            if (readData.len() < 3) {
-                _bulkIn.read(blob(64 + 2));
-            } else {
+            if (readData.len() >= 3) {
                 readData.seek(2);
                 onEvent("data", readData.readblob(readData.len()));
-
-                local writeData = blob(3);
-                writeData.writestring("ACK");
-                _bulkOut.write(writeData);
-
-                readData.seek(0);
-                _bulkIn.read(blob(64 + 2));
             }
+            
+            _bulkIn.read(blob(64 + 2));
         } else if (direction == USB_DIRECTION_OUT) {
             _bulkOut.done(eventdetails);
         }
@@ -610,6 +618,7 @@ function sendTestData(device) {
     local testData = blob();
 
     testData.writestring("I'm a Blob\n");
+    
     device.write(testData);
 
     imp.wakeup(10, function() {
@@ -637,10 +646,9 @@ function onDisconnected(devicetype) {
 
 function readback() {
 
-    local data = uart.readstring();
-    dataString += data;
-    if (data.find("\n")) {
-        server.log("Recieved data on UART: " + dataString + " Sending data back to USB");
+    dataString += uart.readstring();
+    if (dataString.find("\n")) {
+        server.log("Recieved data on UART [" + dataString + "] Sending data back to USB");
         logs.log("Received message: " + dataString);
         dataString = "";
     }
@@ -657,6 +665,7 @@ loadPin.configure(DIGITAL_OUT);
 loadPin.write(1);
 
 usbHost <- UsbHost(hardware.usb);
+
 usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
 
 usbHost.on("connected", onConnected);

@@ -7,6 +7,7 @@ function sendTestData(device) {
     local testData = blob();
 
     testData.writestring("I'm a Blob\n");
+    //todo accept strings in the write method
     device.write(testData);
 
     imp.wakeup(10, function() {
@@ -34,10 +35,9 @@ function onDisconnected(devicetype) {
 // UART 'data arrived' function
 function readback() {
 
-    local data = uart.readstring();
-    dataString += data;
-    if (data.find("\n")) {
-        server.log("Recieved data on UART: " + dataString + " Sending data back to USB");
+    dataString += uart.readstring();
+    if (dataString.find("\n")) {
+        server.log("Recieved data on UART [" + dataString + "] Sending data back to USB");
         logs.log("Received message: " + dataString);
         dataString = "";
     }
@@ -54,6 +54,7 @@ loadPin.configure(DIGITAL_OUT);
 loadPin.write(1);
 
 usbHost <- UsbHost(hardware.usb);
+//todo check that this a class
 usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
 
 usbHost.on("connected", onConnected);

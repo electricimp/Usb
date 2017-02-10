@@ -156,13 +156,14 @@ class BulkOutEndpoint extends BulkEndpoint {
 }
 
 class DriverBase {
+    static isUSBDriver = true;
+
     _usb = null;
 
     _eventHandlers = {};
 
     constructor(usb) {
         _usb = usb;
-
     }
 
     function connect(address, speed, descriptors) {}
@@ -197,10 +198,14 @@ class UsbHost {
     constructor(usb) {
         _usb = usb;
         _registeredDrivers = {};
-        _eventHandlers[USB_DEVICE_CONNECTED] <- UsbHost.onDeviceConnected.bindenv(this);
-        _eventHandlers[USB_DEVICE_DISCONNECTED] <- UsbHost.onDeviceDisconnected.bindenv(this);
-        _eventHandlers[USB_TRANSFER_COMPLETED] <- UsbHost.onTransferCompleted.bindenv(this);
-        _usb.configure(UsbHost.onEvent.bindenv(this));
+        _eventHandlers[USB_DEVICE_CONNECTED] <- onDeviceConnected.bindenv(this);
+        _eventHandlers[USB_DEVICE_DISCONNECTED] <- onDeviceDisconnected.bindenv(this);
+        _eventHandlers[USB_TRANSFER_COMPLETED] <- onTransferCompleted.bindenv(this);
+        _usb.configure(onEvent.bindenv(this));
+    }
+
+    function _typeof() {
+        return "UsbHost";
     }
 
     function logDescriptors(speed, descriptor) {
@@ -247,6 +252,8 @@ class UsbHost {
     }
 
     function registerDriver(className, identifiers) {
+        // todo only accept array.
+        // todo check that className is a usb class using static var in parent class
         if (typeof identifiers != "table") {
             server.error("Identifier for driver must be a Table.")
         }
@@ -394,20 +401,25 @@ class UsbHost {
     }
 
     function onDeviceDisconnected(eventdetails) {
-        server.log("Device:" + _driver.getDeviceType + " gone");
-        _driver = null;
+        server.log("Device:" + typeof _driver + " gone");
         onEvent("disconnected", _driver);
+        _driver = null;
     }
 
     function onTransferCompleted(eventdetails) {
-        _driver.transferComplete(eventdetails);
+        if (_driver) {
+            _driver.transferComplete(eventdetails);
+        }
     }
 
     function on(eventName, cb) {
-        if (typeof cb != "function") {
-            server.error("Callback on event must be of type function");
+        _customEventHandlers[eventName] <- cb;
+    }
+
+    function off(eventName) {
+        if (eventName in _customEventHandlers) {
+            delete _customEventHandlers[eventName];
         }
-        _customEventHandlers[eventName] <- cb
     }
 
     function onEvent(eventtype, eventdetails) {

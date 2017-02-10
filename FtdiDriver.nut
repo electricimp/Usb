@@ -1,4 +1,5 @@
 class FtdiDriver extends DriverBase {
+
     _deviceAddress = null;
     _controlEndpoint = null;
     _bulkIn = null;
@@ -7,7 +8,7 @@ class FtdiDriver extends DriverBase {
     _vid = 0x0403;
     _pid = 0x6001;
 
-    function getClassName() {
+    function _typeof() {
         return "FtdiDriver";
     }
 
@@ -40,8 +41,8 @@ class FtdiDriver extends DriverBase {
     }
 
     function getIdentifiers() {
-        identifiers <- {};
-        identifiers[_vid] <- _pid;
+        local identifiers = {};
+        identifiers[_vid] <-[_pid];
         return identifiers;
     }
 
@@ -108,15 +109,17 @@ class FtdiDriver extends DriverBase {
     }
 
     function on(eventType, cb) {
-        if (typeof cb != "function") {
-            server.error("Callback on event must be of type function");
-        } else {
-            _eventHandlers[eventType] <- cb;
+        _eventHandlers[eventType] <- cb;
+    }
+
+    function off(eventName) {
+        if (eventName in _eventHandlers) {
+            delete _eventHandlers[eventName];
         }
     }
 
     function onEvent(eventType, eventdetails) {
-        server.log("ftdi event"+eventType)
+        server.log("ftdi event" + eventType)
         if (eventType in _eventHandlers) {
             server.log("ftdi event cb")
             _eventHandlers[eventType](eventdetails);
@@ -133,19 +136,12 @@ class FtdiDriver extends DriverBase {
         local direction = (eventdetails["endpoint"] & 0x80) >> 7;
         if (direction == USB_DIRECTION_IN) {
             local readData = _bulkIn.done(eventdetails);
-            if (readData.len() < 3) {
-                _bulkIn.read(blob(64 + 2));
-            } else {
+            if (readData.len() >= 3) {
                 readData.seek(2);
                 onEvent("data", readData.readblob(readData.len()));
-
-                local writeData = blob(3);
-                writeData.writestring("ACK");
-                _bulkOut.write(writeData);
-
-                readData.seek(0);
-                _bulkIn.read(blob(64 + 2));
             }
+            // Blank the buffer
+            _bulkIn.read(blob(64 + 2));
         } else if (direction == USB_DIRECTION_OUT) {
             _bulkOut.done(eventdetails);
         }
