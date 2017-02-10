@@ -1,4 +1,5 @@
-#include "usb.nut"
+#include "UsbHost.nut"
+#include "FtdiDriver.nut"
 #include "UartLogger.nut"
 
 function sendTestData(device) {
@@ -14,8 +15,15 @@ function sendTestData(device) {
 }
 
 function onConnected(device) {
+    device.on("data",dataEvent);
     server.log("our onconnected func")
     sendTestData(device);
+}
+
+function dataEvent(eventDetails) {
+
+    server.log("got data on usb: " + eventDetails);
+
 }
 
 function onDisconnected(devicetype) {
@@ -25,9 +33,11 @@ function onDisconnected(devicetype) {
 
 // UART 'data arrived' function
 function readback() {
+
     local data = uart.readstring();
     dataString += data;
     if (data.find("\n")) {
+        server.log("Recieved data on UART: " + dataString + " Sending data back to USB");
         logs.log("Received message: " + dataString);
         dataString = "";
     }
@@ -46,7 +56,7 @@ loadPin.write(1);
 usbHost <- UsbHost(hardware.usb);
 usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
 
-usbHost.on(USB_DEVICE_CONNECTED, onConnected);
+usbHost.on("connected", onConnected);
 
 // Configure with timing
 uart.configure(115200, 8, PARITY_NONE, 1, 0, readback);
