@@ -43,7 +43,7 @@ class FtdiDriver extends DriverBase {
     function getIdentifiers() {
         local identifiers = {};
         identifiers[_vid] <-[_pid];
-        return identifiers;
+        return [identifiers];
     }
 
     function _configure(device) {
@@ -105,7 +105,19 @@ class FtdiDriver extends DriverBase {
     }
 
     function write(data) {
-        _bulkOut.write(data);
+        local _data = null;
+
+        if (typeof data == "string") {
+            _data = blob();
+            _data.writestring(data);
+        } else if (typeof data == "blob") {
+            _data = data;
+        } else {
+            server.error("Write data must of type string or blob");
+            return;
+        }
+
+        _bulkOut.write(_data);
     }
 
     function on(eventType, cb) {
@@ -119,9 +131,7 @@ class FtdiDriver extends DriverBase {
     }
 
     function onEvent(eventType, eventdetails) {
-        server.log("ftdi event" + eventType)
         if (eventType in _eventHandlers) {
-            server.log("ftdi event cb")
             _eventHandlers[eventType](eventdetails);
         }
     }

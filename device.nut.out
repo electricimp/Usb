@@ -252,20 +252,25 @@ class UsbHost {
     }
 
     function registerDriver(className, identifiers) {
-        
-        
-        if (typeof identifiers != "table") {
-            server.error("Identifier for driver must be a Table.")
+        if (!(className.isUSBDriver == true)) {
+            server.error("This driver is not a valid usb driver.");
+            return;
+        }
+        if (typeof identifiers != "array") {
+            server.error("Identifiers for driver must be of type array.")
+            return;
         }
 
-        foreach (VID, PIDS in identifiers) {
-            if (typeof PIDS != "array") {
-                PIDS = [PIDS];
-            }
+        foreach (k, identifier in identifiers) {
+            foreach (VID, PIDS in identifier) {
+                if (typeof PIDS != "array") {
+                    PIDS = [PIDS];
+                }
 
-            foreach (vidIndex, PID in PIDS) {
-                local vpid = format("%04x%04x", VID, PID);
-                _registeredDrivers[vpid] <- className;
+                foreach (vidIndex, PID in PIDS) {
+                    local vpid = format("%04x%04x", VID, PID);
+                    _registeredDrivers[vpid] <- className;
+                }
             }
         }
 
@@ -401,7 +406,7 @@ class UsbHost {
     }
 
     function onDeviceDisconnected(eventdetails) {
-        server.log("Device:" + typeof _driver + " gone");
+        server.log("Device:" + typeof _driver + " disconnected");
         onEvent("disconnected", _driver);
         _driver = null;
     }
@@ -478,7 +483,7 @@ class FtdiDriver extends DriverBase {
     function getIdentifiers() {
         local identifiers = {};
         identifiers[_vid] <-[_pid];
-        return identifiers;
+        return [identifiers];
     }
 
     function _configure(device) {
@@ -540,7 +545,19 @@ class FtdiDriver extends DriverBase {
     }
 
     function write(data) {
-        _bulkOut.write(data);
+        local _data = null;
+
+        if (typeof data == "string") {
+            _data = blob();
+            _data.writestring(data);
+        } else if (typeof data == "blob") {
+            _data = data;
+        } else {
+            server.error("Write data must of type string or blob");
+            return;
+        }
+
+        _bulkOut.write(_data);
     }
 
     function on(eventType, cb) {
@@ -554,9 +571,7 @@ class FtdiDriver extends DriverBase {
     }
 
     function onEvent(eventType, eventdetails) {
-        server.log("ftdi event" + eventType)
         if (eventType in _eventHandlers) {
-            server.log("ftdi event cb")
             _eventHandlers[eventType](eventdetails);
         }
     }
@@ -615,19 +630,14 @@ class UartLogger {
 
 function sendTestData(device) {
     server.log("sending test data.")
-    local testData = blob();
-
-    testData.writestring("I'm a Blob\n");
-    
-    device.write(testData);
-
+    device.write(3);
     imp.wakeup(10, function() {
         sendTestData(device)
     });
 }
 
 function onConnected(device) {
-    device.on("data",dataEvent);
+    device.on("data", dataEvent);
     server.log("our onconnected func")
     sendTestData(device);
 }
@@ -664,8 +674,10 @@ loadPin <- hardware.pinS;
 loadPin.configure(DIGITAL_OUT);
 loadPin.write(1);
 
-usbHost <- UsbHost(hardware.usb);
+hardware.pinW.configure(DIGITAL_OUT, 1);
+hardware.pinR.configure(DIGITAL_OUT, 1);
 
+usbHost <- UsbHost(hardware.usb);
 usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
 
 usbHost.on("connected", onConnected);

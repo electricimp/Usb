@@ -252,20 +252,25 @@ class UsbHost {
     }
 
     function registerDriver(className, identifiers) {
-        // todo only accept array.
-        // todo check that className is a usb class using static var in parent class
-        if (typeof identifiers != "table") {
-            server.error("Identifier for driver must be a Table.")
+        if (!(className.isUSBDriver == true)) {
+            server.error("This driver is not a valid usb driver.");
+            return;
+        }
+        if (typeof identifiers != "array") {
+            server.error("Identifiers for driver must be of type array.")
+            return;
         }
 
-        foreach (VID, PIDS in identifiers) {
-            if (typeof PIDS != "array") {
-                PIDS = [PIDS];
-            }
+        foreach (k, identifier in identifiers) {
+            foreach (VID, PIDS in identifier) {
+                if (typeof PIDS != "array") {
+                    PIDS = [PIDS];
+                }
 
-            foreach (vidIndex, PID in PIDS) {
-                local vpid = format("%04x%04x", VID, PID);
-                _registeredDrivers[vpid] <- className;
+                foreach (vidIndex, PID in PIDS) {
+                    local vpid = format("%04x%04x", VID, PID);
+                    _registeredDrivers[vpid] <- className;
+                }
             }
         }
 
@@ -401,7 +406,7 @@ class UsbHost {
     }
 
     function onDeviceDisconnected(eventdetails) {
-        server.log("Device:" + typeof _driver + " gone");
+        server.log("Device:" + typeof _driver + " disconnected");
         onEvent("disconnected", _driver);
         _driver = null;
     }

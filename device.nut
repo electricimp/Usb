@@ -4,19 +4,14 @@
 
 function sendTestData(device) {
     server.log("sending test data.")
-    local testData = blob();
-
-    testData.writestring("I'm a Blob\n");
-    //todo accept strings in the write method
-    device.write(testData);
-
+    device.write("I'm a Blob\n");
     imp.wakeup(10, function() {
         sendTestData(device)
     });
 }
 
 function onConnected(device) {
-    device.on("data",dataEvent);
+    device.on("data", dataEvent);
     server.log("our onconnected func")
     sendTestData(device);
 }
@@ -53,8 +48,10 @@ loadPin <- hardware.pinS;
 loadPin.configure(DIGITAL_OUT);
 loadPin.write(1);
 
+hardware.pinW.configure(DIGITAL_OUT, 1);
+hardware.pinR.configure(DIGITAL_OUT, 1);
+
 usbHost <- UsbHost(hardware.usb);
-//todo check that this a class
 usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
 
 usbHost.on("connected", onConnected);
