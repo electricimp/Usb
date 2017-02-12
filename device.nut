@@ -1,21 +1,25 @@
-#include "usb.nut"
+#include "UsbHost.nut"
+#include "FtdiDriver.nut"
 #include "UartLogger.nut"
 
 function sendTestData(device) {
     server.log("sending test data.")
-    local testData = blob();
-
-    testData.writestring("I'm a Blob\n");
-    device.write(testData);
-
+    device.write("I'm a Blob\n");
     imp.wakeup(10, function() {
         sendTestData(device)
     });
 }
 
 function onConnected(device) {
+    device.on("data", dataEvent);
     server.log("our onconnected func")
     sendTestData(device);
+}
+
+function dataEvent(eventDetails) {
+
+    server.log("got data on usb: " + eventDetails);
+
 }
 
 function onDisconnected(devicetype) {
@@ -25,22 +29,33 @@ function onDisconnected(devicetype) {
 
 // UART 'data arrived' function
 function readback() {
-    local data = uart.readstring();
-    logs.log("recieved");
-}
 
-server.log("initilized")
+    dataString += uart.readstring();
+    if (dataString.find("\n")) {
+        server.log("Recieved data on UART [" + dataString + "] Sending data back to USB");
+        logs.log("Received message: " + dataString);
+        dataString = "";
+    }
+
+}
 
 // UART on imp005
 uart <- hardware.uart1;
-
-// Configure with timing
-uart.configure(115200, 8, PARITY_NONE, 1, 0, readback);
-logs <- UartLogger(uart);
+dataString <- "";
 
 // power.
 loadPin <- hardware.pinS;
 loadPin.configure(DIGITAL_OUT);
 loadPin.write(1);
 
-usbHost <- UsbHost(hardware.usb, onConnected, onDisconnected);
+hardware.pinW.configure(DIGITAL_OUT, 1);
+hardware.pinR.configure(DIGITAL_OUT, 1);
+
+usbHost <- UsbHost(hardware.usb);
+usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
+
+usbHost.on("connected", onConnected);
+
+// Configure with timing
+uart.configure(115200, 8, PARITY_NONE, 1, 0, readback);
+logs <- UartLogger(uart);

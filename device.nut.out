@@ -156,186 +156,56 @@ class BulkOutEndpoint extends BulkEndpoint {
 }
 
 class DriverBase {
+    static isUSBDriver = true;
+
+    _usb = null;
+
+    _eventHandlers = {};
+
+    constructor(usb) {
+        _usb = usb;
+    }
+
     function connect(address, speed, descriptors) {}
+
+    function getIdentifiers() {}
 
     function transferComplete(eventdetails) {}
 
-    function getDeviceType() {}
-};
+    function getClassName() {}
 
-class FtdiDriver extends DriverBase {
-    _usb = null;
-    _deviceAddress = null;
-    _controlEndpoint = null;
-    _bulkIn = null;
-    _bulkOut = null;
-
-    constructor(usb) {
-        _usb = usb;
+    function on(eventName, cb) {
+        _eventHandlers[eventName] <- cb;
     }
 
-    function getDeviceType() {
-        return "Ftdi";
-    }
-
-    function _setupEndpoints(deviceAddress, speed, descriptors) {
-        server.log(format("Driver connecting at address 0x%02x", deviceAddress));
-        _deviceAddress = deviceAddress;
-        _controlEndpoint = ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
-
-        
-        local configuration = descriptors["configurations"][0];
-        server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
-        _controlEndpoint.setConfiguration(configuration["value"]);
-
-        
-        local interface = configuration["interfaces"][0];
-        local interfacenumber = interface["interfacenumber"];
-
-        foreach (endpoint in interface["endpoints"]) {
-            local address = endpoint["address"];
-            local maxPacketSize = endpoint["maxpacketsize"];
-            if ((endpoint["attributes"] & 0x3) == 2) {
-                if ((address & 0x80) >> 7 == USB_DIRECTION_OUT) {
-                    _bulkOut = BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
-                } else {
-                    _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
-                }
-
-            }
-        }
-    }
-
-    function _configure(device) {
-        server.log(format("Configuring for device version 0x%04x", device));
-
-        
-        local baud = 115200;
-        local baudValue;
-        local baudIndex = 0;
-        local divisor3 = 48000000 / 2 / baud; 
-
-        if (device == 0x0200) { 
-            if ((divisor3 & 0x07) == 0x07) {
-                divisor3++; 
-            }
-
-            baudValue = divisor3 >> 3;
-            divisor3 = divisor3 & 0x7;
-
-            if (divisor3 == 1) {
-                baudValue = baudValue | 0xc000; 
-            } else if (divisor3 >= 4) {
-                baudValue = baudValue | 0x4000; 
-            } else if (divisor3 != 0) {
-                baudValue = baudValue | 0x8000; 
-            }
-
-            if (baudValue == 1) {
-                baudValue = 0; 
-            }
-
-        } else {
-            local divfrac = [0, 3, 2, 0, 1, 1, 2, 3];
-            local divindex = [0, 0, 0, 1, 0, 1, 1, 1];
-
-            baudValue = divisor3 >> 3;
-            baudValue = baudValue | (divfrac[divisor3 & 0x7] << 14);
-
-            baudIndex = divindex[divisor3 & 0x7];
-
-            
-            if (baudValue == 1) {
-                baudValue = 0; 
-            } else if (baudValue == 0x4001) {
-                baudValue = 1; 
-            }
-        }
-
-        _controlEndpoint.send(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_BAUD_RATE, baudValue, baudIndex);
-
-        local xon = 0x11;
-        local xoff = 0x13;
-
-        _controlEndpoint.send(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_FLOW_CTRL, xon | (xoff << 8), FTDI_SIO_DISABLE_FLOW_CTRL << 8);
-    }
-
-    function _start() {
-        _bulkIn.read(blob(64 + 2));
-    }
-
-    function write(data) {
-        _bulkOut.write(data);
-    }
-
-    function connect(deviceAddress, speed, descriptors) {
-        _setupEndpoints(deviceAddress, speed, descriptors);
-        _configure(descriptors["device"]);
-        _start();
-    }
-
-    function transferComplete(eventdetails) {
-        local direction = (eventdetails["endpoint"] & 0x80) >> 7;
-        if (direction == USB_DIRECTION_IN) {
-            local readData = _bulkIn.done(eventdetails);
-            if (readData.len() < 3) {
-                _bulkIn.read(blob(64 + 2));
-            } else {
-                readData.seek(2);
-                local writeData = blob(readData.len() + 3);
-                writeData.writestring("ACK: ");
-                writeData.writeblob(readData);
-                
-                _bulkOut.write(writeData);
-                readData.seek(0);
-                _bulkIn.read(blob(64 + 2));
-            }
-        } else if (direction == USB_DIRECTION_OUT) {
-            _bulkOut.done(eventdetails);
-        }
+    function _sendEvent(eventName, eventdetails) {
+        _eventHandlers[eventName](eventdetails);
     }
 };
-
-class DriverFactory {
-    _usb = null;
-
-    constructor(usb) {
-        _usb = usb;
-    }
-
-    function create(descriptors) {
-        
-        local vid = 0x0403;
-        local pid = 0x6001;
-        if ((descriptors["vendorid"] == vid) && (descriptors["productid"] == pid)) {
-            return FtdiDriver(_usb);
-        }
-        return null;
-    }
-}
 
 
 class UsbHost {
     _eventHandlers = {};
+    _customEventHandlers = {};
     _driver = null;
     _address = 1;
-    _factory = null;
+    _registeredDrivers = null;
     _usb = null
     _driverCallback = null;
-    _onConnectedCb = null;
-    _onDisconnectedCb = null;
     _DEBUG = false;
 
 
-    constructor(usb, onConnected = null, onDisconnected = null) {
+    constructor(usb) {
         _usb = usb;
-        _onConnectedCb = onConnected;
-        _onDisconnectedCb = onDisconnected;
-        _factory = DriverFactory(this);
-        _eventHandlers[USB_DEVICE_CONNECTED] <- UsbHost.onDeviceConnected.bindenv(this);
-        _eventHandlers[USB_DEVICE_DISCONNECTED] <- UsbHost.onDeviceDisconnected.bindenv(this);
-        _eventHandlers[USB_TRANSFER_COMPLETED] <- UsbHost.onTransferCompleted.bindenv(this);
-        _usb.configure(UsbHost.onEvent.bindenv(this));
+        _registeredDrivers = {};
+        _eventHandlers[USB_DEVICE_CONNECTED] <- onDeviceConnected.bindenv(this);
+        _eventHandlers[USB_DEVICE_DISCONNECTED] <- onDeviceDisconnected.bindenv(this);
+        _eventHandlers[USB_TRANSFER_COMPLETED] <- onTransferCompleted.bindenv(this);
+        _usb.configure(onEvent.bindenv(this));
+    }
+
+    function _typeof() {
+        return "UsbHost";
     }
 
     function logDescriptors(speed, descriptor) {
@@ -379,6 +249,31 @@ class UsbHost {
                 server.log(format("      interval = 0x%02x", endpoint["interval"]));
             }
         }
+    }
+
+    function registerDriver(className, identifiers) {
+        if (!(className.isUSBDriver == true)) {
+            server.error("This driver is not a valid usb driver.");
+            return;
+        }
+        if (typeof identifiers != "array") {
+            server.error("Identifiers for driver must be of type array.")
+            return;
+        }
+
+        foreach (k, identifier in identifiers) {
+            foreach (VID, PIDS in identifier) {
+                if (typeof PIDS != "array") {
+                    PIDS = [PIDS];
+                }
+
+                foreach (vidIndex, PID in PIDS) {
+                    local vpid = format("%04x%04x", VID, PID);
+                    _registeredDrivers[vpid] <- className;
+                }
+            }
+        }
+
     }
 
     function controlTransfer(speed, deviceAddress, requestType, request, value, index, maxPacketSize) {
@@ -473,6 +368,17 @@ class UsbHost {
         _usb.openendpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress);
     }
 
+    function create(descriptors) {
+        local vid = descriptors["vendorid"];
+        local pid = descriptors["productid"];
+        local vpid = format("%04x%04x", vid, pid);
+
+        if ((vpid in _registeredDrivers) && _registeredDrivers[vpid] != null) {
+            return _registeredDrivers[vpid](this);
+        }
+        return null;
+    }
+
     function onDeviceConnected(eventdetails) {
         if (_driver != null) {
             server.log("Device already connected");
@@ -486,7 +392,7 @@ class UsbHost {
             logDescriptors(speed, descriptors);
         }
 
-        _driver = _factory.create(descriptors);
+        _driver = create(descriptors);
         if (_driver == null) {
             server.log("No driver found for device");
             return;
@@ -495,26 +401,200 @@ class UsbHost {
         server.log("Found driver");
         setAddress(_address, speed, maxPacketSize);
         _driver.connect(_address, speed, descriptors);
+        onEvent("connected", _driver);
 
-        if (_onConnectedCb != null) {
-            _onConnectedCb(_driver);
-        }
     }
 
     function onDeviceDisconnected(eventdetails) {
-        server.log("Device:" + _driver.getDeviceType + " gone");
-        if (_onDisconnectedCb != null) {
-            _onDisconnectedCb(_driver.getDriverType);
-        }
+        server.log("Device:" + typeof _driver + " disconnected");
+        onEvent("disconnected", _driver);
         _driver = null;
     }
 
     function onTransferCompleted(eventdetails) {
-        _driver.transferComplete(eventdetails);
+        if (_driver) {
+            _driver.transferComplete(eventdetails);
+        }
+    }
+
+    function on(eventName, cb) {
+        _customEventHandlers[eventName] <- cb;
+    }
+
+    function off(eventName) {
+        if (eventName in _customEventHandlers) {
+            delete _customEventHandlers[eventName];
+        }
     }
 
     function onEvent(eventtype, eventdetails) {
-        _eventHandlers[eventtype](eventdetails);
+        if (eventtype in _eventHandlers) {
+            _eventHandlers[eventtype](eventdetails);
+        }
+
+        if (eventtype in _customEventHandlers) {
+            _customEventHandlers[eventtype](eventdetails);
+        }
+    }
+};
+
+class FtdiDriver extends DriverBase {
+
+    _deviceAddress = null;
+    _controlEndpoint = null;
+    _bulkIn = null;
+    _bulkOut = null;
+    
+    _vid = 0x0403;
+    _pid = 0x6001;
+
+    function _typeof() {
+        return "FtdiDriver";
+    }
+
+    function _setupEndpoints(deviceAddress, speed, descriptors) {
+        server.log(format("Driver connecting at address 0x%02x", deviceAddress));
+        _deviceAddress = deviceAddress;
+        _controlEndpoint = ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
+
+        
+        local configuration = descriptors["configurations"][0];
+        server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
+        _controlEndpoint.setConfiguration(configuration["value"]);
+
+        
+        local interface = configuration["interfaces"][0];
+        local interfacenumber = interface["interfacenumber"];
+
+        foreach (endpoint in interface["endpoints"]) {
+            local address = endpoint["address"];
+            local maxPacketSize = endpoint["maxpacketsize"];
+            if ((endpoint["attributes"] & 0x3) == 2) {
+                if ((address & 0x80) >> 7 == USB_DIRECTION_OUT) {
+                    _bulkOut = BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                } else {
+                    _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                }
+
+            }
+        }
+    }
+
+    function getIdentifiers() {
+        local identifiers = {};
+        identifiers[_vid] <-[_pid];
+        return [identifiers];
+    }
+
+    function _configure(device) {
+        server.log(format("Configuring for device version 0x%04x", device));
+
+        
+        local baud = 115200;
+        local baudValue;
+        local baudIndex = 0;
+        local divisor3 = 48000000 / 2 / baud; 
+
+        if (device == 0x0200) { 
+            if ((divisor3 & 0x07) == 0x07) {
+                divisor3++; 
+            }
+
+            baudValue = divisor3 >> 3;
+            divisor3 = divisor3 & 0x7;
+
+            if (divisor3 == 1) {
+                baudValue = baudValue | 0xc000; 
+            } else if (divisor3 >= 4) {
+                baudValue = baudValue | 0x4000; 
+            } else if (divisor3 != 0) {
+                baudValue = baudValue | 0x8000; 
+            }
+
+            if (baudValue == 1) {
+                baudValue = 0; 
+            }
+
+        } else {
+            local divfrac = [0, 3, 2, 0, 1, 1, 2, 3];
+            local divindex = [0, 0, 0, 1, 0, 1, 1, 1];
+
+            baudValue = divisor3 >> 3;
+            baudValue = baudValue | (divfrac[divisor3 & 0x7] << 14);
+
+            baudIndex = divindex[divisor3 & 0x7];
+
+            
+            if (baudValue == 1) {
+                baudValue = 0; 
+            } else if (baudValue == 0x4001) {
+                baudValue = 1; 
+            }
+        }
+
+        _controlEndpoint.send(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_BAUD_RATE, baudValue, baudIndex);
+
+        const xon = 0x11;
+        const xoff = 0x13;
+
+        _controlEndpoint.send(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_FLOW_CTRL, xon | (xoff << 8), FTDI_SIO_DISABLE_FLOW_CTRL << 8);
+    }
+
+    function _start() {
+        _bulkIn.read(blob(64 + 2));
+    }
+
+    function write(data) {
+        local _data = null;
+
+        if (typeof data == "string") {
+            _data = blob();
+            _data.writestring(data);
+        } else if (typeof data == "blob") {
+            _data = data;
+        } else {
+            server.error("Write data must of type string or blob");
+            return;
+        }
+
+        _bulkOut.write(_data);
+    }
+
+    function on(eventType, cb) {
+        _eventHandlers[eventType] <- cb;
+    }
+
+    function off(eventName) {
+        if (eventName in _eventHandlers) {
+            delete _eventHandlers[eventName];
+        }
+    }
+
+    function onEvent(eventType, eventdetails) {
+        if (eventType in _eventHandlers) {
+            _eventHandlers[eventType](eventdetails);
+        }
+    }
+
+    function connect(deviceAddress, speed, descriptors) {
+        _setupEndpoints(deviceAddress, speed, descriptors);
+        _configure(descriptors["device"]);
+        _start();
+    }
+
+    function transferComplete(eventdetails) {
+        local direction = (eventdetails["endpoint"] & 0x80) >> 7;
+        if (direction == USB_DIRECTION_IN) {
+            local readData = _bulkIn.done(eventdetails);
+            if (readData.len() >= 3) {
+                readData.seek(2);
+                onEvent("data", readData.readblob(readData.len()));
+            }
+            
+            _bulkIn.read(blob(64 + 2));
+        } else if (direction == USB_DIRECTION_OUT) {
+            _bulkOut.done(eventdetails);
+        }
     }
 };
 
@@ -527,15 +607,13 @@ class UartLogger {
     constructor(uart) {
         _uart = uart;
         _uart.write("\r\n\r\n")
-        log("------------[ New log started ]------------");
     }
 
     
     function log(msg) {
 
         local date = date();
-        local dateStr = format("%02d-%02d-%02d %02d:%02d:%02d", date.year, (date.month + 1), date.day, date.hour, date.min, date.sec);
-        _uart.write(dateStr + "    " + msg + "\r\n");
+        _uart.write(msg + "\r\n");
         if (server.isconnected()) server.log(msg);
 
     }
@@ -552,19 +630,22 @@ class UartLogger {
 
 function sendTestData(device) {
     server.log("sending test data.")
-    local testData = blob();
-
-    testData.writestring("I'm a Blob\n");
-    device.write(testData);
-
+    device.write(3);
     imp.wakeup(10, function() {
         sendTestData(device)
     });
 }
 
 function onConnected(device) {
+    device.on("data", dataEvent);
     server.log("our onconnected func")
     sendTestData(device);
+}
+
+function dataEvent(eventDetails) {
+
+    server.log("got data on usb: " + eventDetails);
+
 }
 
 function onDisconnected(devicetype) {
@@ -574,22 +655,33 @@ function onDisconnected(devicetype) {
 
 
 function readback() {
-    local data = uart.readstring();
-    logs.log("recieved");
-}
 
-server.log("initilized")
+    dataString += uart.readstring();
+    if (dataString.find("\n")) {
+        server.log("Recieved data on UART [" + dataString + "] Sending data back to USB");
+        logs.log("Received message: " + dataString);
+        dataString = "";
+    }
+
+}
 
 
 uart <- hardware.uart1;
-
-
-uart.configure(115200, 8, PARITY_NONE, 1, 0, readback);
-logs <- UartLogger(uart);
+dataString <- "";
 
 
 loadPin <- hardware.pinS;
 loadPin.configure(DIGITAL_OUT);
 loadPin.write(1);
 
-usbHost <- UsbHost(hardware.usb, onConnected, onDisconnected);
+hardware.pinW.configure(DIGITAL_OUT, 1);
+hardware.pinR.configure(DIGITAL_OUT, 1);
+
+usbHost <- UsbHost(hardware.usb);
+usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
+
+usbHost.on("connected", onConnected);
+
+
+uart.configure(115200, 8, PARITY_NONE, 1, 0, readback);
+logs <- UartLogger(uart);

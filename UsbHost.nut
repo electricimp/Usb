@@ -42,12 +42,6 @@ const USB_DESCRIPTOR_HID = 0x21;
 const USB_DIRECTION_OUT = 0x0;
 const USB_DIRECTION_IN = 0x1;
 
-// FTDI driver 
-const FTDI_REQUEST_FTDI_OUT = 0x40;
-const FTDI_SIO_SET_BAUD_RATE = 3;
-const FTDI_SIO_SET_FLOW_CTRL = 2;
-const FTDI_SIO_DISABLE_FLOW_CTRL = 0;
-
 
 // Extract the direction from and endpoint address
 function directionString(direction) {
@@ -156,186 +150,56 @@ class BulkOutEndpoint extends BulkEndpoint {
 }
 
 class DriverBase {
+    static isUSBDriver = true;
+
+    _usb = null;
+
+    _eventHandlers = {};
+
+    constructor(usb) {
+        _usb = usb;
+    }
+
     function connect(address, speed, descriptors) {}
+
+    function getIdentifiers() {}
 
     function transferComplete(eventdetails) {}
 
-    function getDeviceType() {}
-};
+    function getClassName() {}
 
-class FtdiDriver extends DriverBase {
-    _usb = null;
-    _deviceAddress = null;
-    _controlEndpoint = null;
-    _bulkIn = null;
-    _bulkOut = null;
-
-    constructor(usb) {
-        _usb = usb;
+    function on(eventName, cb) {
+        _eventHandlers[eventName] <- cb;
     }
 
-    function getDeviceType() {
-        return "Ftdi";
-    }
-
-    function _setupEndpoints(deviceAddress, speed, descriptors) {
-        server.log(format("Driver connecting at address 0x%02x", deviceAddress));
-        _deviceAddress = deviceAddress;
-        _controlEndpoint = ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
-
-        // Select configuration
-        local configuration = descriptors["configurations"][0];
-        server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
-        _controlEndpoint.setConfiguration(configuration["value"]);
-
-        // Select interface
-        local interface = configuration["interfaces"][0];
-        local interfacenumber = interface["interfacenumber"];
-
-        foreach (endpoint in interface["endpoints"]) {
-            local address = endpoint["address"];
-            local maxPacketSize = endpoint["maxpacketsize"];
-            if ((endpoint["attributes"] & 0x3) == 2) {
-                if ((address & 0x80) >> 7 == USB_DIRECTION_OUT) {
-                    _bulkOut = BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
-                } else {
-                    _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
-                }
-
-            }
-        }
-    }
-
-    function _configure(device) {
-        server.log(format("Configuring for device version 0x%04x", device));
-
-        // Set Baud Rate
-        local baud = 115200;
-        local baudValue;
-        local baudIndex = 0;
-        local divisor3 = 48000000 / 2 / baud; // divisor shifted 3 bits to the left
-
-        if (device == 0x0200) { // FT232AM
-            if ((divisor3 & 0x07) == 0x07) {
-                divisor3++; // round x.7/8 up to x+1
-            }
-
-            baudValue = divisor3 >> 3;
-            divisor3 = divisor3 & 0x7;
-
-            if (divisor3 == 1) {
-                baudValue = baudValue | 0xc000; // 0.125
-            } else if (divisor3 >= 4) {
-                baudValue = baudValue | 0x4000; // 0.5
-            } else if (divisor3 != 0) {
-                baudValue = baudValue | 0x8000; // 0.25
-            }
-
-            if (baudValue == 1) {
-                baudValue = 0; /* special case for maximum baud rate */
-            }
-
-        } else {
-            local divfrac = [0, 3, 2, 0, 1, 1, 2, 3];
-            local divindex = [0, 0, 0, 1, 0, 1, 1, 1];
-
-            baudValue = divisor3 >> 3;
-            baudValue = baudValue | (divfrac[divisor3 & 0x7] << 14);
-
-            baudIndex = divindex[divisor3 & 0x7];
-
-            /* Deal with special cases for highest baud rates. */
-            if (baudValue == 1) {
-                baudValue = 0; // 1.0
-            } else if (baudValue == 0x4001) {
-                baudValue = 1; // 1.5
-            }
-        }
-
-        _controlEndpoint.send(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_BAUD_RATE, baudValue, baudIndex);
-
-        local xon = 0x11;
-        local xoff = 0x13;
-
-        _controlEndpoint.send(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_FLOW_CTRL, xon | (xoff << 8), FTDI_SIO_DISABLE_FLOW_CTRL << 8);
-    }
-
-    function _start() {
-        _bulkIn.read(blob(64 + 2));
-    }
-
-    function write(data) {
-        _bulkOut.write(data);
-    }
-
-    function connect(deviceAddress, speed, descriptors) {
-        _setupEndpoints(deviceAddress, speed, descriptors);
-        _configure(descriptors["device"]);
-        _start();
-    }
-
-    function transferComplete(eventdetails) {
-        local direction = (eventdetails["endpoint"] & 0x80) >> 7;
-        if (direction == USB_DIRECTION_IN) {
-            local readData = _bulkIn.done(eventdetails);
-            if (readData.len() < 3) {
-                _bulkIn.read(blob(64 + 2));
-            } else {
-                readData.seek(2);
-                local writeData = blob(readData.len() + 3);
-                writeData.writestring("ACK: ");
-                writeData.writeblob(readData);
-                // local writeData = readData.readblob(readData.len()-2);
-                _bulkOut.write(writeData);
-                readData.seek(0);
-                _bulkIn.read(blob(64 + 2));
-            }
-        } else if (direction == USB_DIRECTION_OUT) {
-            _bulkOut.done(eventdetails);
-        }
+    function _sendEvent(eventName, eventdetails) {
+        _eventHandlers[eventName](eventdetails);
     }
 };
-
-class DriverFactory {
-    _usb = null;
-
-    constructor(usb) {
-        _usb = usb;
-    }
-
-    function create(descriptors) {
-        // FTDI vid and pid
-        local vid = 0x0403;
-        local pid = 0x6001;
-        if ((descriptors["vendorid"] == vid) && (descriptors["productid"] == pid)) {
-            return FtdiDriver(_usb);
-        }
-        return null;
-    }
-}
 
 // Supports only one device at the moment.
 class UsbHost {
     _eventHandlers = {};
+    _customEventHandlers = {};
     _driver = null;
     _address = 1;
-    _factory = null;
+    _registeredDrivers = null;
     _usb = null
     _driverCallback = null;
-    _onConnectedCb = null;
-    _onDisconnectedCb = null;
     _DEBUG = false;
 
 
-    constructor(usb, onConnected = null, onDisconnected = null) {
+    constructor(usb) {
         _usb = usb;
-        _onConnectedCb = onConnected;
-        _onDisconnectedCb = onDisconnected;
-        _factory = DriverFactory(this);
-        _eventHandlers[USB_DEVICE_CONNECTED] <- UsbHost.onDeviceConnected.bindenv(this);
-        _eventHandlers[USB_DEVICE_DISCONNECTED] <- UsbHost.onDeviceDisconnected.bindenv(this);
-        _eventHandlers[USB_TRANSFER_COMPLETED] <- UsbHost.onTransferCompleted.bindenv(this);
-        _usb.configure(UsbHost.onEvent.bindenv(this));
+        _registeredDrivers = {};
+        _eventHandlers[USB_DEVICE_CONNECTED] <- onDeviceConnected.bindenv(this);
+        _eventHandlers[USB_DEVICE_DISCONNECTED] <- onDeviceDisconnected.bindenv(this);
+        _eventHandlers[USB_TRANSFER_COMPLETED] <- onTransferCompleted.bindenv(this);
+        _usb.configure(onEvent.bindenv(this));
+    }
+
+    function _typeof() {
+        return "UsbHost";
     }
 
     function logDescriptors(speed, descriptor) {
@@ -379,6 +243,31 @@ class UsbHost {
                 server.log(format("      interval = 0x%02x", endpoint["interval"]));
             }
         }
+    }
+
+    function registerDriver(className, identifiers) {
+        if (!(className.isUSBDriver == true)) {
+            server.error("This driver is not a valid usb driver.");
+            return;
+        }
+        if (typeof identifiers != "array") {
+            server.error("Identifiers for driver must be of type array.")
+            return;
+        }
+
+        foreach (k, identifier in identifiers) {
+            foreach (VID, PIDS in identifier) {
+                if (typeof PIDS != "array") {
+                    PIDS = [PIDS];
+                }
+
+                foreach (vidIndex, PID in PIDS) {
+                    local vpid = format("%04x%04x", VID, PID);
+                    _registeredDrivers[vpid] <- className;
+                }
+            }
+        }
+
     }
 
     function controlTransfer(speed, deviceAddress, requestType, request, value, index, maxPacketSize) {
@@ -473,6 +362,17 @@ class UsbHost {
         _usb.openendpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress);
     }
 
+    function create(descriptors) {
+        local vid = descriptors["vendorid"];
+        local pid = descriptors["productid"];
+        local vpid = format("%04x%04x", vid, pid);
+
+        if ((vpid in _registeredDrivers) && _registeredDrivers[vpid] != null) {
+            return _registeredDrivers[vpid](this);
+        }
+        return null;
+    }
+
     function onDeviceConnected(eventdetails) {
         if (_driver != null) {
             server.log("Device already connected");
@@ -486,7 +386,7 @@ class UsbHost {
             logDescriptors(speed, descriptors);
         }
 
-        _driver = _factory.create(descriptors);
+        _driver = create(descriptors);
         if (_driver == null) {
             server.log("No driver found for device");
             return;
@@ -495,25 +395,39 @@ class UsbHost {
         server.log("Found driver");
         setAddress(_address, speed, maxPacketSize);
         _driver.connect(_address, speed, descriptors);
+        onEvent("connected", _driver);
 
-        if (_onConnectedCb != null) {
-            _onConnectedCb(_driver);
-        }
     }
 
     function onDeviceDisconnected(eventdetails) {
-        server.log("Device:" + _driver.getDeviceType + " gone");
-        if (_onDisconnectedCb != null) {
-            _onDisconnectedCb(_driver.getDriverType);
-        }
+        server.log("Device:" + typeof _driver + " disconnected");
+        onEvent("disconnected", _driver);
         _driver = null;
     }
 
     function onTransferCompleted(eventdetails) {
-        _driver.transferComplete(eventdetails);
+        if (_driver) {
+            _driver.transferComplete(eventdetails);
+        }
+    }
+
+    function on(eventName, cb) {
+        _customEventHandlers[eventName] <- cb;
+    }
+
+    function off(eventName) {
+        if (eventName in _customEventHandlers) {
+            delete _customEventHandlers[eventName];
+        }
     }
 
     function onEvent(eventtype, eventdetails) {
-        _eventHandlers[eventtype](eventdetails);
+        if (eventtype in _eventHandlers) {
+            _eventHandlers[eventtype](eventdetails);
+        }
+
+        if (eventtype in _customEventHandlers) {
+            _customEventHandlers[eventtype](eventdetails);
+        }
     }
 };
