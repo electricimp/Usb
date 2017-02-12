@@ -1,12 +1,21 @@
 class FtdiDriver extends DriverBase {
 
+    // FTDI vid and pid
+    static VID = 0x0403;
+    static PID = 0x6001;
+
+
+    // FTDI driver 
+    static FTDI_REQUEST_FTDI_OUT = 0x40;
+    static FTDI_SIO_SET_BAUD_RATE = 3;
+    static FTDI_SIO_SET_FLOW_CTRL = 2;
+    static FTDI_SIO_DISABLE_FLOW_CTRL = 0;
+
     _deviceAddress = null;
     _controlEndpoint = null;
     _bulkIn = null;
     _bulkOut = null;
-    // FTDI vid and pid
-    _vid = 0x0403;
-    _pid = 0x6001;
+
 
     function _typeof() {
         return "FtdiDriver";
@@ -42,7 +51,7 @@ class FtdiDriver extends DriverBase {
 
     function getIdentifiers() {
         local identifiers = {};
-        identifiers[_vid] <-[_pid];
+        identifiers[VID] <-[PID];
         return [identifiers];
     }
 

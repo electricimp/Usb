@@ -42,12 +42,6 @@ const USB_DESCRIPTOR_HID = 0x21;
 const USB_DIRECTION_OUT = 0x0;
 const USB_DIRECTION_IN = 0x1;
 
-// FTDI driver 
-const FTDI_REQUEST_FTDI_OUT = 0x40;
-const FTDI_SIO_SET_BAUD_RATE = 3;
-const FTDI_SIO_SET_FLOW_CTRL = 2;
-const FTDI_SIO_DISABLE_FLOW_CTRL = 0;
-
 
 // Extract the direction from and endpoint address
 function directionString(direction) {
