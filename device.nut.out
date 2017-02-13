@@ -372,19 +372,11 @@ class UsbHost {
     }
 
     function bulkTransfer(address, endpoint, type, data) {
-        if (data.len() != 66) {
-            server.log(data);
-        }
-
         if (!_busy) {
-                server.log("running now " + data)
-                _busy = true;
-                _usb.generaltransfer(address, endpoint, type, data);
-
-
+            _busy = true;
+            _usb.generaltransfer(address, endpoint, type, data);
         } else {
-                server.log("added to queue " + data);
-                _queue.push([this, address, endpoint, type, data]);
+            _queue.push([this, address, endpoint, type, data]);
         }
     }
 
@@ -430,9 +422,11 @@ class UsbHost {
     }
 
     function onDeviceDisconnected(eventdetails) {
-        server.log("Device:" + typeof _driver + " disconnected");
-        onEvent("disconnected", _driver);
-        _driver = null;
+        if (_driver != null) {
+            server.log("Device:" + typeof _driver + " disconnected");
+            onEvent("disconnected", typeof _driver);
+            _driver = null;
+        }
     }
 
     function onTransferCompleted(eventdetails) {
@@ -443,7 +437,6 @@ class UsbHost {
         }
 
         if (_queue.len() > 0) {
-            server.log("picking from queue. left " + _queue.len())
             bulkTransfer.acall(_queue.remove(0));
         }
     }
@@ -581,7 +574,7 @@ class FtdiDriver extends DriverBase {
     }
 
     function _start() {
-        _bulkIn.read(blob(64 + 2));
+        _bulkIn.read(blob(64+2));
     }
 
     function write(data) {
@@ -615,7 +608,7 @@ class FtdiDriver extends DriverBase {
                 onEvent("data", readData.readblob(readData.len()));
             }
             
-            _bulkIn.read(blob(64 + 2));
+            
         } else if (direction == USB_DIRECTION_OUT) {
             _bulkOut.done(eventdetails);
         }
@@ -746,7 +739,7 @@ class BrotherQL720Driver extends DriverBase {
     }
 
     function _typeof() {
-        return "BrotherQL720Printer";
+        return "BrotherQL720Driver";
     }
 
     function _setupEndpoints(deviceAddress, speed, descriptors) {
@@ -772,7 +765,6 @@ class BrotherQL720Driver extends DriverBase {
                 } else {
                     _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
                 }
-
             }
         }
     }
@@ -854,7 +846,6 @@ class BrotherQL720Driver extends DriverBase {
             server.error("Write data must of type string or blob");
             return;
         }
-        server.log("writing " + data);
         _bulkOut.write(_data);
     }
 
@@ -869,7 +860,6 @@ class BrotherQL720Driver extends DriverBase {
             local readData = _bulkIn.done(eventdetails);
 
             if (readData.len() >= 3) {
-                server.log(readData);
                 readData.seek(2);
                 onEvent("data", readData.readblob(readData.len()));
             }
@@ -951,8 +941,11 @@ class BrotherQL720Driver extends DriverBase {
         return writeToBuffer(text + TEXT_NEWLINE, options);
     }
 
-    function newline() {
-        return writeToBuffer(TEXT_NEWLINE);
+    function newline(lines = 1) {
+        for (local i = 0; i < lines; i++) {
+            writeToBuffer(TEXT_NEWLINE);
+        }
+        return this;
     }
 
     
@@ -1070,8 +1063,6 @@ class BrotherQL720Driver extends DriverBase {
             afterText += CMD_UNDERLINE_STOP;
         }
 
-        server.log("printing " + beforeText + text + afterText);
-
         _buffer.writestring(beforeText + text + afterText);
 
         return this;
@@ -1117,6 +1108,10 @@ class UartLogger {
 
     }
 
+    function write(msg){
+        _uart.write(msg + "\r\n");
+    }
+
     
     function error(msg) {
         local date = date();
@@ -1137,22 +1132,32 @@ function sendTestData(device) {
 
 function onConnected(device) {
     device.on("data", dataEvent);
-    server.log("our onconnected func")
-    local getInfoReq = blob(3);
-    
-    getInfoReq.writen(0x1B, 'b');
-    getInfoReq.writen(0x69, 'b');
-    getInfoReq.writen(0x53, 'b');
-    
-   
-    
-    device.write(getInfoReq);
+    switch (typeof device) {
+        case "BrotherQL720Driver":
+            local getInfoReq = blob(3);
+            
+            getInfoReq.writen(0x1B, 'b');
+            getInfoReq.writen(0x69, 'b');
+            getInfoReq.writen(0x53, 'b');
+
+            device
+                .setOrientation(BrotherQL720Driver.LANDSCAPE)
+                .setFont(BrotherQL720Driver.FONT_SAN_DIEGO)
+                .setFontSize(BrotherQL720Driver.FONT_SIZE_48)
+                .writeToBuffer("")
+                .newline(3)
+                .writeToBuffer("+61 (03) 8352-4490", BrotherQL720Driver.BOLD | BrotherQL720Driver.ITALIC)
+                .setLeftMargin(8)
+                
+            break;
+        case "FtdiDriver":
+            sendTestData(device);
+            break;
+    }
 }
 
 function dataEvent(eventDetails) {
-
     server.log("got data on usb: " + eventDetails);
-
 }
 
 function onDisconnected(devicetype) {
@@ -1166,7 +1171,7 @@ function readback() {
     dataString += uart.readstring();
     if (dataString.find("\n")) {
         server.log("Recieved data on UART [" + dataString + "] Sending data back to USB");
-        logs.log("Received message: " + dataString);
+        logs.write("Hi from UART");
         dataString = "";
     }
 

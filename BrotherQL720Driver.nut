@@ -122,7 +122,7 @@ class BrotherQL720Driver extends DriverBase {
     }
 
     function _typeof() {
-        return "BrotherQL720Printer";
+        return "BrotherQL720Driver";
     }
 
     function _setupEndpoints(deviceAddress, speed, descriptors) {
@@ -148,7 +148,6 @@ class BrotherQL720Driver extends DriverBase {
                 } else {
                     _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
                 }
-
             }
         }
     }
@@ -230,7 +229,6 @@ class BrotherQL720Driver extends DriverBase {
             server.error("Write data must of type string or blob");
             return;
         }
-        server.log("writing " + data);
         _bulkOut.write(_data);
     }
 
@@ -245,12 +243,11 @@ class BrotherQL720Driver extends DriverBase {
             local readData = _bulkIn.done(eventdetails);
 
             if (readData.len() >= 3) {
-                server.log(readData);
                 readData.seek(2);
                 onEvent("data", readData.readblob(readData.len()));
             }
             // Blank the buffer
-            //_bulkIn.read(blob(64 + 2));
+            // _bulkIn.read(blob(64 + 2));
         } else if (direction == USB_DIRECTION_OUT) {
             _bulkOut.done(eventdetails);
         }
@@ -327,8 +324,11 @@ class BrotherQL720Driver extends DriverBase {
         return writeToBuffer(text + TEXT_NEWLINE, options);
     }
 
-    function newline() {
-        return writeToBuffer(TEXT_NEWLINE);
+    function newline(lines = 1) {
+        for (local i = 0; i < lines; i++) {
+            writeToBuffer(TEXT_NEWLINE);
+        }
+        return this;
     }
 
     // Barcode commands
@@ -445,8 +445,6 @@ class BrotherQL720Driver extends DriverBase {
             beforeText += CMD_UNDERLINE_START;
             afterText += CMD_UNDERLINE_STOP;
         }
-
-        server.log("printing " + beforeText + text + afterText);
 
         _buffer.writestring(beforeText + text + afterText);
 

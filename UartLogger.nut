@@ -18,6 +18,10 @@ class UartLogger {
 
     }
 
+    function write(msg){
+        _uart.write(msg + "\r\n");
+    }
+
     // -----------------------
     function error(msg) {
         local date = date();

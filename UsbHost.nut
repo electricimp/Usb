@@ -372,19 +372,11 @@ class UsbHost {
     }
 
     function bulkTransfer(address, endpoint, type, data) {
-        if (data.len() != 66) {
-            server.log(data);
-        }
-
         if (!_busy) {
-                server.log("running now " + data)
-                _busy = true;
-                _usb.generaltransfer(address, endpoint, type, data);
-
-
+            _busy = true;
+            _usb.generaltransfer(address, endpoint, type, data);
         } else {
-                server.log("added to queue " + data);
-                _queue.push([this, address, endpoint, type, data]);
+            _queue.push([this, address, endpoint, type, data]);
         }
     }
 
@@ -430,9 +422,11 @@ class UsbHost {
     }
 
     function onDeviceDisconnected(eventdetails) {
-        server.log("Device:" + typeof _driver + " disconnected");
-        onEvent("disconnected", _driver);
-        _driver = null;
+        if (_driver != null) {
+            server.log("Device:" + typeof _driver + " disconnected");
+            onEvent("disconnected", typeof _driver);
+            _driver = null;
+        }
     }
 
     function onTransferCompleted(eventdetails) {
@@ -443,7 +437,6 @@ class UsbHost {
         }
 
         if (_queue.len() > 0) {
-            server.log("picking from queue. left " + _queue.len())
             bulkTransfer.acall(_queue.remove(0));
         }
     }

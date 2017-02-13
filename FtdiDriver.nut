@@ -110,7 +110,7 @@ class FtdiDriver extends DriverBase {
     }
 
     function _start() {
-        _bulkIn.read(blob(64 + 2));
+        _bulkIn.read(blob(64+2));
     }
 
     function write(data) {
@@ -144,7 +144,7 @@ class FtdiDriver extends DriverBase {
                 onEvent("data", readData.readblob(readData.len()));
             }
             // Blank the buffer
-            _bulkIn.read(blob(64 + 2));
+            //_bulkIn.read(blob(1));
         } else if (direction == USB_DIRECTION_OUT) {
             _bulkOut.done(eventdetails);
         }

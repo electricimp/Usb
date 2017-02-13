@@ -13,27 +13,32 @@ function sendTestData(device) {
 
 function onConnected(device) {
     device.on("data", dataEvent);
-    server.log("our onconnected func")
-    local getInfoReq = blob(3);
-    // Get printer info
-    getInfoReq.writen(0x1B, 'b');
-    getInfoReq.writen(0x69, 'b');
-    getInfoReq.writen(0x53, 'b');
-    
-   /* device
-        .setOrientation(BrotherQL720Driver.LANDSCAPE)
-        .setFont(BrotherQL720Driver.FONT_SAN_DIEGO)
-        .setFontSize(BrotherQL720Driver.FONT_SIZE_48)
-        .writeToBuffer("I'm a mystic device!")
-        .print();*/
-    
-    device.write(getInfoReq);
+    switch (typeof device) {
+        case "BrotherQL720Driver":
+            local getInfoReq = blob(3);
+            // Get printer info
+            getInfoReq.writen(0x1B, 'b');
+            getInfoReq.writen(0x69, 'b');
+            getInfoReq.writen(0x53, 'b');
+
+            device
+                .setOrientation(BrotherQL720Driver.LANDSCAPE)
+                .setFont(BrotherQL720Driver.FONT_SAN_DIEGO)
+                .setFontSize(BrotherQL720Driver.FONT_SIZE_48)
+                .writeToBuffer("")
+                .newline(3)
+                .writeToBuffer("+61 (03) 8352-4490", BrotherQL720Driver.BOLD | BrotherQL720Driver.ITALIC)
+                .setLeftMargin(8)
+                // .print();
+            break;
+        case "FtdiDriver":
+            sendTestData(device);
+            break;
+    }
 }
 
 function dataEvent(eventDetails) {
-
     server.log("got data on usb: " + eventDetails);
-
 }
 
 function onDisconnected(devicetype) {
@@ -47,7 +52,7 @@ function readback() {
     dataString += uart.readstring();
     if (dataString.find("\n")) {
         server.log("Recieved data on UART [" + dataString + "] Sending data back to USB");
-        logs.log("Received message: " + dataString);
+        logs.write("Hi from UART");
         dataString = "";
     }
 
