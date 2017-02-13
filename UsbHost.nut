@@ -146,6 +146,7 @@ class BulkOutEndpoint extends BulkEndpoint {
     function done(details) {
         assert(details["endpoint"] == _endpointAddress);
         _data = null;
+
     }
 }
 
@@ -160,21 +161,34 @@ class DriverBase {
         _usb = usb;
     }
 
-    function connect(address, speed, descriptors) {}
-
-    function getIdentifiers() {}
-
-    function transferComplete(eventdetails) {}
-
-    function getClassName() {}
-
-    function on(eventName, cb) {
-        _eventHandlers[eventName] <- cb;
+    function connect(address, speed, descriptors) {
+        server.error("connect has not been implemented in this driver. Please override.");
     }
 
-    function _sendEvent(eventName, eventdetails) {
-        _eventHandlers[eventName](eventdetails);
+    function getIdentifiers() {
+        server.error("connect has not been implemented in this driver. Please override.");
     }
+
+    function transferComplete(eventdetails) {
+        server.error("connect has not been implemented in this driver. Please override.");
+    }
+
+    function on(eventType, cb) {
+        _eventHandlers[eventType] <- cb;
+    }
+
+    function off(eventName) {
+        if (eventName in _eventHandlers) {
+            delete _eventHandlers[eventName];
+        }
+    }
+
+    function onEvent(eventType, eventdetails) {
+        if (eventType in _eventHandlers) {
+            _eventHandlers[eventType](eventdetails);
+        }
+    }
+
 };
 
 // Supports only one device at the moment.
@@ -182,15 +196,18 @@ class UsbHost {
     _eventHandlers = {};
     _customEventHandlers = {};
     _driver = null;
+    _queue = null;
     _address = 1;
     _registeredDrivers = null;
     _usb = null
     _driverCallback = null;
     _DEBUG = false;
+    _busy = false;
 
 
     constructor(usb) {
         _usb = usb;
+        _queue = [];
         _registeredDrivers = {};
         _eventHandlers[USB_DEVICE_CONNECTED] <- onDeviceConnected.bindenv(this);
         _eventHandlers[USB_DEVICE_DISCONNECTED] <- onDeviceDisconnected.bindenv(this);
@@ -355,7 +372,20 @@ class UsbHost {
     }
 
     function bulkTransfer(address, endpoint, type, data) {
-        _usb.generaltransfer(address, endpoint, type, data);
+        if (data.len() != 66) {
+            server.log(data);
+        }
+
+        if (!_busy) {
+                server.log("running now " + data)
+                _busy = true;
+                _usb.generaltransfer(address, endpoint, type, data);
+
+
+        } else {
+                server.log("added to queue " + data);
+                _queue.push([this, address, endpoint, type, data]);
+        }
     }
 
     function openEndpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress) {
@@ -392,7 +422,7 @@ class UsbHost {
             return;
         }
 
-        server.log("Found driver");
+        server.log("Found driver for " + typeof _driver);
         setAddress(_address, speed, maxPacketSize);
         _driver.connect(_address, speed, descriptors);
         onEvent("connected", _driver);
@@ -406,8 +436,15 @@ class UsbHost {
     }
 
     function onTransferCompleted(eventdetails) {
+
+        _busy = false;
         if (_driver) {
             _driver.transferComplete(eventdetails);
+        }
+
+        if (_queue.len() > 0) {
+            server.log("picking from queue. left " + _queue.len())
+            bulkTransfer.acall(_queue.remove(0));
         }
     }
 

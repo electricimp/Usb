@@ -43,12 +43,6 @@ const USB_DIRECTION_OUT = 0x0;
 const USB_DIRECTION_IN = 0x1;
 
 
-const FTDI_REQUEST_FTDI_OUT = 0x40;
-const FTDI_SIO_SET_BAUD_RATE = 3;
-const FTDI_SIO_SET_FLOW_CTRL = 2;
-const FTDI_SIO_DISABLE_FLOW_CTRL = 0;
-
-
 
 function directionString(direction) {
     if (direction == USB_DIRECTION_IN) {
@@ -152,6 +146,7 @@ class BulkOutEndpoint extends BulkEndpoint {
     function done(details) {
         assert(details["endpoint"] == _endpointAddress);
         _data = null;
+
     }
 }
 
@@ -166,21 +161,34 @@ class DriverBase {
         _usb = usb;
     }
 
-    function connect(address, speed, descriptors) {}
-
-    function getIdentifiers() {}
-
-    function transferComplete(eventdetails) {}
-
-    function getClassName() {}
-
-    function on(eventName, cb) {
-        _eventHandlers[eventName] <- cb;
+    function connect(address, speed, descriptors) {
+        server.error("connect has not been implemented in this driver. Please override.");
     }
 
-    function _sendEvent(eventName, eventdetails) {
-        _eventHandlers[eventName](eventdetails);
+    function getIdentifiers() {
+        server.error("connect has not been implemented in this driver. Please override.");
     }
+
+    function transferComplete(eventdetails) {
+        server.error("connect has not been implemented in this driver. Please override.");
+    }
+
+    function on(eventType, cb) {
+        _eventHandlers[eventType] <- cb;
+    }
+
+    function off(eventName) {
+        if (eventName in _eventHandlers) {
+            delete _eventHandlers[eventName];
+        }
+    }
+
+    function onEvent(eventType, eventdetails) {
+        if (eventType in _eventHandlers) {
+            _eventHandlers[eventType](eventdetails);
+        }
+    }
+
 };
 
 
@@ -188,15 +196,18 @@ class UsbHost {
     _eventHandlers = {};
     _customEventHandlers = {};
     _driver = null;
+    _queue = null;
     _address = 1;
     _registeredDrivers = null;
     _usb = null
     _driverCallback = null;
     _DEBUG = false;
+    _busy = false;
 
 
     constructor(usb) {
         _usb = usb;
+        _queue = [];
         _registeredDrivers = {};
         _eventHandlers[USB_DEVICE_CONNECTED] <- onDeviceConnected.bindenv(this);
         _eventHandlers[USB_DEVICE_DISCONNECTED] <- onDeviceDisconnected.bindenv(this);
@@ -361,7 +372,20 @@ class UsbHost {
     }
 
     function bulkTransfer(address, endpoint, type, data) {
-        _usb.generaltransfer(address, endpoint, type, data);
+        if (data.len() != 66) {
+            server.log(data);
+        }
+
+        if (!_busy) {
+                server.log("running now " + data)
+                _busy = true;
+                _usb.generaltransfer(address, endpoint, type, data);
+
+
+        } else {
+                server.log("added to queue " + data);
+                _queue.push([this, address, endpoint, type, data]);
+        }
     }
 
     function openEndpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress) {
@@ -398,7 +422,7 @@ class UsbHost {
             return;
         }
 
-        server.log("Found driver");
+        server.log("Found driver for " + typeof _driver);
         setAddress(_address, speed, maxPacketSize);
         _driver.connect(_address, speed, descriptors);
         onEvent("connected", _driver);
@@ -412,8 +436,15 @@ class UsbHost {
     }
 
     function onTransferCompleted(eventdetails) {
+
+        _busy = false;
         if (_driver) {
             _driver.transferComplete(eventdetails);
+        }
+
+        if (_queue.len() > 0) {
+            server.log("picking from queue. left " + _queue.len())
+            bulkTransfer.acall(_queue.remove(0));
         }
     }
 
@@ -440,13 +471,22 @@ class UsbHost {
 
 class FtdiDriver extends DriverBase {
 
+    
+    static VID = 0x0403;
+    static PID = 0x6001;
+
+
+    
+    static FTDI_REQUEST_FTDI_OUT = 0x40;
+    static FTDI_SIO_SET_BAUD_RATE = 3;
+    static FTDI_SIO_SET_FLOW_CTRL = 2;
+    static FTDI_SIO_DISABLE_FLOW_CTRL = 0;
+
     _deviceAddress = null;
     _controlEndpoint = null;
     _bulkIn = null;
     _bulkOut = null;
-    
-    _vid = 0x0403;
-    _pid = 0x6001;
+
 
     function _typeof() {
         return "FtdiDriver";
@@ -482,7 +522,7 @@ class FtdiDriver extends DriverBase {
 
     function getIdentifiers() {
         local identifiers = {};
-        identifiers[_vid] <-[_pid];
+        identifiers[VID] <-[PID];
         return [identifiers];
     }
 
@@ -560,22 +600,6 @@ class FtdiDriver extends DriverBase {
         _bulkOut.write(_data);
     }
 
-    function on(eventType, cb) {
-        _eventHandlers[eventType] <- cb;
-    }
-
-    function off(eventName) {
-        if (eventName in _eventHandlers) {
-            delete _eventHandlers[eventName];
-        }
-    }
-
-    function onEvent(eventType, eventdetails) {
-        if (eventType in _eventHandlers) {
-            _eventHandlers[eventType](eventdetails);
-        }
-    }
-
     function connect(deviceAddress, speed, descriptors) {
         _setupEndpoints(deviceAddress, speed, descriptors);
         _configure(descriptors["device"]);
@@ -597,6 +621,481 @@ class FtdiDriver extends DriverBase {
         }
     }
 };
+
+class BrotherQL720Driver extends DriverBase {
+
+    static VID = 0x04f9;
+    static PID = 0x2044;
+    static QL720_REQUEST_QL720_OUT = 0x40;
+    static QL720_SIO_SET_BAUD_RATE = 3;
+    static QL720_SIO_SET_FLOW_CTRL = 2;
+    static QL720_SIO_DISABLE_FLOW_CTRL = 0;
+
+
+    
+    static CMD_ESCP_ENABLE = "\x1B\x69\x61\x00";
+    static CMD_ESCP_INIT = "\x1B\x40";
+
+    static CMD_SET_ORIENTATION = "\x1B\x69\x4C"
+    static CMD_SET_TB_MARGINS = "\x1B\x28\x63\x34\x30";
+    static CMD_SET_LEFT_MARGIN = "\x1B\x6C";
+    static CMD_SET_RIGHT_MARGIN = "\x1B\x51";
+
+    static CMD_ITALIC_START = "\x1b\x34";
+    static CMD_ITALIC_STOP = "\x1B\x35";
+    static CMD_BOLD_START = "\x1b\x45";
+    static CMD_BOLD_STOP = "\x1B\x46";
+    static CMD_UNDERLINE_START = "\x1B\x2D\x31";
+    static CMD_UNDERLINE_STOP = "\x1B\x2D\x30";
+
+    static CMD_SET_FONT_SIZE = "\x1B\x58\x00";
+    static CMD_SET_FONT = "\x1B\x6B";
+
+    static CMD_BARCODE = "\x1B\x69"
+    static CMD_2D_BARCODE = "\x1B\x69\x71"
+
+    static LANDSCAPE = "\x31";
+    static PORTRAIT = "\x30";
+
+    
+    static TEXT_NEWLINE = "\x0A";
+    static PAGE_FEED = "\x0C";
+
+    
+    static ITALIC = 1;
+    static BOLD = 2;
+    static UNDERLINE = 4;
+
+    static FONT_SIZE_24 = 24;
+    static FONT_SIZE_32 = 32;
+    static FONT_SIZE_48 = 48;
+
+    static FONT_BROUGHAM = 0;
+    static FONT_LETTER_GOTHIC_BOLD = 1;
+    static FONT_BRUSSELS = 2;
+    static FONT_HELSINKI = 3;
+    static FONT_SAN_DIEGO = 4;
+
+    
+    static BARCODE_CODE39 = "t0";
+    static BARCODE_ITF = "t1";
+    static BARCODE_EAN_8_13 = "t5";
+    static BARCODE_UPC_A = "t5";
+    static BARCODE_UPC_E = "t6";
+    static BARCODE_CODABAR = "t9";
+    static BARCODE_CODE128 = "ta";
+    static BARCODE_GS1_128 = "tb";
+    static BARCODE_RSS = "tc";
+    static BARCODE_CODE93 = "td";
+    static BARCODE_POSTNET = "te";
+    static BARCODE_UPC_EXTENTION = "tf";
+
+    static BARCODE_CHARS = "r1";
+    static BARCODE_NO_CHARS = "r0";
+
+    static BARCODE_WIDTH_XXS = "w4";
+    static BARCODE_WIDTH_XS = "w0";
+    static BARCODE_WIDTH_S = "w1";
+    static BARCODE_WIDTH_M = "w2";
+    static BARCODE_WIDTH_L = "w3";
+
+    static BARCODE_RATIO_2_1 = "z0";
+    static BARCODE_RATIO_25_1 = "z1";
+    static BARCODE_RATIO_3_1 = "z2";
+
+    
+    static BARCODE_2D_CELL_SIZE_3 = "\x03";
+    static BARCODE_2D_CELL_SIZE_4 = "\x04";
+    static BARCODE_2D_CELL_SIZE_5 = "\x05";
+    static BARCODE_2D_CELL_SIZE_6 = "\x06";
+    static BARCODE_2D_CELL_SIZE_8 = "\x08";
+    static BARCODE_2D_CELL_SIZE_10 = "\x0A";
+
+    static BARCODE_2D_SYMBOL_MODEL_1 = "\x01";
+    static BARCODE_2D_SYMBOL_MODEL_2 = "\x02";
+    static BARCODE_2D_SYMBOL_MICRO_QR = "\x03";
+
+    static BARCODE_2D_STRUCTURE_NOT_PARTITIONED = "\x00";
+    static BARCODE_2D_STRUCTURE_PARTITIONED = "\x01";
+
+    static BARCODE_2D_ERROR_CORRECTION_HIGH_DENSITY = "\x01";
+    static BARCODE_2D_ERROR_CORRECTION_STANDARD = "\x02";
+    static BARCODE_2D_ERROR_CORRECTION_HIGH_RELIABILITY = "\x03";
+    static BARCODE_2D_ERROR_CORRECTION_ULTRA_HIGH_RELIABILITY = "\x04";
+
+    static BARCODE_2D_DATA_INPUT_AUTO = "\x00";
+    static BARCODE_2D_DATA_INPUT_MANUAL = "\x01";
+
+
+    _deviceAddress = null;
+    _controlEndpoint = null;
+    _bulkIn = null;
+    _bulkOut = null;
+    _buffer = null; 
+
+
+    constructor(usb) {
+        _buffer = blob();
+        base.constructor(usb);
+    }
+
+    function initialize() {
+        write(CMD_ESCP_ENABLE); 
+        write(CMD_ESCP_INIT); 
+        return this;
+    }
+
+    function _typeof() {
+        return "BrotherQL720Printer";
+    }
+
+    function _setupEndpoints(deviceAddress, speed, descriptors) {
+        server.log(format("Driver connecting at address 0x%02x", deviceAddress));
+        _deviceAddress = deviceAddress;
+        _controlEndpoint = ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
+
+        
+        local configuration = descriptors["configurations"][0];
+        server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
+        _controlEndpoint.setConfiguration(configuration["value"]);
+
+        
+        local interface = configuration["interfaces"][0];
+        local interfacenumber = interface["interfacenumber"];
+
+        foreach (endpoint in interface["endpoints"]) {
+            local address = endpoint["address"];
+            local maxPacketSize = endpoint["maxpacketsize"];
+            if ((endpoint["attributes"] & 0x3) == 2) {
+                if ((address & 0x80) >> 7 == USB_DIRECTION_OUT) {
+                    _bulkOut = BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                } else {
+                    _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                }
+
+            }
+        }
+    }
+
+    function getIdentifiers() {
+        local identifiers = {};
+        identifiers[VID] <-[PID];
+        return [identifiers];
+    }
+
+    function _configure(device) {
+        server.log(format("Configuring for device version 0x%04x", device));
+
+        
+        local baud = 115200;
+        local baudValue;
+        local baudIndex = 0;
+        local divisor3 = 48000000 / 2 / baud; 
+
+        if (device == 0x0100) { 
+            if ((divisor3 & 0x07) == 0x07) {
+                divisor3++; 
+            }
+
+            baudValue = divisor3 >> 3;
+            divisor3 = divisor3 & 0x7;
+
+            if (divisor3 == 1) {
+                baudValue = baudValue | 0xc000; 
+            } else if (divisor3 >= 4) {
+                baudValue = baudValue | 0x4000; 
+            } else if (divisor3 != 0) {
+                baudValue = baudValue | 0x8000; 
+            }
+
+            if (baudValue == 1) {
+                baudValue = 0; 
+            }
+
+        } else {
+            local divfrac = [0, 3, 2, 0, 1, 1, 2, 3];
+            local divindex = [0, 0, 0, 1, 0, 1, 1, 1];
+
+            baudValue = divisor3 >> 3;
+            baudValue = baudValue | (divfrac[divisor3 & 0x7] << 14);
+
+            baudIndex = divindex[divisor3 & 0x7];
+
+            
+            if (baudValue == 1) {
+                baudValue = 0; 
+            } else if (baudValue == 0x4001) {
+                baudValue = 1; 
+            }
+        }
+        
+        baudValue = 9600;
+        _controlEndpoint.send(QL720_REQUEST_QL720_OUT, QL720_SIO_SET_BAUD_RATE, baudValue, baudIndex);
+
+        local xon = 0x11;
+        local xoff = 0x13;
+
+        _controlEndpoint.send(QL720_REQUEST_QL720_OUT, QL720_SIO_SET_FLOW_CTRL, xon | (xoff << 8), QL720_SIO_DISABLE_FLOW_CTRL << 8);
+    }
+
+    function _start() {
+        _bulkIn.read(blob(1));
+    }
+
+    function write(data) {
+        local _data = null;
+
+        if (typeof data == "string") {
+            _data = blob();
+            _data.writestring(data);
+        } else if (typeof data == "blob") {
+            _data = data;
+        } else {
+            server.error("Write data must of type string or blob");
+            return;
+        }
+        server.log("writing " + data);
+        _bulkOut.write(_data);
+    }
+
+    function connect(deviceAddress, speed, descriptors) {
+        _setupEndpoints(deviceAddress, speed, descriptors);
+        _start();
+    }
+
+    function transferComplete(eventdetails) {
+        local direction = (eventdetails["endpoint"] & 0x80) >> 7;
+        if (direction == USB_DIRECTION_IN) {
+            local readData = _bulkIn.done(eventdetails);
+
+            if (readData.len() >= 3) {
+                server.log(readData);
+                readData.seek(2);
+                onEvent("data", readData.readblob(readData.len()));
+            }
+            
+            
+        } else if (direction == USB_DIRECTION_OUT) {
+            _bulkOut.done(eventdetails);
+        }
+    }
+
+    
+    function setOrientation(orientation) {
+        
+        local orientationBuffer = blob();
+
+        
+        orientationBuffer.writestring(CMD_SET_ORIENTATION);
+        orientationBuffer.writestring(orientation);
+
+        write(orientationBuffer);
+
+        return this;
+    }
+
+
+    function setRightMargin(column) {
+        return _setMargin(CMD_SET_RIGHT_MARGIN, column);
+    }
+
+    function setLeftMargin(column) {
+        return _setMargin(CMD_SET_LEFT_MARGIN, column);;
+    }
+
+    function setFont(font) {
+        if (font < 0 || font > 4) throw "Unknown font";
+
+        _buffer.writestring(CMD_SET_FONT);
+        _buffer.writen(font, 'b');
+
+        return this;
+    }
+
+    function setFontSize(size) {
+        if (size != 24 && size != 32 && size != 48) throw "Invalid font size";
+
+        _buffer.writestring(CMD_SET_FONT_SIZE)
+        _buffer.writen(size, 'b');
+        _buffer.writen(0, 'b');
+
+        return this;
+    }
+
+    
+    function writeToBuffer(text, options = 0) {
+        local beforeText = "";
+        local afterText = "";
+
+        if (options & ITALIC) {
+            beforeText += CMD_ITALIC_START;
+            afterText += CMD_ITALIC_STOP;
+        }
+
+        if (options & BOLD) {
+            beforeText += CMD_BOLD_START;
+            afterText += CMD_BOLD_STOP;
+        }
+
+        if (options & UNDERLINE) {
+            beforeText += CMD_UNDERLINE_START;
+            afterText += CMD_UNDERLINE_STOP;
+        }
+
+        _buffer.writestring(beforeText + text + afterText);
+
+        return this;
+    }
+
+    function writen(text, options = 0) {
+        return writeToBuffer(text + TEXT_NEWLINE, options);
+    }
+
+    function newline() {
+        return writeToBuffer(TEXT_NEWLINE);
+    }
+
+    
+    function writeBarcode(data, config = {}) {
+        
+        if (!("type" in config)) { config.type <- BARCODE_CODE39; }
+        if (!("charsBelowBarcode" in config)) { config.charsBelowBarcode <- true; }
+        if (!("width" in config)) { config.width <- BARCODE_WIDTH_XS; }
+        if (!("height" in config)) { config.height <- 0.5; }
+        if (!("ratio" in config)) { config.ratio <- BARCODE_RATIO_2_1; }
+
+        
+        _buffer.writestring(CMD_BARCODE);
+
+        
+        _buffer.writestring(config.type);
+
+        
+        if (config.charsBelowBarcode) {
+            _buffer.writestring(BARCODE_CHARS);
+        } else {
+            _buffer.writestring(BARCODE_NO_CHARS);
+        }
+
+        
+        _buffer.writestring(config.width);
+
+        
+        local h = (config.height * 300).tointeger();
+        
+        _buffer.writestring("h"); 
+        _buffer.writen(h & 0xFF, 'b'); 
+        _buffer.writen((h / 256) & 0xFF, 'b'); 
+
+        
+        _buffer.writestring(config.ratio);
+
+        
+        _buffer.writestring("\x62");
+        _buffer.writestring(data);
+
+        
+        if (config.type == BARCODE_CODE128 || config.type == BARCODE_GS1_128 || config.type == BARCODE_CODE93) {
+            _buffer.writestring("\x5C\x5C\x5C");
+        } else {
+            _buffer.writestring("\x5C");
+        }
+
+        return this;
+    }
+
+    function write2dBarcode(data, config = {}) {
+        
+        if (!("cell_size" in config)) { config.cell_size <- BARCODE_2D_CELL_SIZE_3; }
+        if (!("symbol_type" in config)) { config.symbol_type <- BARCODE_2D_SYMBOL_MODEL_2; }
+        if (!("structured_append_partitioned" in config)) { config.structured_append_partitioned <- false; }
+        if (!("code_number" in config)) { config.code_number <- 0; }
+        if (!("num_partitions" in config)) { config.num_partitions <- 0; }
+
+        if (!("parity_data" in config)) { config["parity_data"] <- 0; }
+        if (!("error_correction" in config)) { config["error_correction"] <- BARCODE_2D_ERROR_CORRECTION_STANDARD; }
+        if (!("data_input_method" in config)) { config["data_input_method"] <- BARCODE_2D_DATA_INPUT_AUTO; }
+
+        
+        if (config.structured_append_partitioned) {
+            config.structured_append <- BARCODE_2D_STRUCTURE_PARTITIONED;
+            if (config.code_number < 1 || config.code_number > 16) throw "Unknown code number";
+            if (config.num_partitions < 2 || config.num_partitions > 16) throw "Unknown number of partitions";
+        } else {
+            config.structured_append <- BARCODE_2D_STRUCTURE_NOT_PARTITIONED;
+            config.code_number = "\x00";
+            config.num_partitions = "\x00";
+            config.parity_data = "\x00";
+        }
+
+        
+        _buffer.writestring(CMD_2D_BARCODE);
+
+        
+        _buffer.writestring(config.cell_size);
+        _buffer.writestring(config.symbol_type);
+        _buffer.writestring(config.structured_append);
+        _buffer.writestring(config.code_number);
+        _buffer.writestring(config.num_partitions);
+        _buffer.writestring(config.parity_data);
+        _buffer.writestring(config.error_correction);
+        _buffer.writestring(config.data_input_method);
+
+        
+        _buffer.writestring(data);
+
+        
+        _buffer.writestring("\x5C\x5C\x5C");
+
+        return this;
+    }
+
+    
+    function _print(text, options = 0) {
+        local beforeText = "";
+        local afterText = "";
+
+        if (options & ITALIC) {
+            beforeText += CMD_ITALIC_START;
+            afterText += CMD_ITALIC_STOP;
+        }
+
+        if (options & BOLD) {
+            beforeText += CMD_BOLD_START;
+            afterText += CMD_BOLD_STOP;
+        }
+
+        if (options & UNDERLINE) {
+            beforeText += CMD_UNDERLINE_START;
+            afterText += CMD_UNDERLINE_STOP;
+        }
+
+        server.log("printing " + beforeText + text + afterText);
+
+        _buffer.writestring(beforeText + text + afterText);
+
+        return this;
+    }
+
+    
+    function print() {
+        _buffer.writestring(PAGE_FEED);
+        write(_buffer);
+
+        _buffer = blob();
+    }
+
+    function _setMargin(command, margin) {
+        local marginBuffer = blob();
+        marginBuffer.writestring(command);
+        marginBuffer.writen(margin & 0xFF, 'b');
+
+        write(marginBuffer);
+
+        return this;
+    }
+
+}
 
 class UartLogger {
     static version = [1, 0, 0];
@@ -630,7 +1129,7 @@ class UartLogger {
 
 function sendTestData(device) {
     server.log("sending test data.")
-    device.write(3);
+    device.write("I'm a Blob\n");
     imp.wakeup(10, function() {
         sendTestData(device)
     });
@@ -639,7 +1138,15 @@ function sendTestData(device) {
 function onConnected(device) {
     device.on("data", dataEvent);
     server.log("our onconnected func")
-    sendTestData(device);
+    local getInfoReq = blob(3);
+    
+    getInfoReq.writen(0x1B, 'b');
+    getInfoReq.writen(0x69, 'b');
+    getInfoReq.writen(0x53, 'b');
+    
+   
+    
+    device.write(getInfoReq);
 }
 
 function dataEvent(eventDetails) {
@@ -679,6 +1186,7 @@ hardware.pinR.configure(DIGITAL_OUT, 1);
 
 usbHost <- UsbHost(hardware.usb);
 usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
+usbHost.registerDriver(BrotherQL720Driver, BrotherQL720Driver.getIdentifiers());
 
 usbHost.on("connected", onConnected);
 

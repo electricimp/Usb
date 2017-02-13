@@ -1,5 +1,6 @@
 #include "UsbHost.nut"
 #include "FtdiDriver.nut"
+#include "BrotherQL720Driver.nut"
 #include "UartLogger.nut"
 
 function sendTestData(device) {
@@ -13,7 +14,20 @@ function sendTestData(device) {
 function onConnected(device) {
     device.on("data", dataEvent);
     server.log("our onconnected func")
-    sendTestData(device);
+    local getInfoReq = blob(3);
+    // Get printer info
+    getInfoReq.writen(0x1B, 'b');
+    getInfoReq.writen(0x69, 'b');
+    getInfoReq.writen(0x53, 'b');
+    
+   /* device
+        .setOrientation(BrotherQL720Driver.LANDSCAPE)
+        .setFont(BrotherQL720Driver.FONT_SAN_DIEGO)
+        .setFontSize(BrotherQL720Driver.FONT_SIZE_48)
+        .writeToBuffer("I'm a mystic device!")
+        .print();*/
+    
+    device.write(getInfoReq);
 }
 
 function dataEvent(eventDetails) {
@@ -53,6 +67,7 @@ hardware.pinR.configure(DIGITAL_OUT, 1);
 
 usbHost <- UsbHost(hardware.usb);
 usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
+usbHost.registerDriver(BrotherQL720Driver, BrotherQL720Driver.getIdentifiers());
 
 usbHost.on("connected", onConnected);
 

@@ -129,22 +129,6 @@ class FtdiDriver extends DriverBase {
         _bulkOut.write(_data);
     }
 
-    function on(eventType, cb) {
-        _eventHandlers[eventType] <- cb;
-    }
-
-    function off(eventName) {
-        if (eventName in _eventHandlers) {
-            delete _eventHandlers[eventName];
-        }
-    }
-
-    function onEvent(eventType, eventdetails) {
-        if (eventType in _eventHandlers) {
-            _eventHandlers[eventType](eventdetails);
-        }
-    }
-
     function connect(deviceAddress, speed, descriptors) {
         _setupEndpoints(deviceAddress, speed, descriptors);
         _configure(descriptors["device"]);
