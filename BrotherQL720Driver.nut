@@ -1,5 +1,7 @@
 class BrotherQL720Driver extends DriverBase {
 
+    static VERSION = "1.0.0";
+
     static VID = 0x04f9;
     static PID = 0x2044;
     static QL720_REQUEST_QL720_OUT = 0x40;

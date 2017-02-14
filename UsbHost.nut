@@ -60,8 +60,8 @@ class ControlEndpoint {
         _usb.setConfiguration(_deviceAddress, _speed, _maxPacketSize, value);
     }
 
-    function getStringDescriptor(index) {
-        return _usb.getStringDescriptor(_deviceAddress, _speed, _maxPacketSize, index);
+    function _getStringDescriptor(index) {
+        return _usb._getStringDescriptor(_deviceAddress, _speed, _maxPacketSize, index);
     }
 
     function send(requestType, request, value, index) {
@@ -70,6 +70,9 @@ class ControlEndpoint {
 }
 
 class BulkEndpoint {
+
+    static VERSION = "1.0.0";
+
     _usb = null;
     _deviceAddress = null;
     _endpointAddress = null;
@@ -84,6 +87,9 @@ class BulkEndpoint {
 }
 
 class BulkInEndpoint extends BulkEndpoint {
+
+    static VERSION = "1.0.0";
+
     _data = null;
 
     constructor(usb, speed, deviceAddress, interfaceNumber, endpointAddress, maxPacketSize) {
@@ -107,6 +113,8 @@ class BulkInEndpoint extends BulkEndpoint {
 
 class BulkOutEndpoint extends BulkEndpoint {
 
+    static VERSION = "1.0.0";
+
     _data = null;
 
     constructor(usb, speed, deviceAddress, interfaceNumber, endpointAddress, maxPacketSize) {
@@ -127,6 +135,9 @@ class BulkOutEndpoint extends BulkEndpoint {
 }
 
 class DriverBase {
+
+    static VERSION = "1.0.0";
+
     static isUSBDriver = true;
 
     _usb = null;
@@ -159,7 +170,7 @@ class DriverBase {
         }
     }
 
-    function onEvent(eventType, eventdetails) {
+    function _onEvent(eventType, eventdetails) {
         if (eventType in _eventHandlers) {
             _eventHandlers[eventType](eventdetails);
         }
@@ -168,6 +179,9 @@ class DriverBase {
 };
 
 class UsbHost {
+
+    static VERSION = "1.0.0";
+
     _eventHandlers = {};
     _customEventHandlers = {};
     _driver = null;
@@ -183,17 +197,246 @@ class UsbHost {
         _usb = usb;
         _bulkTransferQueue = [];
         _registeredDrivers = {};
-        _eventHandlers[USB_DEVICE_CONNECTED] <- onDeviceConnected.bindenv(this);
-        _eventHandlers[USB_DEVICE_DISCONNECTED] <- onDeviceDisconnected.bindenv(this);
-        _eventHandlers[USB_TRANSFER_COMPLETED] <- onTransferCompleted.bindenv(this);
-        _usb.configure(onEvent.bindenv(this));
+        _eventHandlers[USB_DEVICE_CONNECTED] <- _onDeviceConnected.bindenv(this);
+        _eventHandlers[USB_DEVICE_DISCONNECTED] <- _onDeviceDisconnected.bindenv(this);
+        _eventHandlers[USB_TRANSFER_COMPLETED] <- _onTransferCompleted.bindenv(this);
+        _usb.configure(_onEvent.bindenv(this));
     }
 
     function _typeof() {
         return "UsbHost";
     }
 
-    function logDescriptors(speed, descriptor) {
+    // Registers a driver with usb host
+    function registerDriver(driverClass, identifiers) {
+
+        if (!(driverClass.isUSBDriver == true)) {
+            server.error("This driver is not a valid usb driver.");
+            return;
+        }
+
+        if (typeof identifiers != "array") {
+            server.error("Identifiers for driver must be of type array.")
+            return;
+        }
+
+        foreach (k, identifier in identifiers) {
+            foreach (VID, PIDS in identifier) {
+                if (typeof PIDS != "array") {
+                    PIDS = [PIDS];
+                }
+
+                foreach (vidIndex, PID in PIDS) {
+                    local vpid = format("%04x%04x", VID, PID);
+                    // store all VID PID combos
+                    _registeredDrivers[vpid] <- driverClass;
+                }
+            }
+        }
+    }
+
+    // Creates a USB driver instance if vid/pid combo matches registered devices
+    function create(identifiers) {
+        local vid = identifiers["vendorid"];
+        local pid = identifiers["productid"];
+        local vpid = format("%04x%04x", vid, pid);
+
+        if ((vpid in _registeredDrivers) && _registeredDrivers[vpid] != null) {
+            return _registeredDrivers[vpid](this);
+        }
+        return null;
+    }
+
+    // Subscribe callback to call on "eventName" event
+    function on(eventName, cb) {
+        _customEventHandlers[eventName] <- cb;
+    }
+
+    // Clear callback from "eventName" event
+    function off(eventName) {
+        if (eventName in _customEventHandlers) {
+            delete _customEventHandlers[eventName];
+        }
+    }
+
+    function controlTransfer(speed, deviceAddress, requestType, request, value, index, maxPacketSize) {
+        _usb.controltransfer(
+            speed,
+            deviceAddress,
+            0,
+            requestType,
+            request,
+            value,
+            index,
+            maxPacketSize
+        );
+    }
+
+    // Bulk transfer data blob
+    function bulkTransfer(address, endpoint, type, data) {
+        // Push to the end of the queue
+        _pushBulkTransferQueue([_usb, address, endpoint, type, data]);
+
+        // Process request at the front of the queue
+        _popBulkTransferQueue();
+    }
+
+
+    function openEndpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress) {
+        _usb.openendpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress);
+    }
+
+
+    function setAddress(address, speed, maxPacketSize) {
+        _usb.controltransfer(
+            speed,
+            0,
+            0,
+            USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
+            USB_REQUEST_SET_ADDRESS,
+            address,
+            0,
+            maxPacketSize
+        );
+    }
+
+    function setConfiguration(deviceAddress, speed, maxPacketSize, value) {
+        _usb.controltransfer(
+            speed,
+            deviceAddress,
+            0,
+            USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
+            USB_REQUEST_SET_CONFIGURATION,
+            value,
+            0,
+            maxPacketSize
+        );
+    }
+
+
+    // Usb connected callback
+    function _onDeviceConnected(eventdetails) {
+        if (_driver != null) {
+            server.log("Device already connected");
+            return;
+        }
+
+        local speed = eventdetails["speed"];
+        local descriptors = eventdetails["descriptors"];
+        local maxPacketSize = descriptors["maxpacketsize0"];
+        if (_DEBUG) {
+            logDescriptors(speed, descriptors);
+        }
+        // Try to create the driver for connected device
+        _driver = create(descriptors);
+
+        if (_driver == null) {
+            server.log("No driver found for device");
+            return;
+        }
+
+        server.log("Found driver for " + typeof _driver);
+        setAddress(_address, speed, maxPacketSize);
+        _driver.connect(_address, speed, descriptors);
+        // Emit connected event that user can subscribe to
+        _onEvent("connected", _driver);
+
+    }
+
+    // Device disconnected callback
+    function _onDeviceDisconnected(eventdetails) {
+        if (_driver != null) {
+            server.log("Device:" + typeof _driver + " disconnected");
+            // Emit disconnected event
+            _onEvent("disconnected", typeof _driver);
+            _driver = null;
+        }
+    }
+
+    // Callback when a Usb transfer successfully completed
+    function _onTransferCompleted(eventdetails) {
+        _busy = false;
+        if (_driver) {
+            // Pass complete event to driver
+            _driver.transferComplete(eventdetails);
+        }
+        // Process any queued requests
+        _popBulkTransferQueue();
+    }
+
+    // Push bulk transfer request to back of queue
+    function _pushBulkTransferQueue(request) {
+        _bulkTransferQueue.push(request);
+    }
+
+    // Pop bulk transfer request to front of queue
+    function _popBulkTransferQueue() {
+        if (!_busy && _bulkTransferQueue.len() > 0) {
+            _usb.generaltransfer.acall(_bulkTransferQueue.remove(0));
+            _busy = true;
+        }
+    }
+
+    // Emit event "eventtype" with eventdetails
+    function _onEvent(eventtype, eventdetails) {
+        // Handle event internally first
+        if (eventtype in _eventHandlers) {
+            _eventHandlers[eventtype](eventdetails);
+        }
+        // Pass event to any subscribers
+        if (eventtype in _customEventHandlers) {
+            _customEventHandlers[eventtype](eventdetails);
+        }
+    }
+
+    function _getStringDescriptor(deviceAddress, speed, maxPacketSize, index) {
+        if (index == 0) {
+            return "";
+        }
+        local buffer = blob(2);
+        _usb.controltransfer(
+            speed,
+            deviceAddress,
+            0,
+            USB_SETUP_DEVICE_TO_HOST | USB_SETUP_RECIPIENT_DEVICE,
+            USB_REQUEST_GET_DESCRIPTOR,
+            (USB_DESCRIPTOR_STRING << 8) | index,
+            0,
+            maxPacketSize,
+            buffer
+        );
+
+        local stringSize = buffer[0];
+        buffer = blob(stringSize);
+        _usb.controltransfer(
+            speed,
+            deviceAddress,
+            0,
+            USB_SETUP_DEVICE_TO_HOST | USB_SETUP_RECIPIENT_DEVICE,
+            USB_REQUEST_GET_DESCRIPTOR,
+            (USB_DESCRIPTOR_STRING << 8) | index,
+            0,
+            maxPacketSize,
+            buffer
+        );
+
+        // String descriptors are zero-terminated, unicode. 
+        // This could be done better.
+        buffer.seek(2, 'b');
+        local description = blob();
+        while (!buffer.eos()) {
+            local char = buffer.readn('b');
+            if (char != 0) {
+                description.writen(char, 'b');
+            }
+            buffer.readn('b');
+        }
+        return description.tostring();
+    }
+
+
+
+    function _logDescriptors(speed, descriptor) {
         local maxPacketSize = descriptor["maxpacketsize0"];
         server.log("USB Device Connected, speed=" + speed + " Mbit/s");
         server.log(format("usb = 0x%04x", descriptor["usb"]));
@@ -201,21 +444,21 @@ class UsbHost {
         server.log(format("subclass = 0x%02x", descriptor["subclass"]));
         server.log(format("protocol = 0x%02x", descriptor["protocol"]));
         server.log(format("maxpacketsize0 = 0x%02x", maxPacketSize));
-        local manufacturer = getStringDescriptor(0, speed, maxPacketSize, descriptor["manufacturer"]);
+        local manufacturer = _getStringDescriptor(0, speed, maxPacketSize, descriptor["manufacturer"]);
         server.log(format("VID = 0x%04x (%s)", descriptor["vendorid"], manufacturer));
-        local product = getStringDescriptor(0, speed, maxPacketSize, descriptor["product"]);
+        local product = _getStringDescriptor(0, speed, maxPacketSize, descriptor["product"]);
         server.log(format("PID = 0x%04x (%s)", descriptor["productid"], product));
-        local serial = getStringDescriptor(0, speed, maxPacketSize, descriptor["serial"]);
+        local serial = _getStringDescriptor(0, speed, maxPacketSize, descriptor["serial"]);
         server.log(format("device = 0x%04x (%s)", descriptor["device"], serial));
 
         local configuration = descriptor["configurations"][0];
-        local configurationString = getStringDescriptor(0, speed, maxPacketSize, configuration["configuration"]);
+        local configurationString = _getStringDescriptor(0, speed, maxPacketSize, configuration["configuration"]);
         server.log(format("Configuration: 0x%02x (%s)", configuration["value"], configurationString));
         server.log(format("  attributes = 0x%02x", configuration["attributes"]));
         server.log(format("  maxpower = 0x%02x", configuration["maxpower"]));
 
         foreach (interface in configuration["interfaces"]) {
-            local interfaceDescription = getStringDescriptor(0, speed, maxPacketSize, interface["interface"]);
+            local interfaceDescription = _getStringDescriptor(0, speed, maxPacketSize, interface["interface"]);
             server.log(format("  Interface: 0x%02x (%s)", interface["interfacenumber"], interfaceDescription));
             server.log(format("    altsetting = 0x%02x", interface["altsetting"]));
             server.log(format("    class=0x%02x", interface["class"]));
@@ -262,227 +505,4 @@ class UsbHost {
         }
     }
 
-    // Registers a driver with usb host
-    function registerDriver(className, identifiers) {
-
-        if (!(className.isUSBDriver == true)) {
-            server.error("This driver is not a valid usb driver.");
-            return;
-        }
-
-        if (typeof identifiers != "array") {
-            server.error("Identifiers for driver must be of type array.")
-            return;
-        }
-
-        foreach (k, identifier in identifiers) {
-            foreach (VID, PIDS in identifier) {
-                if (typeof PIDS != "array") {
-                    PIDS = [PIDS];
-                }
-
-                foreach (vidIndex, PID in PIDS) {
-                    local vpid = format("%04x%04x", VID, PID);
-                    // store all VID PID combos
-                    _registeredDrivers[vpid] <- className;
-                }
-            }
-        }
-    }
-
-    function controlTransfer(speed, deviceAddress, requestType, request, value, index, maxPacketSize) {
-        _usb.controltransfer(
-            speed,
-            deviceAddress,
-            0,
-            requestType,
-            request,
-            value,
-            index,
-            maxPacketSize
-        );
-    }
-
-    function setAddress(address, speed, maxPacketSize) {
-        _usb.controltransfer(
-            speed,
-            0,
-            0,
-            USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
-            USB_REQUEST_SET_ADDRESS,
-            address,
-            0,
-            maxPacketSize
-        );
-    }
-
-    function setConfiguration(deviceAddress, speed, maxPacketSize, value) {
-        _usb.controltransfer(
-            speed,
-            deviceAddress,
-            0,
-            USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
-            USB_REQUEST_SET_CONFIGURATION,
-            value,
-            0,
-            maxPacketSize
-        );
-    }
-
-    function getStringDescriptor(deviceAddress, speed, maxPacketSize, index) {
-        if (index == 0) {
-            return "";
-        }
-        local buffer = blob(2);
-        _usb.controltransfer(
-            speed,
-            deviceAddress,
-            0,
-            USB_SETUP_DEVICE_TO_HOST | USB_SETUP_RECIPIENT_DEVICE,
-            USB_REQUEST_GET_DESCRIPTOR,
-            (USB_DESCRIPTOR_STRING << 8) | index,
-            0,
-            maxPacketSize,
-            buffer
-        );
-
-        local stringSize = buffer[0];
-        buffer = blob(stringSize);
-        _usb.controltransfer(
-            speed,
-            deviceAddress,
-            0,
-            USB_SETUP_DEVICE_TO_HOST | USB_SETUP_RECIPIENT_DEVICE,
-            USB_REQUEST_GET_DESCRIPTOR,
-            (USB_DESCRIPTOR_STRING << 8) | index,
-            0,
-            maxPacketSize,
-            buffer
-        );
-
-        // String descriptors are zero-terminated, unicode. 
-        // This could be done better.
-        buffer.seek(2, 'b');
-        local description = blob();
-        while (!buffer.eos()) {
-            local char = buffer.readn('b');
-            if (char != 0) {
-                description.writen(char, 'b');
-            }
-            buffer.readn('b');
-        }
-        return description.tostring();
-    }
-
-    // Bulk transfer data blob
-    function bulkTransfer(address, endpoint, type, data) {
-        // Push to the end of the queue
-        _pushBulkTransferQueue([_usb, address, endpoint, type, data]);
-
-        // Process request at the front of the queue
-        _popBulkTransferQueue();
-    }
-
-    function openEndpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress) {
-        _usb.openendpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress);
-    }
-
-    // Creates a USB driver instance if vid/pid combo matches registered devices
-    function create(descriptors) {
-        local vid = descriptors["vendorid"];
-        local pid = descriptors["productid"];
-        local vpid = format("%04x%04x", vid, pid);
-
-        if ((vpid in _registeredDrivers) && _registeredDrivers[vpid] != null) {
-            return _registeredDrivers[vpid](this);
-        }
-        return null;
-    }
-
-    // Usb connected callback
-    function onDeviceConnected(eventdetails) {
-        if (_driver != null) {
-            server.log("Device already connected");
-            return;
-        }
-
-        local speed = eventdetails["speed"];
-        local descriptors = eventdetails["descriptors"];
-        local maxPacketSize = descriptors["maxpacketsize0"];
-        if (_DEBUG) {
-            logDescriptors(speed, descriptors);
-        }
-        // Try to create the driver for connected device
-        _driver = create(descriptors);
-
-        if (_driver == null) {
-            server.log("No driver found for device");
-            return;
-        }
-
-        server.log("Found driver for " + typeof _driver);
-        setAddress(_address, speed, maxPacketSize);
-        _driver.connect(_address, speed, descriptors);
-        // Emit connected event that user can subscribe to
-        onEvent("connected", _driver);
-
-    }
-
-    // Device disconnected callback
-    function onDeviceDisconnected(eventdetails) {
-        if (_driver != null) {
-            server.log("Device:" + typeof _driver + " disconnected");
-            // Emit disconnected event
-            onEvent("disconnected", typeof _driver);
-            _driver = null;
-        }
-    }
-
-    // Callback when a Usb transfer successfully completed
-    function onTransferCompleted(eventdetails) {
-        _busy = false;
-        if (_driver) {
-            // Pass complete event to driver
-            _driver.transferComplete(eventdetails);
-        }
-        // Process any queued requests
-        _popBulkTransferQueue();
-    }
-
-    // Push bulk transfer request to back of queue
-    function _pushBulkTransferQueue(request) {
-        _bulkTransferQueue.push(request);
-    }
-
-    // Pop bulk transfer request to front of queue
-    function _popBulkTransferQueue() {
-        if (!_busy && _bulkTransferQueue.len() > 0) {
-            _usb.generaltransfer.acall(_bulkTransferQueue.remove(0));
-            _busy = true;
-        }
-    }
-
-    // Subscribe callback to call on "eventName" event
-    function on(eventName, cb) {
-        _customEventHandlers[eventName] <- cb;
-    }
-
-    // Clear callback from "eventName" event
-    function off(eventName) {
-        if (eventName in _customEventHandlers) {
-            delete _customEventHandlers[eventName];
-        }
-    }
-
-    // Emit event "eventtype" with eventdetails
-    function onEvent(eventtype, eventdetails) {
-        // Handle event internally first
-        if (eventtype in _eventHandlers) {
-            _eventHandlers[eventtype](eventdetails);
-        }
-        // Pass event to any subscribers
-        if (eventtype in _customEventHandlers) {
-            _customEventHandlers[eventtype](eventdetails);
-        }
-    }
 };
