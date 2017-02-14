@@ -43,31 +43,6 @@ const USB_DIRECTION_OUT = 0x0;
 const USB_DIRECTION_IN = 0x1;
 
 
-// Extract the direction from and endpoint address
-function directionString(direction) {
-    if (direction == USB_DIRECTION_IN) {
-        return "IN";
-    } else if (direction == USB_DIRECTION_OUT) {
-        return "OUT";
-    } else {
-        return "UNKNOWN";
-    }
-}
-
-// Extract the endpoint type from attributes byte
-function endpointTypeString(attributes) {
-    local type = attributes & 0x3;
-    if (type == 0) {
-        return "CONTROL";
-    } else if (type == 1) {
-        return "ISOCHRONOUS";
-    } else if (type == 2) {
-        return "BULK";
-    } else if (type == 3) {
-        return "INTERRUPT";
-    }
-}
-
 class ControlEndpoint {
     _usb = null;
     _deviceAddress = null;
@@ -131,6 +106,7 @@ class BulkInEndpoint extends BulkEndpoint {
 }
 
 class BulkOutEndpoint extends BulkEndpoint {
+
     _data = null;
 
     constructor(usb, speed, deviceAddress, interfaceNumber, endpointAddress, maxPacketSize) {
@@ -191,12 +167,11 @@ class DriverBase {
 
 };
 
-// Supports only one device at the moment.
 class UsbHost {
     _eventHandlers = {};
     _customEventHandlers = {};
     _driver = null;
-    _queue = null;
+    _bulkTransferQueue = null;
     _address = 1;
     _registeredDrivers = null;
     _usb = null
@@ -204,10 +179,9 @@ class UsbHost {
     _DEBUG = false;
     _busy = false;
 
-
     constructor(usb) {
         _usb = usb;
-        _queue = [];
+        _bulkTransferQueue = [];
         _registeredDrivers = {};
         _eventHandlers[USB_DEVICE_CONNECTED] <- onDeviceConnected.bindenv(this);
         _eventHandlers[USB_DEVICE_DISCONNECTED] <- onDeviceDisconnected.bindenv(this);
@@ -253,8 +227,8 @@ class UsbHost {
                 local endpointNumber = address & 0x3;
                 local direction = (address & 0x80) >> 7;
                 local attributes = endpoint["attributes"];
-                local type = endpointTypeString(attributes);
-                server.log(format("    Endpoint: 0x%02x (ENDPOINT %d %s %s)", address, endpointNumber, type, directionString(direction)));
+                local type = _endpointTypeString(attributes);
+                server.log(format("    Endpoint: 0x%02x (ENDPOINT %d %s %s)", address, endpointNumber, type, _directionString(direction)));
                 server.log(format("      attributes = 0x%02x", attributes));
                 server.log(format("      maxpacketsize = 0x%02x", endpoint["maxpacketsize"]));
                 server.log(format("      interval = 0x%02x", endpoint["interval"]));
@@ -262,11 +236,40 @@ class UsbHost {
         }
     }
 
+    // Extract the direction from and endpoint address
+    function _directionString(direction) {
+        if (direction == USB_DIRECTION_IN) {
+            return "IN";
+        } else if (direction == USB_DIRECTION_OUT) {
+            return "OUT";
+        } else {
+            return "UNKNOWN";
+        }
+    }
+
+
+    // Extract the endpoint type from attributes byte
+    function _endpointTypeString(attributes) {
+        local type = attributes & 0x3;
+        if (type == 0) {
+            return "CONTROL";
+        } else if (type == 1) {
+            return "ISOCHRONOUS";
+        } else if (type == 2) {
+            return "BULK";
+        } else if (type == 3) {
+            return "INTERRUPT";
+        }
+    }
+
+    // Registers a driver with usb host
     function registerDriver(className, identifiers) {
+
         if (!(className.isUSBDriver == true)) {
             server.error("This driver is not a valid usb driver.");
             return;
         }
+
         if (typeof identifiers != "array") {
             server.error("Identifiers for driver must be of type array.")
             return;
@@ -280,11 +283,11 @@ class UsbHost {
 
                 foreach (vidIndex, PID in PIDS) {
                     local vpid = format("%04x%04x", VID, PID);
+                    // store all VID PID combos
                     _registeredDrivers[vpid] <- className;
                 }
             }
         }
-
     }
 
     function controlTransfer(speed, deviceAddress, requestType, request, value, index, maxPacketSize) {
@@ -371,19 +374,20 @@ class UsbHost {
         return description.tostring();
     }
 
+    // Bulk transfer data blob
     function bulkTransfer(address, endpoint, type, data) {
-        if (!_busy) {
-            _busy = true;
-            _usb.generaltransfer(address, endpoint, type, data);
-        } else {
-            _queue.push([this, address, endpoint, type, data]);
-        }
+        // Push to the end of the queue
+        _pushBulkTransferQueue([_usb, address, endpoint, type, data]);
+
+        // Process request at the front of the queue
+        _popBulkTransferQueue();
     }
 
     function openEndpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress) {
         _usb.openendpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress);
     }
 
+    // Creates a USB driver instance if vid/pid combo matches registered devices
     function create(descriptors) {
         local vid = descriptors["vendorid"];
         local pid = descriptors["productid"];
@@ -395,6 +399,7 @@ class UsbHost {
         return null;
     }
 
+    // Usb connected callback
     function onDeviceConnected(eventdetails) {
         if (_driver != null) {
             server.log("Device already connected");
@@ -407,8 +412,9 @@ class UsbHost {
         if (_DEBUG) {
             logDescriptors(speed, descriptors);
         }
-
+        // Try to create the driver for connected device
         _driver = create(descriptors);
+
         if (_driver == null) {
             server.log("No driver found for device");
             return;
@@ -417,45 +423,64 @@ class UsbHost {
         server.log("Found driver for " + typeof _driver);
         setAddress(_address, speed, maxPacketSize);
         _driver.connect(_address, speed, descriptors);
+        // Emit connected event that user can subscribe to
         onEvent("connected", _driver);
 
     }
 
+    // Device disconnected callback
     function onDeviceDisconnected(eventdetails) {
         if (_driver != null) {
             server.log("Device:" + typeof _driver + " disconnected");
+            // Emit disconnected event
             onEvent("disconnected", typeof _driver);
             _driver = null;
         }
     }
 
+    // Callback when a Usb transfer successfully completed
     function onTransferCompleted(eventdetails) {
-
         _busy = false;
         if (_driver) {
+            // Pass complete event to driver
             _driver.transferComplete(eventdetails);
         }
+        // Process any queued requests
+        _popBulkTransferQueue();
+    }
 
-        if (_queue.len() > 0) {
-            bulkTransfer.acall(_queue.remove(0));
+    // Push bulk transfer request to back of queue
+    function _pushBulkTransferQueue(request) {
+        _bulkTransferQueue.push(request);
+    }
+
+    // Pop bulk transfer request to front of queue
+    function _popBulkTransferQueue() {
+        if (!_busy && _bulkTransferQueue.len() > 0) {
+            _usb.generaltransfer.acall(_bulkTransferQueue.remove(0));
+            _busy = true;
         }
     }
 
+    // Subscribe callback to call on "eventName" event
     function on(eventName, cb) {
         _customEventHandlers[eventName] <- cb;
     }
 
+    // Clear callback from "eventName" event
     function off(eventName) {
         if (eventName in _customEventHandlers) {
             delete _customEventHandlers[eventName];
         }
     }
 
+    // Emit event "eventtype" with eventdetails
     function onEvent(eventtype, eventdetails) {
+        // Handle event internally first
         if (eventtype in _eventHandlers) {
             _eventHandlers[eventtype](eventdetails);
         }
-
+        // Pass event to any subscribers
         if (eventtype in _customEventHandlers) {
             _customEventHandlers[eventtype](eventdetails);
         }

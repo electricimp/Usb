@@ -115,128 +115,27 @@ class BrotherQL720Driver extends DriverBase {
         base.constructor(usb);
     }
 
+    // Set printer defaults
     function initialize() {
         write(CMD_ESCP_ENABLE); // Select ESC/P mode
         write(CMD_ESCP_INIT); // Initialize ESC/P mode
         return this;
     }
 
-    function _typeof() {
-        return "BrotherQL720Driver";
-    }
-
-    function _setupEndpoints(deviceAddress, speed, descriptors) {
-        server.log(format("Driver connecting at address 0x%02x", deviceAddress));
-        _deviceAddress = deviceAddress;
-        _controlEndpoint = ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
-
-        // Select configuration
-        local configuration = descriptors["configurations"][0];
-        server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
-        _controlEndpoint.setConfiguration(configuration["value"]);
-
-        // Select interface
-        local interface = configuration["interfaces"][0];
-        local interfacenumber = interface["interfacenumber"];
-
-        foreach (endpoint in interface["endpoints"]) {
-            local address = endpoint["address"];
-            local maxPacketSize = endpoint["maxpacketsize"];
-            if ((endpoint["attributes"] & 0x3) == 2) {
-                if ((address & 0x80) >> 7 == USB_DIRECTION_OUT) {
-                    _bulkOut = BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
-                } else {
-                    _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
-                }
-            }
-        }
-    }
-
+    // Returns an array of VID PID combinations
     function getIdentifiers() {
         local identifiers = {};
         identifiers[VID] <-[PID];
         return [identifiers];
     }
 
-    function _configure(device) {
-        server.log(format("Configuring for device version 0x%04x", device));
-
-        // Set Baud Rate
-        local baud = 115200;
-        local baudValue;
-        local baudIndex = 0;
-        local divisor3 = 48000000 / 2 / baud; // divisor shifted 3 bits to the left
-
-        if (device == 0x0100) { // FT232AM
-            if ((divisor3 & 0x07) == 0x07) {
-                divisor3++; // round x.7/8 up to x+1
-            }
-
-            baudValue = divisor3 >> 3;
-            divisor3 = divisor3 & 0x7;
-
-            if (divisor3 == 1) {
-                baudValue = baudValue | 0xc000; // 0.125
-            } else if (divisor3 >= 4) {
-                baudValue = baudValue | 0x4000; // 0.5
-            } else if (divisor3 != 0) {
-                baudValue = baudValue | 0x8000; // 0.25
-            }
-
-            if (baudValue == 1) {
-                baudValue = 0; /* special case for maximum baud rate */
-            }
-
-        } else {
-            local divfrac = [0, 3, 2, 0, 1, 1, 2, 3];
-            local divindex = [0, 0, 0, 1, 0, 1, 1, 1];
-
-            baudValue = divisor3 >> 3;
-            baudValue = baudValue | (divfrac[divisor3 & 0x7] << 14);
-
-            baudIndex = divindex[divisor3 & 0x7];
-
-            /* Deal with special cases for highest baud rates. */
-            if (baudValue == 1) {
-                baudValue = 0; // 1.0
-            } else if (baudValue == 0x4001) {
-                baudValue = 1; // 1.5
-            }
-        }
-        // server.log("Baud rate is:"+baudValue);
-        baudValue = 9600;
-        _controlEndpoint.send(QL720_REQUEST_QL720_OUT, QL720_SIO_SET_BAUD_RATE, baudValue, baudIndex);
-
-        local xon = 0x11;
-        local xoff = 0x13;
-
-        _controlEndpoint.send(QL720_REQUEST_QL720_OUT, QL720_SIO_SET_FLOW_CTRL, xon | (xoff << 8), QL720_SIO_DISABLE_FLOW_CTRL << 8);
-    }
-
-    function _start() {
-        _bulkIn.read(blob(1));
-    }
-
-    function write(data) {
-        local _data = null;
-
-        if (typeof data == "string") {
-            _data = blob();
-            _data.writestring(data);
-        } else if (typeof data == "blob") {
-            _data = data;
-        } else {
-            server.error("Write data must of type string or blob");
-            return;
-        }
-        _bulkOut.write(_data);
-    }
-
+    // Called by Usb host to initialize driver
     function connect(deviceAddress, speed, descriptors) {
         _setupEndpoints(deviceAddress, speed, descriptors);
         _start();
     }
 
+    // Called when a Usb request is succesfully completed
     function transferComplete(eventdetails) {
         local direction = (eventdetails["endpoint"] & 0x80) >> 7;
         if (direction == USB_DIRECTION_IN) {
@@ -246,27 +145,24 @@ class BrotherQL720Driver extends DriverBase {
                 readData.seek(2);
                 onEvent("data", readData.readblob(readData.len()));
             }
-            // Blank the buffer
-            // _bulkIn.read(blob(64 + 2));
         } else if (direction == USB_DIRECTION_OUT) {
             _bulkOut.done(eventdetails);
         }
     }
 
-    // Formating commands
+
+    /* Formating commands */
+    
+    // Set print orientation
     function setOrientation(orientation) {
         // Create a new buffer that we prepend all of this information to
         local orientationBuffer = blob();
-
         // Set the orientation
         orientationBuffer.writestring(CMD_SET_ORIENTATION);
         orientationBuffer.writestring(orientation);
-
-        write(orientationBuffer);
-
+        _write(orientationBuffer);
         return this;
     }
-
 
     function setRightMargin(column) {
         return _setMargin(CMD_SET_RIGHT_MARGIN, column);
@@ -295,8 +191,10 @@ class BrotherQL720Driver extends DriverBase {
         return this;
     }
 
-    // Text commands
-    function writeToBuffer(text, options = 0) {
+    /* Text commands */
+
+    // Writes text to a buffer
+    function write(text, options = 0) {
         local beforeText = "";
         local afterText = "";
 
@@ -320,13 +218,15 @@ class BrotherQL720Driver extends DriverBase {
         return this;
     }
 
+    // Writes text + a new line to buffer
     function writen(text, options = 0) {
-        return writeToBuffer(text + TEXT_NEWLINE, options);
+        return write(text + TEXT_NEWLINE, options);
     }
 
+    // Writes a new line char to buffer
     function newline(lines = 1) {
         for (local i = 0; i < lines; i++) {
-            writeToBuffer(TEXT_NEWLINE);
+            write(TEXT_NEWLINE);
         }
         return this;
     }
@@ -426,7 +326,123 @@ class BrotherQL720Driver extends DriverBase {
         return this;
     }
 
-    // Text commands
+    // Prints the label
+    function print() {
+        _buffer.writestring(PAGE_FEED);
+        _write(_buffer);
+
+        _buffer = blob();
+    }
+
+    // Metafunction to return class name when typeof <instance> is run
+    function _typeof() {
+        return "BrotherQL720Driver";
+    }
+
+    // Initialize and set up all required endpoints
+    function _setupEndpoints(deviceAddress, speed, descriptors) {
+        server.log(format("Driver connecting at address 0x%02x", deviceAddress));
+        _deviceAddress = deviceAddress;
+        _controlEndpoint = ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
+
+        // Select configuration
+        local configuration = descriptors["configurations"][0];
+        server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
+        _controlEndpoint.setConfiguration(configuration["value"]);
+
+        // Select interface
+        local interface = configuration["interfaces"][0];
+        local interfacenumber = interface["interfacenumber"];
+
+        foreach (endpoint in interface["endpoints"]) {
+            local address = endpoint["address"];
+            local maxPacketSize = endpoint["maxpacketsize"];
+            if ((endpoint["attributes"] & 0x3) == 2) {
+                if ((address & 0x80) >> 7 == USB_DIRECTION_OUT) {
+                    _bulkOut = BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                } else {
+                    _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                }
+            }
+        }
+    }
+
+    // Configure params for device
+    function _configure(device) {
+        server.log(format("Configuring for device version 0x%04x", device));
+
+        // Set Baud Rate
+        local baud = 115200;
+        local baudValue;
+        local baudIndex = 0;
+        local divisor3 = 48000000 / 2 / baud; // divisor shifted 3 bits to the left
+
+        if (device == 0x0100) { // FT232AM
+            if ((divisor3 & 0x07) == 0x07) {
+                divisor3++; // round x.7/8 up to x+1
+            }
+
+            baudValue = divisor3 >> 3;
+            divisor3 = divisor3 & 0x7;
+
+            if (divisor3 == 1) {
+                baudValue = baudValue | 0xc000; // 0.125
+            } else if (divisor3 >= 4) {
+                baudValue = baudValue | 0x4000; // 0.5
+            } else if (divisor3 != 0) {
+                baudValue = baudValue | 0x8000; // 0.25
+            }
+
+            if (baudValue == 1) {
+                baudValue = 0; /* special case for maximum baud rate */
+            }
+
+        } else {
+            local divfrac = [0, 3, 2, 0, 1, 1, 2, 3];
+            local divindex = [0, 0, 0, 1, 0, 1, 1, 1];
+
+            baudValue = divisor3 >> 3;
+            baudValue = baudValue | (divfrac[divisor3 & 0x7] << 14);
+
+            baudIndex = divindex[divisor3 & 0x7];
+
+            /* Deal with special cases for highest baud rates. */
+            if (baudValue == 1) {
+                baudValue = 0; // 1.0
+            } else if (baudValue == 0x4001) {
+                baudValue = 1; // 1.5
+            }
+        }
+
+        baudValue = 9600;
+        _controlEndpoint.send(QL720_REQUEST_QL720_OUT, QL720_SIO_SET_BAUD_RATE, baudValue, baudIndex);
+
+        local xon = 0x11;
+        local xoff = 0x13;
+
+        _controlEndpoint.send(QL720_REQUEST_QL720_OUT, QL720_SIO_SET_FLOW_CTRL, xon | (xoff << 8), QL720_SIO_DISABLE_FLOW_CTRL << 8);
+    }
+    // Initialize the read buffer
+    function _start() {
+        _bulkIn.read(blob(1));
+    }
+
+    // Write bulk transfer on Usb host
+    function _write(data) {
+        local _data = null;
+
+        if (typeof data == "string") {
+            _data = blob();
+            _data.writestring(data);
+        } else if (typeof data == "blob") {
+            _data = data;
+        } else {
+            server.error("Write data must of type string or blob");
+            return;
+        }
+        _bulkOut.write(_data);
+    }
+
     function _print(text, options = 0) {
         local beforeText = "";
         local afterText = "";
@@ -451,20 +467,12 @@ class BrotherQL720Driver extends DriverBase {
         return this;
     }
 
-    // Prints the label
-    function print() {
-        _buffer.writestring(PAGE_FEED);
-        write(_buffer);
-
-        _buffer = blob();
-    }
-
     function _setMargin(command, margin) {
         local marginBuffer = blob();
         marginBuffer.writestring(command);
         marginBuffer.writen(margin & 0xFF, 'b');
 
-        write(marginBuffer);
+        _write(marginBuffer);
 
         return this;
     }
