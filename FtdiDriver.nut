@@ -16,7 +16,7 @@ class FtdiDriver extends DriverBase {
     _bulkIn = null;
     _bulkOut = null;
 
-
+    // Metafunction to return class name when typeof <instance> is run
     function _typeof() {
         return "FtdiDriver";
     }
@@ -110,7 +110,7 @@ class FtdiDriver extends DriverBase {
     }
 
     function _start() {
-        _bulkIn.read(blob(64 + 2));
+        _bulkIn.read(blob(64+2));
     }
 
     function write(data) {
@@ -129,22 +129,6 @@ class FtdiDriver extends DriverBase {
         _bulkOut.write(_data);
     }
 
-    function on(eventType, cb) {
-        _eventHandlers[eventType] <- cb;
-    }
-
-    function off(eventName) {
-        if (eventName in _eventHandlers) {
-            delete _eventHandlers[eventName];
-        }
-    }
-
-    function onEvent(eventType, eventdetails) {
-        if (eventType in _eventHandlers) {
-            _eventHandlers[eventType](eventdetails);
-        }
-    }
-
     function connect(deviceAddress, speed, descriptors) {
         _setupEndpoints(deviceAddress, speed, descriptors);
         _configure(descriptors["device"]);
@@ -160,7 +144,7 @@ class FtdiDriver extends DriverBase {
                 onEvent("data", readData.readblob(readData.len()));
             }
             // Blank the buffer
-            _bulkIn.read(blob(64 + 2));
+            _bulkIn.read(blob(64+2));
         } else if (direction == USB_DIRECTION_OUT) {
             _bulkOut.done(eventdetails);
         }
