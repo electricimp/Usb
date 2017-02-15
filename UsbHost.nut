@@ -149,15 +149,15 @@ class DriverBase {
     }
 
     function connect(address, speed, descriptors) {
-        server.error("connect has not been implemented in this driver. Please override.");
+        throw "Method not implemented";
     }
 
     function getIdentifiers() {
-        server.error("connect has not been implemented in this driver. Please override.");
+        throw "Method not implemented";
     }
 
     function transferComplete(eventdetails) {
-        server.error("connect has not been implemented in this driver. Please override.");
+        throw "Method not implemented";
     }
 
     function on(eventType, cb) {
@@ -200,6 +200,7 @@ class UsbHost {
         _eventHandlers[USB_DEVICE_CONNECTED] <- _onDeviceConnected.bindenv(this);
         _eventHandlers[USB_DEVICE_DISCONNECTED] <- _onDeviceDisconnected.bindenv(this);
         _eventHandlers[USB_TRANSFER_COMPLETED] <- _onTransferCompleted.bindenv(this);
+        _eventHandlers[USB_UNRECOVERABLE_ERROR] <- _onHardwareError.bindenv(this);
         _usb.configure(_onEvent.bindenv(this));
     }
 
@@ -235,18 +236,6 @@ class UsbHost {
         }
     }
 
-    // Creates a USB driver instance if vid/pid combo matches registered devices
-    function create(identifiers) {
-        local vid = identifiers["vendorid"];
-        local pid = identifiers["productid"];
-        local vpid = format("%04x%04x", vid, pid);
-
-        if ((vpid in _registeredDrivers) && _registeredDrivers[vpid] != null) {
-            return _registeredDrivers[vpid](this);
-        }
-        return null;
-    }
-
     // Subscribe callback to call on "eventName" event
     function on(eventName, cb) {
         _customEventHandlers[eventName] <- cb;
@@ -259,6 +248,21 @@ class UsbHost {
         }
     }
 
+    function openEndpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress) {
+        _usb.openendpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress);
+    }
+
+
+    // Bulk transfer data blob
+    function bulkTransfer(address, endpoint, type, data) {
+        // Push to the end of the queue
+        _pushBulkTransferQueue([_usb, address, endpoint, type, data]);
+
+        // Process request at the front of the queue
+        _popBulkTransferQueue();
+    }
+
+    // Control transfer wrapper method
     function controlTransfer(speed, deviceAddress, requestType, request, value, index, maxPacketSize) {
         _usb.controltransfer(
             speed,
@@ -272,21 +276,7 @@ class UsbHost {
         );
     }
 
-    // Bulk transfer data blob
-    function bulkTransfer(address, endpoint, type, data) {
-        // Push to the end of the queue
-        _pushBulkTransferQueue([_usb, address, endpoint, type, data]);
-
-        // Process request at the front of the queue
-        _popBulkTransferQueue();
-    }
-
-
-    function openEndpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress) {
-        _usb.openendpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress);
-    }
-
-
+    // Set control transfer USB_REQUEST_SET_ADDRESS device address
     function setAddress(address, speed, maxPacketSize) {
         _usb.controltransfer(
             speed,
@@ -300,6 +290,7 @@ class UsbHost {
         );
     }
 
+    // Set control transfer USB_REQUEST_SET_CONFIGURATION value
     function setConfiguration(deviceAddress, speed, maxPacketSize, value) {
         _usb.controltransfer(
             speed,
@@ -313,6 +304,17 @@ class UsbHost {
         );
     }
 
+    // Creates a USB driver instance if vid/pid combo matches registered devices
+    function _create(identifiers) {
+        local vid = identifiers["vendorid"];
+        local pid = identifiers["productid"];
+        local vpid = format("%04x%04x", vid, pid);
+
+        if ((vpid in _registeredDrivers) && _registeredDrivers[vpid] != null) {
+            return _registeredDrivers[vpid](this);
+        }
+        return null;
+    }
 
     // Usb connected callback
     function _onDeviceConnected(eventdetails) {
@@ -328,7 +330,7 @@ class UsbHost {
             logDescriptors(speed, descriptors);
         }
         // Try to create the driver for connected device
-        _driver = create(descriptors);
+        _driver = _create(descriptors);
 
         if (_driver == null) {
             server.log("No driver found for device");
@@ -362,6 +364,13 @@ class UsbHost {
         }
         // Process any queued requests
         _popBulkTransferQueue();
+    }
+
+    // Callback on hardware error
+    function _onHardwareError(eventdetails) {
+        server.error("Internal unrecoverable usb error. Resetting the bus.");
+        usb.disable();
+        _usb.configure(_onEvent.bindenv(this));
     }
 
     // Push bulk transfer request to back of queue

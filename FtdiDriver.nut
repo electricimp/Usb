@@ -21,38 +21,47 @@ class FtdiDriver extends DriverBase {
         return "FtdiDriver";
     }
 
-    function _setupEndpoints(deviceAddress, speed, descriptors) {
-        server.log(format("Driver connecting at address 0x%02x", deviceAddress));
-        _deviceAddress = deviceAddress;
-        _controlEndpoint = ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
-
-        // Select configuration
-        local configuration = descriptors["configurations"][0];
-        server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
-        _controlEndpoint.setConfiguration(configuration["value"]);
-
-        // Select interface
-        local interface = configuration["interfaces"][0];
-        local interfacenumber = interface["interfacenumber"];
-
-        foreach (endpoint in interface["endpoints"]) {
-            local address = endpoint["address"];
-            local maxPacketSize = endpoint["maxpacketsize"];
-            if ((endpoint["attributes"] & 0x3) == 2) {
-                if ((address & 0x80) >> 7 == USB_DIRECTION_OUT) {
-                    _bulkOut = BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
-                } else {
-                    _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
-                }
-
-            }
-        }
-    }
-
     function getIdentifiers() {
         local identifiers = {};
         identifiers[VID] <-[PID];
         return [identifiers];
+    }
+
+    function write(data) {
+        local _data = null;
+
+        if (typeof data == "string") {
+            _data = blob();
+            _data.writestring(data);
+        } else if (typeof data == "blob") {
+            _data = data;
+        } else {
+            server.error("Write data must of type string or blob");
+            return;
+        }
+
+        _bulkOut.write(_data);
+    }
+
+    function connect(deviceAddress, speed, descriptors) {
+        _setupEndpoints(deviceAddress, speed, descriptors);
+        _configure(descriptors["device"]);
+        _start();
+    }
+
+    function transferComplete(eventdetails) {
+        local direction = (eventdetails["endpoint"] & 0x80) >> 7;
+        if (direction == USB_DIRECTION_IN) {
+            local readData = _bulkIn.done(eventdetails);
+            if (readData.len() >= 3) {
+                readData.seek(2);
+                onEvent("data", readData.readblob(readData.len()));
+            }
+            // Blank the buffer
+            _bulkIn.read(blob(64 + 2));
+        } else if (direction == USB_DIRECTION_OUT) {
+            _bulkOut.done(eventdetails);
+        }
     }
 
     function _configure(device) {
@@ -110,43 +119,34 @@ class FtdiDriver extends DriverBase {
     }
 
     function _start() {
-        _bulkIn.read(blob(64+2));
+        _bulkIn.read(blob(64 + 2));
     }
 
-    function write(data) {
-        local _data = null;
+    function _setupEndpoints(deviceAddress, speed, descriptors) {
+        server.log(format("Driver connecting at address 0x%02x", deviceAddress));
+        _deviceAddress = deviceAddress;
+        _controlEndpoint = ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
 
-        if (typeof data == "string") {
-            _data = blob();
-            _data.writestring(data);
-        } else if (typeof data == "blob") {
-            _data = data;
-        } else {
-            server.error("Write data must of type string or blob");
-            return;
-        }
+        // Select configuration
+        local configuration = descriptors["configurations"][0];
+        server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
+        _controlEndpoint.setConfiguration(configuration["value"]);
 
-        _bulkOut.write(_data);
-    }
+        // Select interface
+        local interface = configuration["interfaces"][0];
+        local interfacenumber = interface["interfacenumber"];
 
-    function connect(deviceAddress, speed, descriptors) {
-        _setupEndpoints(deviceAddress, speed, descriptors);
-        _configure(descriptors["device"]);
-        _start();
-    }
+        foreach (endpoint in interface["endpoints"]) {
+            local address = endpoint["address"];
+            local maxPacketSize = endpoint["maxpacketsize"];
+            if ((endpoint["attributes"] & 0x3) == 2) {
+                if ((address & 0x80) >> 7 == USB_DIRECTION_OUT) {
+                    _bulkOut = BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                } else {
+                    _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                }
 
-    function transferComplete(eventdetails) {
-        local direction = (eventdetails["endpoint"] & 0x80) >> 7;
-        if (direction == USB_DIRECTION_IN) {
-            local readData = _bulkIn.done(eventdetails);
-            if (readData.len() >= 3) {
-                readData.seek(2);
-                onEvent("data", readData.readblob(readData.len()));
             }
-            // Blank the buffer
-            _bulkIn.read(blob(64+2));
-        } else if (direction == USB_DIRECTION_OUT) {
-            _bulkOut.done(eventdetails);
         }
     }
 };
