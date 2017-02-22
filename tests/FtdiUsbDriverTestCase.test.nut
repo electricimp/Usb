@@ -17,7 +17,7 @@ class FtdiUsbTestCase extends ImpTestCase {
 
         uart = hardware.uart1;
         usbHost = UsbHost(hardware.usb);
-        usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
+        usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
         usbHost.registerDriver(UARTOverUSBDriver, UARTOverUSBDriver.getIdentifiers());
 
 
@@ -28,7 +28,7 @@ class FtdiUsbTestCase extends ImpTestCase {
         this.info("Connect any Ftdi device to imp");
         return Promise(function(resolve, reject) {
             usbHost.on("connected", function(device) {
-                if (typeof device == "FtdiDriver") {
+                if (typeof device == "FtdiUsbDriver") {
                     _device = device;
                     return resolve("Device was a Ftdi device");
                 }
@@ -74,16 +74,13 @@ class FtdiUsbTestCase extends ImpTestCase {
                 local dataString = "";
 
                 _device.on("data", function(data) {
-                    this.info(typeof data);
-                    this.info(typeof testString);
-                    this.info(data.tostring() == testString);
                         if (data.tostring() == testString) {
                             resolve("Recieved data on Usb from Uart");
-                        } 
+                        }
                     }.bindenv(this))
-                // Configure with timing
-                uart.configure(115200, 8, PARITY_NONE, 1, 0);
                     // Configure with timing
+                uart.configure(115200, 8, PARITY_NONE, 1, 0);
+                // Configure with timing
                 uart.write(testString);
 
 
@@ -92,6 +89,18 @@ class FtdiUsbTestCase extends ImpTestCase {
             }
         }.bindenv(this))
     }
+
+    function testUsbDisconnection() {
+        this.info("Disconnect the usb device from imp");
+        return Promise(function(resolve, reject) {
+            usbHost.on("disconnected", function(device) {
+                if (device != null) {
+                    resolve("Device Disconnected");
+                }
+            }.bindenv(this));
+        }.bindenv(this))
+    }
+
 
     function tearDown() {
         return "#{__FILE__} Test finished";

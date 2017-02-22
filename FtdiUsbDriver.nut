@@ -1,4 +1,4 @@
-class FtdiDriver extends DriverBase {
+class FtdiUsbDriver extends DriverBase {
 
     // FTDI vid and pid
     static VID = 0x0403;
@@ -17,7 +17,7 @@ class FtdiDriver extends DriverBase {
 
     // Metafunction to return class name when typeof <instance> is run
     function _typeof() {
-        return "FtdiDriver";
+        return "FtdiUsbDriver";
     }
 
     function getIdentifiers() {

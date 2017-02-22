@@ -16,7 +16,7 @@ class UsbHostTestCase extends ImpTestCase {
         hardware.pinR.configure(DIGITAL_OUT, 1);
 
         usbHost = UsbHost(hardware.usb);
-        usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
+        usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
         usbHost.registerDriver(UARTOverUSBDriver, UARTOverUSBDriver.getIdentifiers());
 
         return "Hi from #{__FILE__}!";
@@ -33,7 +33,7 @@ class UsbHostTestCase extends ImpTestCase {
         }.bindenv(this))
     }
 
-    /*function testUsbDisconnection() {
+    function testUsbDisconnection() {
         this.info("Disconnect the usb device from imp");
         return Promise(function(resolve, reject) {
             usbHost.on("disconnected", function(device) {
@@ -42,7 +42,7 @@ class UsbHostTestCase extends ImpTestCase {
                 }
             }.bindenv(this));
         }.bindenv(this))
-    }*/
+    }
 
     function tearDown() {
         return "Test finished";

@@ -1,10 +1,10 @@
-# FtdiDriver
+# FtdiUsbDriver
 
-The FtdiDriver class exposes methods to interact with an device connected to usb via an ftdi cable. It requires the UsbHost wrapper class to work.
+The FtdiUsbDriver class exposes methods to interact with an device connected to usb via an ftdi cable. It requires the UsbHost wrapper class to work.
 
 ### Setup
 
-**To add this library to your project, add** `#require "ftdidriver.class.nut:1.0.0"` **to the top of your device code**
+**To add this library to your project, add** `#require "ftdiusbdriver.class.nut:1.0.0"` **to the top of your device code**
 
 This class requires the UsbHost class. The usb host will handle the connection and instantiation of this class. The class and its identifiers must be registered with the UsbHost and the device driver will be passed to the connection callback on the UsbHost. 
 
@@ -12,13 +12,13 @@ This class requires the UsbHost class. The usb host will handle the connection a
 
 ```squirrel
 #require "usbhost.class.nut:1.0.0"
-#require "ftdidriver.class.nut:1.0.0"
+#require "ftdiusbdriver.class.nut:1.0.0"
 
 // Callback to handle device connection
 function onDeviceConnected(device) {
     server.log(typeof device + " was connected!");
     switch (typeof device) {
-        case ("FtdiDriver"):
+        case ("FtdiUsbDriver"):
             // device is a ftdi device. Handle it here.
             break;
     }
@@ -31,7 +31,7 @@ function onDeviceDisconnected(deviceName) {
 usbHost <- UsbHost(hardware.usb);
 
 // Register the Ftdi driver with usb host
-usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
+usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
 usbHost.on("connected",onConnected);
 usbHost.on("disconnected",onDisconnected);
 
@@ -40,7 +40,7 @@ usbHost.on("disconnected",onDisconnected);
 
 ## Device Class Usage
 
-### Constructor: FtdiDriver(*usb*)
+### Constructor: FtdiUsbDriver(*usb*)
 
 Class instantiation is handled by the UsbHost class.
 
@@ -70,7 +70,7 @@ onDeviceData(data){
 function onDeviceConnected(device) {
     server.log(typeof device + " was connected!");
     switch (typeof device) {
-        case ("FtdiDriver"):
+        case ("FtdiUsbDriver"):
             device.on("data", onDeviceData);
             break;
     }
