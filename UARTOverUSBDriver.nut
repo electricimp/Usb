@@ -17,6 +17,11 @@ class UARTOverUSBDriver extends DriverBase {
         base.constructor(usb);
     }
 
+    // Metafunction to return class name when typeof <instance> is run
+    function _typeof() {
+        return "UARTOverUSBDriver";
+    }
+
     // Returns an array of VID PID combinations
     function getIdentifiers() {
         local identifiers = {};
@@ -43,6 +48,11 @@ class UARTOverUSBDriver extends DriverBase {
         } else if (direction == USB_DIRECTION_OUT) {
             _bulkOut.done(eventdetails);
         }
+    }
+
+    // Initialize the read buffer
+    function _start() {
+        _bulkIn.read(blob(1));
     }
 
     // Write bulk transfer on Usb host

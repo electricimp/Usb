@@ -286,6 +286,7 @@ class UsbHost {
         _eventHandlers[USB_TRANSFER_COMPLETED] <- _onTransferCompleted.bindenv(this);
         _eventHandlers[USB_UNRECOVERABLE_ERROR] <- _onHardwareError.bindenv(this);
         _usb.configure(_onEvent.bindenv(this));
+        server.log("UsbHost instantiated")
     }
 
     function _typeof() {
@@ -318,6 +319,10 @@ class UsbHost {
                 }
             }
         }
+    }
+
+    function getDriver() {
+        return _driver;
     }
 
     // Subscribe callback to call on "eventName" event
