@@ -1,4 +1,4 @@
-class UsbHostTestCase extends ImpTestCase {
+class FtdiUsbTestCase extends ImpTestCase {
     // UART on imp005
     uart = null;
     dataString = "";
