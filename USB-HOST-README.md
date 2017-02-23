@@ -22,7 +22,7 @@ usbHost <- UsbHost(hardware.usb);
 ### registerDriver(*driverClass, identifiers*)
 
 Registers a driver to a devices list of VID/PID combinations. When a device is connected via usb its VID/PID combination will be looked up and the matching driver will be instantiated to interface with device.
-
+å
 
 | Key | Data Type | Required | Description |
 | --- | --------- | -------- | ----------- |
@@ -38,7 +38,7 @@ Registers a driver to a devices list of VID/PID combinations. When a device is c
 
 usbHost <- UsbHost(hardware.usb);
 // Register the Ftdi driver with usb host
-usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
+usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
 
 ```
 
@@ -62,7 +62,7 @@ Subscribe a callback function to a specific event.
 function onDeviceConnected(device) {
     server.log(typeof device + " was connected!");
     switch (typeof device) {
-        case ("FtdiDriver"):
+        case ("FtdiUsbDriver"):
             // device is a ftdi device. Handle it here.
             break;
     }
@@ -75,7 +75,7 @@ function onDeviceDisconnected(deviceName) {
 usbHost <- UsbHost(hardware.usb);
 
 // Register the Ftdi driver with usb host
-usbHost.registerDriver(FtdiDriver, FtdiDriver.getIdentifiers());
+usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
 usbHost.on("connected",onDeviceConnected);
 usbHost.on("disconnected",onDeviceDisconnected);
 
