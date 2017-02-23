@@ -49,6 +49,16 @@ Class instantiation is handled by the UsbHost class.
 
 Returns an array of tables with VID-PID key value pairs respectively. Identifiers are used by UsbHost to instantiate a matching devices driver.
 
+### write(data)
+
+Writes String or Blob data out to ftdi.
+
+
+| Key | Data Type | Required | Description |
+| --- | --------- | -------- | ----------- |
+| *data* | String/Blob | Yes | The String or Blob to be written to ftdi.|
+
+
 
 ### on(*eventName, callback*)
 
