@@ -34,7 +34,7 @@ Registers a driver to a devices list of VID/PID combinations. When a device is c
 
 ```squirrel
 #require "usbhost.class.nut:1.0.0"
-#require "ftdidriver.class.nut:1.0.0"
+#require "ftdiusbdriver.class.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
 // Register the Ftdi driver with usb host
@@ -56,7 +56,7 @@ Subscribe a callback function to a specific event.
 
 ```squirrel
 #require "usbhost.class.nut:1.0.0"
-#require "ftdidriver.class.nut:1.0.0"
+#require "ftdiusbdriver.class.nut:1.0.0"
 
 // Callback to handle device connection
 function onDeviceConnected(device) {
