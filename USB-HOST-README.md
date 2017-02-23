@@ -22,7 +22,7 @@ usbHost <- UsbHost(hardware.usb);
 ### registerDriver(*driverClass, identifiers*)
 
 Registers a driver to a devices list of VID/PID combinations. When a device is connected via usb its VID/PID combination will be looked up and the matching driver will be instantiated to interface with device.
-å
+
 
 | Key | Data Type | Required | Description |
 | --- | --------- | -------- | ----------- |
@@ -41,6 +41,7 @@ usbHost <- UsbHost(hardware.usb);
 usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
 
 ```
+
 
 ### on(*eventName, callback*)
 
@@ -88,6 +89,10 @@ Clears a subscribed callback function from a specific event.
 | Key | Data Type | Required | Description |
 | --- | --------- | -------- | ----------- |
 | *eventName* | String | Yes | The string name of the event to unsubscribe from.|
+
+### getDriver()
+
+Returns the driver for the currently connected devices. Returns null if no device is connected or a corresponding driver to the device was not found.
 
 
 ## License

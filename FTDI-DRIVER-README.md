@@ -87,3 +87,8 @@ Clears a subscribed callback function from a specific event.
 | *eventName* | String | Yes | The string name of the event to unsubscribe from.|
 
 
+
+
+## License
+
+The Conctr library is licensed under [MIT License](./LICENSE).

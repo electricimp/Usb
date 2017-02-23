@@ -49,7 +49,7 @@ class UARTOverUsbTestCase extends ImpTestCase {
                     .setFont(QL720NW.FONT_SAN_DIEGO)
                     .setFontSize(QL720NW.FONT_SIZE_48)
                     .write("San Diego 48 ")
-                    .print();
+                    //.print();
 
                 resolve("Printed data")
 

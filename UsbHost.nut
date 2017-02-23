@@ -56,8 +56,8 @@ class ControlEndpoint {
         _maxPacketSize = maxPacketSize;
     }
 
-    function setConfiguration(value) {
-        _usb.setConfiguration(_deviceAddress, _speed, _maxPacketSize, value);
+    function _setConfiguration(value) {
+        _usb._setConfiguration(_deviceAddress, _speed, _maxPacketSize, value);
     }
 
     function getStringDescriptor(index) {
@@ -65,7 +65,7 @@ class ControlEndpoint {
     }
 
     function send(requestType, request, value, index) {
-        return _usb.controlTransfer(_speed, _deviceAddress, requestType, request, value, index, _maxPacketSize)
+        return _usb._controlTransfer(_speed, _deviceAddress, requestType, request, value, index, _maxPacketSize)
     }
 }
 
@@ -82,7 +82,7 @@ class BulkEndpoint {
         _usb = usb;
         _deviceAddress = deviceAddress;
         _endpointAddress = endpointAddress;
-        _usb.openEndpoint(speed, _deviceAddress, interfaceNumber, USB_ENDPOINT_BULK, maxPacketSize, _endpointAddress);
+        _usb._openEndpoint(speed, _deviceAddress, interfaceNumber, USB_ENDPOINT_BULK, maxPacketSize, _endpointAddress);
     }
 }
 
@@ -99,7 +99,7 @@ class BulkInEndpoint extends BulkEndpoint {
 
     function read(data) {
         _data = data;
-        _usb.bulkTransfer(_deviceAddress, _endpointAddress, USB_ENDPOINT_BULK, data);
+        _usb._bulkTransfer(_deviceAddress, _endpointAddress, USB_ENDPOINT_BULK, data);
     }
 
     function done(details) {
@@ -124,7 +124,7 @@ class BulkOutEndpoint extends BulkEndpoint {
 
     function write(data) {
         _data = data;
-        _usb.bulkTransfer(_deviceAddress, _endpointAddress, USB_ENDPOINT_BULK, data);
+        _usb._bulkTransfer(_deviceAddress, _endpointAddress, USB_ENDPOINT_BULK, data);
     }
 
     function done(details) {
@@ -241,7 +241,7 @@ class DriverBase {
         // Select configuration
         local configuration = descriptors["configurations"][0];
         server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
-        _controlEndpoint.setConfiguration(configuration["value"]);
+        _controlEndpoint._setConfiguration(configuration["value"]);
 
         // Select interface
         local interface = configuration["interfaces"][0];
@@ -337,36 +337,12 @@ class UsbHost {
         }
     }
 
-    function openEndpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress) {
+    function _openEndpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress) {
         _usb.openendpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress);
     }
 
-
-    // Bulk transfer data blob
-    function bulkTransfer(address, endpoint, type, data) {
-        // Push to the end of the queue
-        _pushBulkTransferQueue([_usb, address, endpoint, type, data]);
-
-        // Process request at the front of the queue
-        _popBulkTransferQueue();
-    }
-
-    // Control transfer wrapper method
-    function controlTransfer(speed, deviceAddress, requestType, request, value, index, maxPacketSize) {
-        _usb.controltransfer(
-            speed,
-            deviceAddress,
-            0,
-            requestType,
-            request,
-            value,
-            index,
-            maxPacketSize
-        );
-    }
-
     // Set control transfer USB_REQUEST_SET_ADDRESS device address
-    function setAddress(address, speed, maxPacketSize) {
+    function _setAddress(address, speed, maxPacketSize) {
         _usb.controltransfer(
             speed,
             0,
@@ -380,7 +356,7 @@ class UsbHost {
     }
 
     // Set control transfer USB_REQUEST_SET_CONFIGURATION value
-    function setConfiguration(deviceAddress, speed, maxPacketSize, value) {
+    function _setConfiguration(deviceAddress, speed, maxPacketSize, value) {
         _usb.controltransfer(
             speed,
             deviceAddress,
@@ -427,7 +403,7 @@ class UsbHost {
         }
 
         server.log("Found driver for " + typeof _driver);
-        setAddress(_address, speed, maxPacketSize);
+        _setAddress(_address, speed, maxPacketSize);
         _driver.connect(_address, speed, descriptors);
         // Emit connected event that user can subscribe to
         _onEvent("connected", _driver);
@@ -442,6 +418,30 @@ class UsbHost {
             _onEvent("disconnected", typeof _driver);
             _driver = null;
         }
+    }
+
+
+    // Bulk transfer data blob
+    function _bulkTransfer(address, endpoint, type, data) {
+        // Push to the end of the queue
+        _pushBulkTransferQueue([_usb, address, endpoint, type, data]);
+
+        // Process request at the front of the queue
+        _popBulkTransferQueue();
+    }
+
+    // Control transfer wrapper method
+    function _controlTransfer(speed, deviceAddress, requestType, request, value, index, maxPacketSize) {
+        _usb.controltransfer(
+            speed,
+            deviceAddress,
+            0,
+            requestType,
+            request,
+            value,
+            index,
+            maxPacketSize
+        );
     }
 
     // Callback when a Usb transfer successfully completed
