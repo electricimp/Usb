@@ -4,7 +4,7 @@ The UartOverUsbDriver class creates an interface object that exposes methods sim
 
 ### Setup
 
-**To add this library to your project, add** `#require "uartoverusb.class.nut:1.0.0"` **to the top of your device code**
+**To add this library to your project, add** `#require "uartoverusb.device.nut:1.0.0"` **to the top of your device code**
 
 This class requires the UsbHost class. The usb host will handle the connection and instantiation of this class. The class and its identifiers must be registered with the UsbHost and the device driver will be passed to the connection callback on the UsbHost. 
 

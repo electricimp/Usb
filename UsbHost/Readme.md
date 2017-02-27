@@ -4,7 +4,7 @@ The UsbHost Class acts as a wrapper around the hardware.usb object and manages U
 
 ### Setup
 
-**To add this library to your project, add** `#require "usbhost.class.nut:1.0.0"` **to the top of your device code**
+**To add this library to your project, add** `#require "usbhost.device.nut:1.0.0"` **to the top of your device code**
 
 ## Device Class Usage
 

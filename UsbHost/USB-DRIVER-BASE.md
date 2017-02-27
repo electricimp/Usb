@@ -8,8 +8,8 @@ The UsbDriverBase Class is used as the base class for all usb drivers that make 
 #### Example
 
 ```squirrel
-#require "usbhost.class.nut:1.0.0"
-#require "yourusbdriver.class.nut:1.0.0"
+#require "usbhost.device.nut:1.0.0"
+#require "yourusbdriver.device.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
 ```
@@ -68,7 +68,7 @@ Method that returns an array of tables containing VID PID pairs. The identifiers
 #### Example
 
 ```squirrel
-#require "usbhost.class.nut:1.0.0"
+#require "usbhost.device.nut:1.0.0"
 
 class YourUsbDriver {
 
@@ -98,7 +98,7 @@ Called when a usb transfer is completed. Below is an example of the transferComp
 #### Example
 
 ```squirrel
-#require "usbhost.class.nut:1.0.0"
+#require "usbhost.device.nut:1.0.0"
 
 class YourUsbDriver {
 
