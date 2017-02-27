@@ -18,7 +18,7 @@ class FtdiUsbTestCase extends ImpTestCase {
         uart = hardware.uart1;
         usbHost = UsbHost(hardware.usb);
         usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
-        usbHost.registerDriver(UARTOverUSBDriver, UARTOverUSBDriver.getIdentifiers());
+        usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
 
 
         return "Hi from #{__FILE__}!";

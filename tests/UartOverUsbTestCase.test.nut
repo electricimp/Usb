@@ -19,13 +19,13 @@ class UARTOverUsbTestCase extends ImpTestCase {
             uart = hardware.uart1;
             usbHost = UsbHost(hardware.usb);
             usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
-            usbHost.registerDriver(UARTOverUSBDriver, UARTOverUSBDriver.getIdentifiers());
+            usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
             this.info("Hi from #{__FILE__}!")
             this.info("Connect any Uart over Usb device to imp");
 
             usbHost.on("connected", function(device) {
                 this.info("usb connected")
-                if (typeof device == "UARTOverUSBDriver") {
+                if (typeof device == "UartOverUsbDriver") {
                     _device = device;
                     return resolve("Device was a Uart over Usb device");
                 }
@@ -49,7 +49,7 @@ class UARTOverUsbTestCase extends ImpTestCase {
                     .setFont(QL720NW.FONT_SAN_DIEGO)
                     .setFontSize(QL720NW.FONT_SIZE_48)
                     .write("San Diego 48 ")
-                    //.print();
+                    .print();
 
                 resolve("Printed data")
 

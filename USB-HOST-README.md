@@ -26,7 +26,7 @@ Registers a driver to a devices list of VID/PID combinations. When a device is c
 
 | Key | Data Type | Required | Description |
 | --- | --------- | -------- | ----------- |
-| *driverClass* | Class | Yes | A reference to the class to be instantiated when a device with matching identifiers is connected. Must be a valid usb class that extends the *DriverBase* class. |
+| *driverClass* | Class | Yes | A reference to the class to be instantiated when a device with matching identifiers is connected. Must be a valid usb class that extends the *UsbDriverBase* class. |
 | *identifiers* | Array | Yes | Array of VID/PID combinations. When a device connected that identifies itself with any of the PID/VID combinations provided the driverClass will be instatiated.
 
 

@@ -1,4 +1,4 @@
-class UARTOverUSBDriver extends DriverBase {
+class UartOverUsbDriver extends UsbDriverBase {
 
     static VERSION = "1.0.0";
 
@@ -12,7 +12,7 @@ class UARTOverUSBDriver extends DriverBase {
 
     // Metafunction to return class name when typeof <instance> is run
     function _typeof() {
-        return "UARTOverUSBDriver";
+        return "UartOverUsbDriver";
     }
 
     // Returns an array of VID PID combinations
@@ -47,7 +47,7 @@ class UARTOverUSBDriver extends DriverBase {
 
             if (readData.len() >= 3) {
                 readData.seek(2);
-                onEvent("data", readData.readblob(readData.len()));
+                _onEvent("data", readData.readblob(readData.len()));
             }
         } else if (direction == USB_DIRECTION_OUT) {
             _bulkOut.done(eventdetails);

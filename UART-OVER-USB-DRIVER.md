@@ -46,6 +46,15 @@ usbHost <- UsbHost(hardware.usb);
 
 // Register the Uart over Usb driver with usb host
 usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
+
+// To use a device that is not directly supported by the UartOverUsb you can manually pass in identifiers using the following code
+// vid <- [enter device vid];
+// pid <- [enter device pid];
+// identifier <- {};
+// identifier[vid] <- pid;
+// identifiers <- [identifier]
+// usbHost.registerDriver(UartOverUsbDriver, identifiers);
+
 usbHost.on("connected",onConnected);
 usbHost.on("disconnected",onDisconnected);
 

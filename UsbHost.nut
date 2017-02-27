@@ -134,7 +134,7 @@ class BulkOutEndpoint extends BulkEndpoint {
     }
 }
 
-class DriverBase {
+class UsbDriverBase {
 
     static VERSION = "1.0.0";
 
@@ -172,9 +172,37 @@ class DriverBase {
         }
     }
 
-    function onEvent(eventType, eventdetails) {
-        if (eventType in _eventHandlers) {
-            _eventHandlers[eventType](eventdetails);
+    function _onEvent(eventName, eventdetails) {
+        if (eventName in _eventHandlers) {
+            _eventHandlers[eventName](eventdetails);
+        }
+    }
+
+    // Initialize and set up all required endpoints
+    function _setupEndpoints(deviceAddress, speed, descriptors) {
+        server.log(format("Driver connecting at address 0x%02x", deviceAddress));
+        _deviceAddress = deviceAddress;
+        _controlEndpoint = ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
+
+        // Select configuration
+        local configuration = descriptors["configurations"][0];
+        server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
+        _controlEndpoint._setConfiguration(configuration["value"]);
+
+        // Select interface
+        local interface = configuration["interfaces"][0];
+        local interfacenumber = interface["interfacenumber"];
+
+        foreach (endpoint in interface["endpoints"]) {
+            local address = endpoint["address"];
+            local maxPacketSize = endpoint["maxpacketsize"];
+            if ((endpoint["attributes"] & 0x3) == 2) {
+                if ((address & 0x80) >> 7 == USB_DIRECTION_OUT) {
+                    _bulkOut = BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                } else {
+                    _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                }
+            }
         }
     }
 
@@ -232,32 +260,8 @@ class DriverBase {
         _controlEndpoint.send(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_FLOW_CTRL, xon | (xoff << 8), FTDI_SIO_DISABLE_FLOW_CTRL << 8);
     }
 
-    // Initialize and set up all required endpoints
-    function _setupEndpoints(deviceAddress, speed, descriptors) {
-        server.log(format("Driver connecting at address 0x%02x", deviceAddress));
-        _deviceAddress = deviceAddress;
-        _controlEndpoint = ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
-
-        // Select configuration
-        local configuration = descriptors["configurations"][0];
-        server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
-        _controlEndpoint._setConfiguration(configuration["value"]);
-
-        // Select interface
-        local interface = configuration["interfaces"][0];
-        local interfacenumber = interface["interfacenumber"];
-
-        foreach (endpoint in interface["endpoints"]) {
-            local address = endpoint["address"];
-            local maxPacketSize = endpoint["maxpacketsize"];
-            if ((endpoint["attributes"] & 0x3) == 2) {
-                if ((address & 0x80) >> 7 == USB_DIRECTION_OUT) {
-                    _bulkOut = BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
-                } else {
-                    _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
-                }
-            }
-        }
+    function _start() {
+        _bulkIn.read(blob(1));
     }
 
 };

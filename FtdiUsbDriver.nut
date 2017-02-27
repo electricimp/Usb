@@ -1,4 +1,4 @@
-class FtdiUsbDriver extends DriverBase {
+class FtdiUsbDriver extends UsbDriverBase {
 
     // FTDI vid and pid
     static VID = 0x0403;
@@ -48,7 +48,7 @@ class FtdiUsbDriver extends DriverBase {
             local readData = _bulkIn.done(eventdetails);
             if (readData.len() >= 3) {
                 readData.seek(2);
-                onEvent("data", readData.readblob(readData.len()));
+                _onEvent("data", readData.readblob(readData.len()));
             }
             // Blank the buffer
             _bulkIn.read(blob(64 + 2));
