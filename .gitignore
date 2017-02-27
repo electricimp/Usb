@@ -1,2 +1,9 @@
 **/*.wrench
 .build_api_key.json
+UartLogger.nut
+**/*.out.nut
+device.nut
+UartLogger.nut
+agent.nut
+QL720NW.class.nut
+.imptest
