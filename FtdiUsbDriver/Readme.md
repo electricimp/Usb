@@ -4,15 +4,15 @@ The FtdiUsbDriver class exposes methods to interact with an device connected to 
 
 ### Setup
 
-**To add this library to your project, add** `#require "ftdiusbdriver.class.nut:1.0.0"` **to the top of your device code**
+**To add this library to your project, add** `#require "ftdiusbdriver.device.nut:1.0.0"` **to the top of your device code**
 
 This class requires the UsbHost class. The usb host will handle the connection and instantiation of this class. The class and its identifiers must be registered with the UsbHost and the device driver will be passed to the connection callback on the UsbHost. 
 
 #### Example
 
 ```squirrel
-#require "usbhost.class.nut:1.0.0"
-#require "ftdiusbdriver.class.nut:1.0.0"
+#require "usbhost.device.nut:1.0.0"
+#require "ftdiusbdriver.device.nut:1.0.0"
 
 // Callback to handle device connection
 function onDeviceConnected(device) {
