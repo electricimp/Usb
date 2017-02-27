@@ -1,6 +1,6 @@
 # UsbHost
 
-The UsbHost Class acts as a wrapper around the hardware.usb object and manages USB device connections, disconnections, transfers and driver selection.
+The UsbHost class acts as a wrapper around the hardware.usb object and manages USB device connections, disconnections, transfers and driver selection.
 
 ### Setup
 

@@ -1,6 +1,6 @@
 # UsbDriverBase
 
-The UsbDriverBase Class is used as the base class for all usb drivers that make use of the UsbHost. It contains a set of functions that you must override that are expected by the UsbHost class and set up functions.
+The UsbDriverBase class is used as the base class for all usb drivers that make use of the UsbHost. It contains a set of functions that you must override that are expected by the UsbHost class and set up functions.
 
 ### Setup
 
