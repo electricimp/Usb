@@ -14,7 +14,7 @@ Instantiates the UsbHost class. It takes `hardware.usb` as its only parameter.
 #### Example
 
 ```squirrel
-#require "usbhost.class.nut:1.0.0"
+#require "usbhost.device.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
 ```
@@ -33,8 +33,8 @@ Registers a driver to a devices list of VID/PID combinations. When a device is c
 #### Example
 
 ```squirrel
-#require "usbhost.class.nut:1.0.0"
-#require "ftdiusbdriver.class.nut:1.0.0"
+#require "usbhost.device.nut:1.0.0"
+#require "ftdiusbdriver.device.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
 // Register the Ftdi driver with usb host
@@ -56,8 +56,8 @@ Subscribe a callback function to a specific event.
 #### Example
 
 ```squirrel
-#require "usbhost.class.nut:1.0.0"
-#require "ftdiusbdriver.class.nut:1.0.0"
+#require "usbhost.device.nut:1.0.0"
+#require "ftdiusbdriver.device.nut:1.0.0"
 
 // Callback to handle device connection
 function onDeviceConnected(device) {

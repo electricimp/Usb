@@ -9,13 +9,13 @@ The UartOverUsbDriver class creates an interface object that exposes methods sim
 This class requires the UsbHost class. The usb host will handle the connection and instantiation of this class. The class and its identifiers must be registered with the UsbHost and the device driver will be passed to the connection callback on the UsbHost. 
 
 #### Example
-The example shows how to use the Brother QL-720NW uart driver to demonstrate how to use UartOverUsb. Please get the QL720NW.class.nut file from [here](https://github.com/electricimp/QL720NW) and paste the class at the top of your code.
+The example shows how to use the Brother QL-720NW uart driver to demonstrate how to use UartOverUsb. Please get the QL720NW.device.nut file from [here](https://github.com/electricimp/QL720NW) and paste the class at the top of your code.
 ```squirrel
 
 class QL720NW {...}
 
-#require "usbhost.class.nut:1.0.0"
-#require "uartoverusb.class.nut:1.0.0"
+#require "usbhost.device.nut:1.0.0"
+#require "uartoverusb.device.nut:1.0.0"
 
 
 // Callback to handle device connection
