@@ -141,8 +141,6 @@ Subscribe a callback function to a specific event.
 | *callback* | Function | Yes | Function to be called on event |
 
 
-### off(*eventName*)
-
 Clears a subscribed callback function from a specific event.
 
 | Key | Data Type | Required | Description |
@@ -163,4 +161,4 @@ This is used internal to your class to emit events. The user is able to subscrib
 
 ## License
 
-The Conctr library is licensed under [MIT License](./LICENSE).
+The UsbDriverBase is licensed under [MIT License](./LICENSE).

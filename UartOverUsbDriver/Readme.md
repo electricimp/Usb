@@ -11,15 +11,25 @@ This class requires the UsbHost class. The usb host will handle the connection a
 #### Example
 The example shows how to use the Brother QL-720NW uart driver to demonstrate how to use UartOverUsb. Please get the QL720NW.device.nut file from [here](https://github.com/electricimp/QL720NW) and paste the class at the top of your code.
 ```squirrel
-
-class QL720NW {...}
-
 #require "usbhost.device.nut:1.0.0"
 #require "uartoverusb.device.nut:1.0.0"
 
+class QL720NW {...}
 
-// Callback to handle device connection
-function onDeviceConnected(device) {
+usbHost <- UsbHost(hardware.usb);
+
+// Register the Uart over Usb driver with usb host
+usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
+
+// To use a device that is not directly supported by the UartOverUsb you can manually pass in identifiers using the following code
+// vid <- [enter device vid];
+// pid <- [enter device pid];
+// identifier <- {};
+// identifier[vid] <- pid;
+// identifiers <- [identifier]
+// usbHost.registerDriver(UartOverUsbDriver, identifiers);
+
+usbHost.on("connected",function (device) {
     server.log(typeof device + " was connected!");
     switch (typeof device) {
         case ("UartOverUsbDriver"):
@@ -36,27 +46,10 @@ function onDeviceConnected(device) {
                 .print();
             break;
     }
-}
-
-// Callback to handle device disconnection
-function onDeviceDisconnected(deviceName) {
+});
+usbHost.on("disconnected",function (deviceName) {
     server.log(deviceName + " disconnected");
-}
-usbHost <- UsbHost(hardware.usb);
-
-// Register the Uart over Usb driver with usb host
-usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
-
-// To use a device that is not directly supported by the UartOverUsb you can manually pass in identifiers using the following code
-// vid <- [enter device vid];
-// pid <- [enter device pid];
-// identifier <- {};
-// identifier[vid] <- pid;
-// identifiers <- [identifier]
-// usbHost.registerDriver(UartOverUsbDriver, identifiers);
-
-usbHost.on("connected",onConnected);
-usbHost.on("disconnected",onDisconnected);
+});
 
 
 ```
@@ -72,14 +65,21 @@ Class instantiation is handled by the UsbHost class.
 
 Returns an array of tables with VID-PID key value pairs respectively. Identifiers are used by UsbHost to instantiate a matching devices driver.
 
-### write(data)
 
-Writes String or Blob data out to uart over usb.
+#### Example
 
+```squirrel
+#require "uartoverusb.device.nut:1.0.0"
 
-| Key | Data Type | Required | Description |
-| --- | --------- | -------- | ----------- |
-| *data* | String/Blob | Yes | The String or Blob to be written to uart over usb.|
+local identifiers = UartOverUsbDriver.getIdentifiers();
+
+foreach (i, identifier in identifiers) {
+    foreach (VID, PID in identifier){
+        server.log("VID =" + VID + " PID = " + PID);
+    }
+}
+
+```
 
 
 
@@ -96,15 +96,15 @@ Subscribe a callback function to a specific event.
 #### Example
 
 ```squirrel
-onDeviceData(data){
-    server.log("Recieved " + data + " via usb");
-}
+
 // Callback to handle device connection
 function onDeviceConnected(device) {
     server.log(typeof device + " was connected!");
     switch (typeof device) {
-        case ("UartOverUsbDriver"):
-            device.on("data", onDeviceData);
+        case "UartOverUsbDriver":
+            device.on("data", function (data){
+                 server.log("Received " + data + " via usb");
+            });
             break;
     }
 }
@@ -120,8 +120,66 @@ Clears a subscribed callback function from a specific event.
 | *eventName* | String | Yes | The string name of the event to unsubscribe from.|
 
 
+```squirrel
+#require "usbhost.device.nut:1.0.0"
+#require "uartoverusb.device.nut:1.0.0"
+
+usbHost <- UsbHost(hardware.usb);
+
+// Register the Uart over Usb driver with usb host
+usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
+
+usbHost.on("connected",function (device) {
+    switch (typeof device) {
+        case ("UartOverUsbDriver"):
+            // Listen for data events
+            device.on("data", function (data){
+                 server.log("Received " + data + " via usb");
+            });
+            
+            // Stop listening for data after 30 seconds
+            imp.wakeup(30, function(){
+                device.off("data");
+            }.bindenv(this))
+            break;
+    }
+});
+
+```
+
+### write(data)
+
+Writes String or Blob data out to uart over usb.
+
+
+| Key | Data Type | Required | Description |
+| --- | --------- | -------- | ----------- |
+| *data* | String/Blob | Yes | The String or Blob to be written to uart over usb.|
+
+
+#### Example
+
+```squirrel
+#require "usbhost.device.nut:1.0.0"
+#require "uartoverusb.device.nut:1.0.0"
+
+usbHost <- UsbHost(hardware.usb);
+
+// Register the Uart over Usb driver with usb host
+usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
+
+usbHost.on("connected",function (device) {
+    switch (typeof device) {
+        case ("UartOverUsbDriver"):
+            device.write("Testing usb over uart");
+            break;
+    }
+});
+
+```
+
 
 
 ## License
 
-The Conctr library is licensed under [MIT License](./LICENSE).
+The UartOverUsbDriver is licensed under [MIT License](./LICENSE).

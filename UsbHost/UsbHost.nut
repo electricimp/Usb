@@ -172,12 +172,6 @@ class UsbDriverBase {
         }
     }
 
-    function _onEvent(eventName, eventdetails) {
-        if (eventName in _eventHandlers) {
-            _eventHandlers[eventName](eventdetails);
-        }
-    }
-
     // Initialize and set up all required endpoints
     function _setupEndpoints(deviceAddress, speed, descriptors) {
         server.log(format("Driver connecting at address 0x%02x", deviceAddress));

@@ -49,16 +49,21 @@ Class instantiation is handled by the UsbHost class.
 
 Returns an array of tables with VID-PID key value pairs respectively. Identifiers are used by UsbHost to instantiate a matching devices driver.
 
-### write(data)
 
-Writes String or Blob data out to ftdi.
+#### Example
 
+```squirrel
+#require "ftdiusbdriver.device.nut:1.0.0"
 
-| Key | Data Type | Required | Description |
-| --- | --------- | -------- | ----------- |
-| *data* | String/Blob | Yes | The String or Blob to be written to ftdi.|
+local identifiers = FtdiUsbDriver.getIdentifiers();
 
+foreach (i, identifier in identifiers) {
+    foreach (VID, PID in identifier){
+        server.log("VID =" + VID + " PID = " + PID);
+    }
+}
 
+```
 
 ### on(*eventName, callback*)
 
@@ -73,15 +78,15 @@ Subscribe a callback function to a specific event.
 #### Example
 
 ```squirrel
-onDeviceData(data){
-    server.log("Recieved " + data + " via usb");
-}
+
 // Callback to handle device connection
 function onDeviceConnected(device) {
     server.log(typeof device + " was connected!");
     switch (typeof device) {
         case ("FtdiUsbDriver"):
-            device.on("data", onDeviceData);
+            device.on("data", function (data){
+                server.log("Recieved " + data + " via usb");
+            });
             break;
     }
 }
@@ -97,8 +102,64 @@ Clears a subscribed callback function from a specific event.
 | *eventName* | String | Yes | The string name of the event to unsubscribe from.|
 
 
+#### Example
 
+```squirrel
+
+// Callback to handle device connection
+function onDeviceConnected(device) {
+    server.log(typeof device + " was connected!");
+    switch (typeof device) {
+        case ("FtdiUsbDriver"):
+        
+            // Listen for data events
+            device.on("data", function (data){
+                server.log("Recieved " + data + " via usb");
+            });
+            
+            // Cancel data events listener after 30 seconds
+            imp.wakeup(30, function(){
+                device.off("data");
+            }.bindenv(this))
+
+            break;
+    }
+}
+
+```
+
+
+### write(data)
+
+Writes String or Blob data out to ftdi.
+
+
+| Key | Data Type | Required | Description |
+| --- | --------- | -------- | ----------- |
+| *data* | String/Blob | Yes | The String or Blob to be written to ftdi.|
+
+
+#### Example
+
+```squirrel
+#require "usbhost.device.nut:1.0.0"
+#require "ftdiusbdriver.device.nut:1.0.0"
+
+usbHost <- UsbHost(hardware.usb);
+
+// Register the Ftdi usb driver driver with usb host
+usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
+
+usbHost.on("connected",function (device) {
+    switch (typeof device) {
+        case ("FtdiUsbDriver"):
+            device.write("Testing ftdi over usb");
+            break;
+    }
+});
+
+```
 
 ## License
 
-The Conctr library is licensed under [MIT License](./LICENSE).
+The FtdiUsbDriver is licensed under [MIT License](./LICENSE).

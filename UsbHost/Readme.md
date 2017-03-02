@@ -59,26 +59,25 @@ Subscribe a callback function to a specific event.
 #require "usbhost.device.nut:1.0.0"
 #require "ftdiusbdriver.device.nut:1.0.0"
 
-// Callback to handle device connection
-function onDeviceConnected(device) {
-    server.log(typeof device + " was connected!");
-    switch (typeof device) {
-        case ("FtdiUsbDriver"):
-            // device is a ftdi device. Handle it here.
-            break;
-    }
-}
-
-// Callback to handle device disconnection
-function onDeviceDisconnected(deviceName) {
-    server.log(deviceName + " disconnected");
-}
 usbHost <- UsbHost(hardware.usb);
 
 // Register the Ftdi driver with usb host
 usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
-usbHost.on("connected",onDeviceConnected);
-usbHost.on("disconnected",onDeviceDisconnected);
+
+// Subscribe to usb connection events
+usbHost.on("connected",function (device) {
+    server.log(typeof device + " was connected!");
+    switch (typeof device) {
+        case "FtdiUsbDriver":
+            // device is a ftdi device. Handle it here.
+            break;
+    }
+});
+
+// Subscribe to usb disconnection events
+usbHost.on("disconnected",function(deviceName) {
+    server.log(deviceName + " disconnected");
+});
 
 ```
 
@@ -90,11 +89,56 @@ Clears a subscribed callback function from a specific event.
 | --- | --------- | -------- | ----------- |
 | *eventName* | String | Yes | The string name of the event to unsubscribe from.|
 
+#### Example
+
+```squirrel
+#require "usbhost.device.nut:1.0.0"
+#require "ftdiusbdriver.device.nut:1.0.0"
+
+usbHost <- UsbHost(hardware.usb);
+
+// Register the Ftdi driver with usb host
+usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
+
+// Subscribe to usb connection events
+usbHost.on("connected",function (device) {
+    server.log(typeof device + " was connected!");
+    switch (typeof device) {
+        case "FtdiUsbDriver":
+            // device is a ftdi device. Handle it here.
+            break;
+    }
+});
+
+// Unsubscribe from usb connection events
+usbHost.off("connected");
+```
+
+
 ### getDriver()
 
 Returns the driver for the currently connected devices. Returns null if no device is connected or a corresponding driver to the device was not found.
 
+#### Example
+
+```squirrel
+#require "usbhost.device.nut:1.0.0"
+#require "ftdiusbdriver.device.nut:1.0.0"
+
+usbHost <- UsbHost(hardware.usb);
+
+// Register the Ftdi driver with usb host
+usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
+
+// Check if a recognized usb device is connected in 30 seconds
+imp.wakeup(30,function(){
+    local driver = usbHost.getDriver();
+    if (driver != null){
+       // handle driver here 
+    }
+}.bindenv(this))
+```
 
 ## License
 
-The Conctr library is licensed under [MIT License](./LICENSE).
+The UsbHost is licensed under [MIT License](./LICENSE).
