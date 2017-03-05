@@ -15,17 +15,29 @@ class FtdiUsbDriver extends UsbDriverBase {
     _bulkIn = null;
     _bulkOut = null;
 
+    // 
     // Metafunction to return class name when typeof <instance> is run
+    // 
     function _typeof() {
         return "FtdiUsbDriver";
     }
 
+    // 
+    // Returns an array of VID PID combination tables.
+    // 
+    // @return {Array of Tables} Array of VID PID Tables
+    // 
     function getIdentifiers() {
         local identifiers = {};
         identifiers[VID] <-[PID];
         return [identifiers];
     }
 
+    // 
+    // Write string or blob to usb
+    // 
+    // @param  {String/Blob} data data to be sent via usb
+    // 
     function write(data) {
         local _data = null;
 
@@ -42,6 +54,11 @@ class FtdiUsbDriver extends UsbDriverBase {
         _bulkOut.write(_data);
     }
 
+    // 
+    // Handle a transfer complete event
+    // 
+    // @param  {Table} eventdetails Table with the transfer event details
+    // 
     function transferComplete(eventdetails) {
         local direction = (eventdetails["endpoint"] & 0x80) >> 7;
         if (direction == USB_DIRECTION_IN) {
@@ -57,6 +74,9 @@ class FtdiUsbDriver extends UsbDriverBase {
         }
     }
 
+    // 
+    // Initialize the buffer.
+    // 
     function _start() {
         _bulkIn.read(blob(64 + 2));
     }

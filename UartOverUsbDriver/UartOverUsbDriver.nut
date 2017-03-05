@@ -10,12 +10,18 @@ class UartOverUsbDriver extends UsbDriverBase {
     _bulkIn = null;
     _bulkOut = null;
 
+    // 
     // Metafunction to return class name when typeof <instance> is run
+    // 
     function _typeof() {
         return "UartOverUsbDriver";
     }
 
+    // 
     // Returns an array of VID PID combinations
+    // 
+    // @return {Array of Tables} Array of VID PID Tables
+    // 
     function getIdentifiers() {
         local identifiers = {};
         identifiers[VID] <-[PID];
@@ -23,7 +29,11 @@ class UartOverUsbDriver extends UsbDriverBase {
     }
 
 
+    // 
     // Write bulk transfer on Usb host
+    // 
+    // @param  {String/Blob} data data to be sent via usb
+    // 
     function write(data) {
         local _data = null;
 
@@ -39,7 +49,11 @@ class UartOverUsbDriver extends UsbDriverBase {
         _bulkOut.write(_data);
     }
 
+    // 
     // Called when a Usb request is succesfully completed
+    // 
+    // @param  {Table} eventdetails Table with the transfer event details
+    // 
     function transferComplete(eventdetails) {
         local direction = (eventdetails["endpoint"] & 0x80) >> 7;
         if (direction == USB_DIRECTION_IN) {
@@ -54,13 +68,21 @@ class UartOverUsbDriver extends UsbDriverBase {
         }
     }
 
+    // 
     // Called by Usb host to initialize driver
+    // 
+    // @param  {Integer} deviceAddress The address of the device
+    // @param  {Float} speed           The speed in Mb/s. Must be either 1.5 or 12
+    // @param  {String} descriptors    The device descriptors
+    // 
     function connect(deviceAddress, speed, descriptors) {
         _setupEndpoints(deviceAddress, speed, descriptors);
         _start();
     }
 
+    // 
     // Initialize the read buffer
+    // 
     function _start() {
         _bulkIn.read(blob(1));
     }
