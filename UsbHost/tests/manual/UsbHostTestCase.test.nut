@@ -7,11 +7,6 @@ class UsbHostTestCase extends ImpTestCase {
 
     function setUp() {
 
-        // power.
-        loadPin = hardware.pinS;
-        loadPin.configure(DIGITAL_OUT);
-        loadPin.write(1);
-
         hardware.pinW.configure(DIGITAL_OUT, 1);
         hardware.pinR.configure(DIGITAL_OUT, 1);
 
