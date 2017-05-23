@@ -1,30 +1,34 @@
 # UsbHost
 
-The UsbHost class acts as a wrapper around the hardware.usb object and manages USB device connections, disconnections, transfers and driver selection.
+The UsbHost class acts as a wrapper around the Imp API hardware.usb object and manages USB device connections, disconnections, transfers and driver selection.
 
 ### Setup
 
-**To add this library to your project, add** `#require "usbhost.device.nut:1.0.0"` **to the top of your device code**
+**To use this library add the following statements to the top of your device code:**
+
+```
+#require "UsbHost.device.lib.nut:1.0.0"
+```
 
 ## Device Class Usage
 
-### Constructor: UsbHost(*usb*)
+### Constructor: UsbHost(*usb[, autoConfigPins]*)
 
 Instantiates the UsbHost class. It takes `hardware.usb` as a required parameter and an optional boolean flag to set whether to automatically configure pins R and W (required for USB to work on imp005. [More info](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb) )
-
 
 | Key | Data Type | Required | Description |
 | --- | --------- | -------- | ----------- |
 | *usb* | Object | Yes | The usb object from the hardware class. `hardware.usb` |
 | *autoConfPins* | Boolean | No | Setting to false will require pin R and W to be manually configured according to [electric imps docs](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb) for the usb to work.
+
 #### Example
 
 ```squirrel
-#require "usbhost.device.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
 ```
- 
+
 ### registerDriver(*driverClass, identifiers*)
 
 Registers a driver to a devices list of VID/PID combinations. When a device is connected via usb its VID/PID combination will be looked up and the matching driver will be instantiated to interface with device.
@@ -39,8 +43,8 @@ Registers a driver to a devices list of VID/PID combinations. When a device is c
 #### Example
 
 ```squirrel
-#require "usbhost.device.nut:1.0.0"
-#require "ftdiusbdriver.device.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
+#require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
 // Register the Ftdi driver with usb host
@@ -62,8 +66,8 @@ Subscribe a callback function to a specific event.
 #### Example
 
 ```squirrel
-#require "usbhost.device.nut:1.0.0"
-#require "ftdiusbdriver.device.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
+#require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
 
@@ -98,8 +102,8 @@ Clears a subscribed callback function from a specific event.
 #### Example
 
 ```squirrel
-#require "usbhost.device.nut:1.0.0"
-#require "ftdiusbdriver.device.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
+#require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
 
@@ -128,8 +132,8 @@ Returns the driver for the currently connected devices. Returns null if no devic
 #### Example
 
 ```squirrel
-#require "usbhost.device.nut:1.0.0"
-#require "ftdiusbdriver.device.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
+#require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
 
@@ -140,7 +144,7 @@ usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
 imp.wakeup(30,function(){
     local driver = usbHost.getDriver();
     if (driver != null){
-       // handle driver here 
+       // handle driver here
     }
 }.bindenv(this))
 ```

@@ -22,8 +22,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#require "usbhost.device.nut:1.0.0"
-#require "ftdiusbdriver.device.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
+#require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
 

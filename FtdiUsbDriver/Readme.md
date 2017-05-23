@@ -4,15 +4,20 @@ The FtdiUsbDriver class exposes methods to interact with an device connected to 
 
 ### Setup
 
-**To add this library to your project, add** `#require "ftdiusbdriver.device.nut:1.0.0"` **to the top of your device code**
+**To use this library add the following statements to the top of your device code:**
 
-This class requires the UsbHost class. The usb host will handle the connection and instantiation of this class. The class and its identifiers must be registered with the UsbHost and the device driver will be passed to the connection callback on the UsbHost. 
+```
+#require "UsbHost.device..lib.nut:1.0.0"
+#require "FtdiUsbDriver.device.lib.nut:1.0.0"
+```
+
+This class requires the UsbHost class. The usb host will handle the connection and instantiation of this class. The class and its identifiers must be registered with the UsbHost and the device driver will be passed to the connection callback on the UsbHost.
 
 #### Example
 
 ```squirrel
-#require "usbhost.device.nut:1.0.0"
-#require "ftdiusbdriver.device.nut:1.0.0"
+#require "UsbHost.device..lib.nut:1.0.0"
+#require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
 // Callback to handle device connection
 function onDeviceConnected(device) {
@@ -34,8 +39,6 @@ usbHost <- UsbHost(hardware.usb);
 usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
 usbHost.on("connected",onConnected);
 usbHost.on("disconnected",onDisconnected);
-
-
 ```
 
 ## Device Class Usage
@@ -44,7 +47,7 @@ usbHost.on("disconnected",onDisconnected);
 
 Class instantiation is handled by the UsbHost class.
 
- 
+
 ### getIdentifiers()
 
 Returns an array of tables with VID-PID key value pairs respectively. Identifiers are used by UsbHost to instantiate a matching devices driver.
@@ -53,7 +56,7 @@ Returns an array of tables with VID-PID key value pairs respectively. Identifier
 #### Example
 
 ```squirrel
-#require "ftdiusbdriver.device.nut:1.0.0"
+#require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
 local identifiers = FtdiUsbDriver.getIdentifiers();
 
@@ -111,12 +114,12 @@ function onDeviceConnected(device) {
     server.log(typeof device + " was connected!");
     switch (typeof device) {
         case ("FtdiUsbDriver"):
-        
+
             // Listen for data events
             device.on("data", function (data){
                 server.log("Recieved " + data + " via usb");
             });
-            
+
             // Cancel data events listener after 30 seconds
             imp.wakeup(30, function(){
                 device.off("data");
@@ -142,8 +145,8 @@ Writes String or Blob data out to ftdi.
 #### Example
 
 ```squirrel
-#require "usbhost.device.nut:1.0.0"
-#require "ftdiusbdriver.device.nut:1.0.0"
+#require "UsbHost.device..lib.nut:1.0.0"
+#require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
 

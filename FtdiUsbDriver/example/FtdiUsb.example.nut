@@ -22,19 +22,19 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#require "usbhost.device.nut:1.0.0"
-#require "uartoverusb.device.nut:1.0.0"
+#require "UsbHost.device..lib.nut:1.0.0"
+#require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
 
-// Register the Uart over Usb driver with usb host
-usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
+// Register the Ftdi usb driver driver with usb host
+usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
 
 usbHost.on("connected",function (device) {
     switch (typeof device) {
-        case ("UartOverUsbDriver"):
+        case ("FtdiUsbDriver"):
             // This will write to the connected device
-            device.write("Testing usb over uart");
+            device.write("Testing ftdi over usb");
             break;
     }
 });

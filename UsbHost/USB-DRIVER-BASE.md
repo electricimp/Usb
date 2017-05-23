@@ -5,20 +5,23 @@ The UsbDriverBase class is used as the base class for all usb drivers that make 
 ### Setup
 
 **To use your driver the UsbHost must be required before the driver class at the top of the device code.**
+
 #### Example
 
 ```squirrel
-#require "usbhost.device.nut:1.0.0"
-#require "yourusbdriver.device.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
+
+// Add your driver class here
 
 usbHost <- UsbHost(hardware.usb);
 ```
+
 ## Set-up Functions
-This is a set of functions that are called during the set up process of the usb driver by the UsbHost. They are already implemented within the UsbDriverBase class and should not require changes. 
+This is a set of functions that are called during the set up process of the usb driver by the UsbHost. They are already implemented within the UsbDriverBase class and should not require changes.
 
 ### Constructor: UsbHost(*usb*)
  It takes `hardware.usb` as its only parameter and assigns it to internal `_usb` variable accessible within the class scope.
-If custom initialization is required override the constructor as shown below but ensure to call the base.constructor() method. If no initialization is required let the parent class handle constructor. 
+If custom initialization is required override the constructor as shown below but ensure to call the base.constructor() method. If no initialization is required let the parent class handle constructor.
 
 #### Example
 
@@ -36,11 +39,11 @@ class YourUsbDriver {
 
 ```
 
-### connect(deviceAddress, speed, descriptors) 
+### connect(deviceAddress, speed, descriptors)
  This method is called by the UsbHost after instantiation of the usb driver class. It makes calls to internal functions to set up the various endpoints (control and bulk transfer endpoints), configures the usb parameters like the baud rate and sets up the buffers.
 
 ## Required Functions
-These are the functions you usb driver class must override. 
+These are the functions you usb driver class must override.
 
 ### _typeof()
 
@@ -68,7 +71,7 @@ Method that returns an array of tables containing VID PID pairs. The identifiers
 #### Example
 
 ```squirrel
-#require "usbhost.device.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
 
 class YourUsbDriver {
 
@@ -98,7 +101,7 @@ Called when a usb transfer is completed. Below is an example of the transferComp
 #### Example
 
 ```squirrel
-#require "usbhost.device.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
 
 class YourUsbDriver {
 
@@ -149,7 +152,7 @@ Clears a subscribed callback function from a specific event.
 
 ## Private Functions
 
-### _onEvent(eventName, eventdetails) 
+### _onEvent(eventName, eventdetails)
 
 This is used internal to your class to emit events. The user is able to subscribe to these events using the on method defined in the public functions above.
 
