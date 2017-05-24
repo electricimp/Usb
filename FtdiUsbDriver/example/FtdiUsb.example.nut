@@ -22,19 +22,40 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+// ----------------------------------------------------------------------
+
+// Hardware used in this example
+//  - Imp005
+//  - FT232RL FTDI USB to TTL Serial Adapter Module
+
+// Require USB libraries
 #require "UsbHost.device.lib.nut:1.0.0"
 #require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
+// Configure USB pins on the Imp005
+hardware.pinW.configure(DIGITAL_OUT, 1);
+hardware.pinR.configure(DIGITAL_OUT, 1);
+
+// Initialize USB Host
 usbHost <- UsbHost(hardware.usb);
 
-// Register the Ftdi usb driver driver with usb host
+// Register the Ftdi driver with USB Host
 usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
 
+// Subscribe to USB connection events
 usbHost.on("connected",function (device) {
+    server.log(typeof device + " was connected!");
     switch (typeof device) {
-        case ("FtdiUsbDriver"):
-            // This will write to the connected device
-            device.write("Testing ftdi over usb");
+        case "FtdiUsbDriver":
+            server.log("An ftdi compatible device was connected via usb.");
             break;
     }
 });
+
+// Subscribe to USB disconnection events
+usbHost.on("disconnected",function(deviceName) {
+    server.log(deviceName + " disconnected");
+});
+
+// Log instructions for user
+server.log("USB listeners opened.  Plug and unplug FTDI board in to see logs.");
