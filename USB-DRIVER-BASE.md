@@ -6,12 +6,10 @@ The UsbDriverBase class is used as the base class for all usb drivers that make 
 
 **To use your driver the UsbHost must be required before the driver class at the top of the device code.**
 
-#### Example
-
 ```squirrel
 #require "UsbHost.device.lib.nut:1.0.0"
-
-// Add your driver class here
+// Add require statement for driver library or
+// or a custom driver class here
 
 usbHost <- UsbHost(hardware.usb);
 ```

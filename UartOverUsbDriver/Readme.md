@@ -7,7 +7,7 @@ The UartOverUsbDriver class creates an interface object that exposes methods sim
 **To use this library add the following statements to the top of your device code:**
 
 ```
-#require "UsbHost.device..lib.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
 #require "UartOverUsbDriver.device.lib.nut:1.0.0"
 ```
 
@@ -18,7 +18,7 @@ This class requires the UsbHost class. The usb host will handle the connection a
 The example shows how to use the Brother QL-720NW uart driver to demonstrate how to use UartOverUsb. Please get the QL720NW.device.nut file from [here](https://github.com/electricimp/QL720NW) and paste the class at the top of your code.
 
 ```squirrel
-#require "UsbHost.device..lib.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
 #require "UartOverUsbDriver.device.lib.nut:1.0.0"
 
 class QL720NW {...}
@@ -126,7 +126,7 @@ Clears a subscribed callback function from a specific event.
 
 
 ```squirrel
-#require "UsbHost.device..lib.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
 #require "UartOverUsbDriver.device.lib.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
@@ -165,7 +165,7 @@ Writes String or Blob data out to uart over usb.
 #### Example
 
 ```squirrel
-#require "UsbHost.device..lib.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
 #require "UartOverUsbDriver.device.lib.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);

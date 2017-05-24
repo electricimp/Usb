@@ -113,4 +113,3 @@ usbHost.on("connected", onConnected);
 
 uart.configure(115200, 8, PARITY_NONE, 1, 0, readback);
 logs <- UartLogger(uart);
-*/

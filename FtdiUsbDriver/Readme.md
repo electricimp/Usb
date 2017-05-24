@@ -7,7 +7,7 @@ The FtdiUsbDriver class exposes methods to interact with an device connected to 
 **To use this library add the following statements to the top of your device code:**
 
 ```
-#require "UsbHost.device..lib.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
 #require "FtdiUsbDriver.device.lib.nut:1.0.0"
 ```
 
@@ -16,7 +16,7 @@ This class requires the UsbHost class. The usb host will handle the connection a
 #### Example
 
 ```squirrel
-#require "UsbHost.device..lib.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
 #require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
 // Callback to handle device connection
@@ -145,7 +145,7 @@ Writes String or Blob data out to ftdi.
 #### Example
 
 ```squirrel
-#require "UsbHost.device..lib.nut:1.0.0"
+#require "UsbHost.device.lib.nut:1.0.0"
 #require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
 usbHost <- UsbHost(hardware.usb);
