@@ -20,4 +20,4 @@ The FtdiUsbDriver class exposes methods to interact with an device connected to 
 
 # License
 
-This library is licensed under the [MIT License](https://github.com/electricimp/thethingsapi/tree/master/LICENSE).
+This library is licensed under the [MIT License](/LICENSE).
