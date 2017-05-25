@@ -32,10 +32,6 @@
 #require "UsbHost.device.lib.nut:1.0.0"
 #require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
-// Configure USB pins on the Imp005
-hardware.pinW.configure(DIGITAL_OUT, 1);
-hardware.pinR.configure(DIGITAL_OUT, 1);
-
 // Initialize USB Host
 usbHost <- UsbHost(hardware.usb);
 

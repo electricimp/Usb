@@ -354,9 +354,6 @@ class UARTOverUsbTestCase extends ImpTestCase {
     function setUp() {
         return Promise(function(resolve, reject) {
 
-            hardware.pinW.configure(DIGITAL_OUT, 1);
-            hardware.pinR.configure(DIGITAL_OUT, 1);
-
             uart = hardware.uart1;
             usbHost = UsbHost(hardware.usb);
             usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());

@@ -30,9 +30,6 @@ class UsbHostTestCase extends ImpTestCase {
 
     function setUp() {
 
-        hardware.pinW.configure(DIGITAL_OUT, 1);
-        hardware.pinR.configure(DIGITAL_OUT, 1);
-
         usbHost = UsbHost(hardware.usb);
         usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
         usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
