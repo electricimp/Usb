@@ -22,6 +22,20 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+
+// Setup
+// ---------------------------------------------------------------------
+
+// Test Hardware
+//  - Imp005 Breakout Board
+//  - FT232RL FTDI USB to TTL Serial Adapter Module
+//      - USB wired to USB
+//      - TX & RX wired to UART1
+
+
+// Tests
+// ---------------------------------------------------------------------
+
 class FtdiUsbTestCase extends ImpTestCase {
     // UART on imp005
     uart = null;
@@ -106,6 +120,8 @@ class FtdiUsbTestCase extends ImpTestCase {
             }
         }.bindenv(this))
     }
+
+    // missing test for
 
     function tearDown() {
         return "#{__FILE__} Test finished";

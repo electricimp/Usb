@@ -62,6 +62,8 @@ class UsbHostTestCase extends ImpTestCase {
         }.bindenv(this))
     }
 
+    // missing test for off and get driver
+
     function tearDown() {
         return "Test finished";
     }
