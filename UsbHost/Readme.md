@@ -14,7 +14,7 @@ The UsbHost class acts as a wrapper around the Imp API hardware.usb object and m
 
 ### Constructor: UsbHost(*usb[, autoConfigPins]*)
 
-Instantiates the UsbHost class. It takes `hardware.usb` as a required parameter and an optional boolean flag to set whether to automatically configure pins R and W (required for USB to work on imp005. [More info](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb) )
+Instantiates the UsbHost class. It takes `hardware.usb` as a required parameter and an optional boolean flag to set whether to automatically configure pins R and W (required for USB to work on imp005. [More info](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb) ). By default *autoConfigPins* is set to `true`.
 
 | Key | Data Type | Required | Description |
 | --- | --------- | -------- | ----------- |

@@ -474,9 +474,9 @@ class UsbHost {
         _bulkTransferQueue = [];
         _registeredDrivers = {};
 
-        if(autoConfPins == false){
+        if (autoConfPins) {
             // Configure the pins required for usb
-            hardware.pinW.configure(DIGITAL_OUT, 1);
+            hardware.pinW.configure(DIGITAL_IN_PULLUP);
             hardware.pinR.configure(DIGITAL_OUT, 1);
         }
 
