@@ -29,7 +29,7 @@
 //  - Brother QL-720NW label printer
 
 // Require USB libraries
-#require "UsbHost.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.0"
 #require "UartOverUsbDriver.device.lib.nut:1.0.0"
 
 // Driver for printer
@@ -340,20 +340,20 @@ class QL720NW {
 }
 
 // Initialize USB Host
-usbHost <- UsbHost(hardware.usb);
+usbHost <- USB.Host(hardware.usb);
 
 // Register the UART over USB driver with USB Host
 usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
 
 // Subscribe to USB connection events
 usbHost.on("connected",function (device) {
+
     server.log(typeof device + " was connected!");
 
     switch (typeof device) {
         case "UartOverUsbDriver":
             // Initialize Printer Driver with USB UART device
             printer <- QL720NW(device);
-            server.log("Created printer using uartoverusb");
 
             // Print a text label
             printer

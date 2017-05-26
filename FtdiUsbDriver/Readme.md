@@ -1,25 +1,25 @@
 # FtdiUsbDriver
 
-The FtdiUsbDriver class exposes methods to interact with an device connected to usb via an ftdi cable. It requires the UsbHost wrapper class to work.
+The FtdiUsbDriver class exposes methods to interact with an device connected to usb via an ftdi cable. 
 
 ### Setup
 
-**To use this library add the following statements to the top of your device code:**
+**The USB class must be required before this driver class at the top of the device code. As shown below:**
 
 ```
-#require "UsbHost.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.0"
 #require "FtdiUsbDriver.device.lib.nut:1.0.0"
 ```
 
-This class requires the UsbHost class. The usb host will handle the connection and instantiation of this class. The class and its identifiers must be registered with the UsbHost and the device driver will be passed to the connection callback on the UsbHost.
+The [USB.Host](../USB/) will handle the connection/disconnection events and instantiation of this class. This class and its identifiers will be registered with the [USB.Host](../USB/) and when a device with matching identifiers is connected the device driver will be instantiated and passed to the `"connection"` event callback registered with the [USB.Host](../USB/). As this can be confusing an example of receiving an instantiated driver object is shown below:
 
 #### Example
 
 ```squirrel
-#require "UsbHost.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.0"
 #require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
-// Callback to handle device connection
+// Callback function to handle device connection
 function onDeviceConnected(device) {
     server.log(typeof device + " was connected!");
     switch (typeof device) {
@@ -33,24 +33,30 @@ function onDeviceConnected(device) {
 function onDeviceDisconnected(deviceName) {
     server.log(deviceName + " disconnected");
 }
-usbHost <- UsbHost(hardware.usb);
+// Instantiated usb host
+usbHost <- USB.Host(hardware.usb);
 
 // Register the Ftdi driver with usb host
 usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
+
+// Set up callbacks for connection/disconnection events
 usbHost.on("connected",onConnected);
 usbHost.on("disconnected",onDisconnected);
+
+// Log instructions for user
+server.log("USB listeners opened.  Plug FTDI board in to see logs.");
 ```
 
 ## Device Class Usage
 
 ### Constructor: FtdiUsbDriver(*usb*)
 
-Class instantiation is handled by the UsbHost class.
+Class instantiation is handled by the [USB.Host](../USB/) class. This class should not be manually instantiated.
 
 
 ### getIdentifiers()
 
-Returns an array of tables with VID-PID key value pairs respectively. Identifiers are used by UsbHost to instantiate a matching devices driver.
+Returns an array of tables with VID-PID key value pairs respectively. Identifiers are used by the [USB.Host](../USB/) to instantiate the corresponding devices driver.
 
 
 #### Example
@@ -75,11 +81,15 @@ Subscribe a callback function to a specific event.
 
 | Key | Data Type | Required | Description |
 | --- | --------- | -------- | ----------- |
-| *eventName* | String | Yes | The string name of the event to subscribe to. There is currently 1 event that you can subscibe to: "data"|
+| *eventName* | String | Yes | The string name of the event to subscribe to. |
 | *callback* | Function | Yes | Function to be called on event |
 
+Events emitted by this class:
+| eventName | Data Type Returned |  Description |
+| --- | ---------  | ----------- |
+| *data* | [blob](https://electricimp.com/docs/squirrel/blob/) |Called when data is received over usb. A blob containing the data is called as the only arguement to the callback function.|
 #### Example
-
+Replace the `onDeviceConnected` function in the example shown in the setup section with the one below.
 ```squirrel
 
 // Callback to handle device connection
@@ -106,7 +116,7 @@ Clears a subscribed callback function from a specific event.
 
 
 #### Example
-
+Replace the `onDeviceConnected` function in the example shown in the setup section with the one below.
 ```squirrel
 
 // Callback to handle device connection
@@ -145,10 +155,10 @@ Writes String or Blob data out to ftdi.
 #### Example
 
 ```squirrel
-#require "UsbHost.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.0"
 #require "FtdiUsbDriver.device.lib.nut:1.0.0"
 
-usbHost <- UsbHost(hardware.usb);
+usbHost <- USB.Host(hardware.usb);
 
 // Register the Ftdi usb driver driver with usb host
 usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
@@ -161,8 +171,10 @@ usbHost.on("connected",function (device) {
     }
 });
 
+// Log instructions for user
+server.log("USB listeners opened.  Plug FTDI board in to see logs.");
 ```
 
 ## License
 
-The FtdiUsbDriver is licensed under [MIT License](./LICENSE).
+The FtdiUsbDriver is licensed under [MIT License](../LICENSE).

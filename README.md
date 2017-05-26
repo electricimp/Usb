@@ -1,12 +1,12 @@
 # Usb Drivers
 
-## [UsbHost](./UsbHost/)
+## [USB](./USB/)
 
-The UsbHost class acts as a wrapper around the Imp API hardware.usb object and manages USB device connections, disconnections, transfers and driver selection. This library is a prerequisite to driver libraries.
+The USB class acts as a wrapper around the Imp API hardware.usb object and manages USB device connections, disconnections, transfers and driver selection. This library is a prerequisite to driver libraries.
 
 ## Drivers
 
-Drivers compatible with the UsbHost class extend the UsbDriverBase class. Below are the some library drivers, or [click here](./USB-DRIVER-BASE.md) for documentation on extending the UsbDriverBase class to create a custom driver.
+Drivers compatible with the USB.Host class extend the USB.DriverBase class. Below are the current library drivers available, or [click here](./USB-DRIVER-BASE.md) for documentation on extending the USB.DriverBase class to create a custom driver.
 
 ### [UartOverUsbDriver](./UartOverUsbDriver/)
 

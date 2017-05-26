@@ -45,41 +45,61 @@ class FtdiUsbTestCase extends ImpTestCase {
     _device = null;
 
     function setUp() {
-
+        // Initialize UART
         uart = hardware.uart1;
-        usbHost = UsbHost(hardware.usb);
-        usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
-        usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
 
+        // Initialize USB Host & register driver to be tested
+        usbHost = USB.Host(hardware.usb);
+        usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
 
         return "Hi from #{__FILE__}!";
     }
 
+    // Testing whether the connection event is emitted on device connection
+    // and device driver instantiated is the correct one. 
+    // NOTE: Requires manual action from a user to connect correct device before 
+    //       or during running the tests.
     function testFtdiConnection() {
         this.info("Connect any Ftdi device to imp");
         return Promise(function(resolve, reject) {
+
+            // Listen for a connection event
             usbHost.on("connected", function(device) {
+
+                // Check the device is an instance of FtdiUsbDriver
                 if (typeof device == "FtdiUsbDriver") {
+
+                    // Store the driver for the next test
                     _device = device;
-                    return resolve("Device was a Ftdi device");
+                    return resolve("Device was a valid ftdi device");
                 }
+
+                // Wrong device was connected
                 reject("Device connected is not a ftdi device");
             }.bindenv(this));
         }.bindenv(this))
     }
 
-
+    // Test whether a message sent via usb to UART on the same device
+    // is successfully received
     function testFtdiUsbSending() {
         return Promise(function(resolve, reject) {
+
+            // Check there is a valid device driver
             if (_device != null) {
 
+                // Set up test vars
                 local testString = "I'm a Blob\n";
                 local dataString = "";
 
                 // Configure with timing
                 uart.configure(115200, 8, PARITY_NONE, 1, 0, function() {
                     dataString += uart.readstring();
+
+                    // New line char means we got a full line
                     if (dataString.find("\n")) {
+
+                        // Check if the correct message was received
                         if (testString == dataString) {
                             resolve("Recieved sent message on Uart");
                         } else {
@@ -97,31 +117,38 @@ class FtdiUsbTestCase extends ImpTestCase {
         }.bindenv(this))
     }
 
+    // Test whether a message can be successfully received via usb over an
+    // ftdi connection
     function testFtdiUsbRecieving() {
         return Promise(function(resolve, reject) {
+
+            // Check there is a valid device driver
             if (_device != null) {
 
                 local testString = "I'm a Blob";
                 local dataString = "";
 
+                // Set up a listener for data events
                 _device.on("data", function(data) {
+
+                        // Check the data received matches the sent string
                         if (data.tostring() == testString) {
                             resolve("Recieved data on Usb from Uart");
+                        }else {
+                            reject("Invalid data was received on Usb from Uart")
                         }
                     }.bindenv(this))
-                    // Configure with timing
-                uart.configure(115200, 8, PARITY_NONE, 1, 0);
+
                 // Configure with timing
+                uart.configure(115200, 8, PARITY_NONE, 1, 0);
+
+                // Write the test string from UART to USB
                 uart.write(testString);
-
-
             } else {
                 reject("No device connected");
             }
         }.bindenv(this))
     }
-
-    // missing test for
 
     function tearDown() {
         return "#{__FILE__} Test finished";
