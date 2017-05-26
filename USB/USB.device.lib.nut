@@ -122,7 +122,7 @@ class USB.Host {
     // @return {String} typeof instance of class
     // 
     function _typeof() {
-        return "UsbHost";
+        return "USB.Host";
     }
 
 
@@ -135,16 +135,19 @@ class USB.Host {
     // 
     function registerDriver(driverClass, identifiers) {
 
+        // Check the driver class is using the correct base class
         if (!(driverClass.isUSBDriver == true)) {
             throw "This driver is not a valid usb driver.";
             return;
         }
 
+        // identifiers must be an array
         if (typeof identifiers != "array") {
             throw "Identifiers for driver must be of type array.";
             return;
         }
 
+        // Register all indentifiers to corresponding class
         foreach (k, identifier in identifiers) {
             foreach (VID, PIDS in identifier) {
                 if (typeof PIDS != "array") {
@@ -620,8 +623,6 @@ class USB.ControlEndpoint {
     function send(requestType, request, value, index) {
         return _usb._controlTransfer(_speed, _deviceAddress, requestType, request, value, index, _maxPacketSize)
     }
-
-
 }
 
 
@@ -847,9 +848,9 @@ class USB.DriverBase {
             local maxPacketSize = endpoint["maxpacketsize"];
             if ((endpoint["attributes"] & 0x3) == 2) {
                 if ((address & 0x80) >> 7 == USB_DIRECTION_OUT) {
-                    _bulkOut = BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                    _bulkOut = USB.BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
                 } else {
-                    _bulkIn = BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                    _bulkIn = USB.BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
                 }
             }
         }
