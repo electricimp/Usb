@@ -57,7 +57,6 @@ class UsbHostTestCase extends ImpTestCase {
         return "Hi from #{__FILE__}!";
     }
 
-
     // Test that a registered driver is returned when corresponding device is
     // connected
     function test1UsbConnection() {
@@ -107,8 +106,8 @@ class UsbHostTestCase extends ImpTestCase {
         usbHost = USB.Host(hardware.usb);
 
         return Promise(function(resolve, reject) {
-            
-                // Assert there are no event listeners registered
+
+            // Assert there are no event listeners registered
             assertEqual(0, usbHost._customEventHandlers.len())
 
             // Register two event handlers
@@ -157,6 +156,17 @@ class UsbHostTestCase extends ImpTestCase {
             resolve()
 
         }.bindenv(this))
+    }
+
+    function test6UsbAutoConf() {
+
+        local host = USB.Host(hardware.usb, false);
+        local host2 = USB.Host(hardware.usb, true);
+        // Assert _autoConfiguredPins is false
+        assertTrue(!host._autoConfiguredPins);
+        // Assert _autoConfiguredPins is true
+        assertTrue(host2._autoConfiguredPins);
+        return;
     }
 
     function tearDown() {

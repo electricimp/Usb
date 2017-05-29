@@ -59,7 +59,7 @@ class FtdiUsbTestCase extends ImpTestCase {
     // and device driver instantiated is the correct one. 
     // NOTE: Requires manual action from a user to connect correct device before 
     //       or during running the tests.
-    function testFtdiConnection() {
+    function test1FtdiConnection() {
         this.info("Connect any Ftdi device to imp");
         return Promise(function(resolve, reject) {
 
@@ -82,7 +82,7 @@ class FtdiUsbTestCase extends ImpTestCase {
 
     // Test whether a message sent via usb to UART on the same device
     // is successfully received
-    function testFtdiUsbSending() {
+    function test2FtdiUsbSending() {
         return Promise(function(resolve, reject) {
 
             // Check there is a valid device driver
@@ -119,7 +119,7 @@ class FtdiUsbTestCase extends ImpTestCase {
 
     // Test whether a message can be successfully received via usb over an
     // ftdi connection
-    function testFtdiUsbRecieving() {
+    function test3FtdiUsbRecieving() {
         return Promise(function(resolve, reject) {
 
             // Check there is a valid device driver

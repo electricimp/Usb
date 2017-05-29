@@ -90,7 +90,7 @@ class FtdiUsbDriver extends USB.DriverBase {
     // 
     // @param  {Table} eventdetails Table with the transfer event details
     // 
-    function transferComplete(eventdetails) {
+    function _transferComplete(eventdetails) {
         local direction = (eventdetails["endpoint"] & 0x80) >> 7;
         if (direction == USB_DIRECTION_IN) {
             local readData = _bulkIn.done(eventdetails);

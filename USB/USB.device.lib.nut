@@ -82,6 +82,7 @@ class USB.Host {
     _eventHandlers = null;
     _customEventHandlers = null;
     _driver = null;
+    _autoConfiguredPins = false;
     _bulkTransferQueue = null;
     _address = 1;
     _registeredDrivers = null;
@@ -104,6 +105,7 @@ class USB.Host {
         _customEventHandlers = {};
 
         if (autoConfPins) {
+            _autoConfiguredPins = true;
             // Configure the pins required for usb
             hardware.pinW.configure(DIGITAL_IN_PULLUP);
             hardware.pinR.configure(DIGITAL_OUT, 1);
@@ -266,6 +268,7 @@ class USB.Host {
         local vpid = format("%04x%04x", vid, pid);
 
         if ((vpid in _registeredDrivers) && _registeredDrivers[vpid] != null) {
+            server.log("Found valid device")
             return _registeredDrivers[vpid](this);
         }
         return null;
@@ -289,6 +292,7 @@ class USB.Host {
         if (_DEBUG) {
             logDescriptors(speed, descriptors);
         }
+
         // Try to create the driver for connected device
         _driver = _create(descriptors);
 
@@ -367,7 +371,7 @@ class USB.Host {
         _busy = false;
         if (_driver) {
             // Pass complete event to driver
-            _driver.transferComplete(eventdetails);
+            _driver._transferComplete(eventdetails);
         }
         // Process any queued requests
         _popBulkTransferQueue();
@@ -772,6 +776,7 @@ class USB.DriverBase {
         _usb = usb;
     }
 
+
     // 
     // Set up the usb to connect to this device
     // 
@@ -790,14 +795,6 @@ class USB.DriverBase {
     // Should return an array of VID PID combination tables.
     // 
     function getIdentifiers() {
-        throw "Method not implemented";
-    }
-
-
-    // 
-    // Handle case when a Usb request is succesfully completed
-    // 
-    function transferComplete(eventdetails) {
         throw "Method not implemented";
     }
 
@@ -822,6 +819,14 @@ class USB.DriverBase {
         if (eventName in _eventHandlers) {
             delete _eventHandlers[eventName];
         }
+    }
+
+
+    // 
+    // Handle case when a Usb request is succesfully completed
+    // 
+    function _transferComplete(eventdetails) {
+        throw "Method not implemented";
     }
 
 
@@ -916,6 +921,7 @@ class USB.DriverBase {
 
         _controlEndpoint.send(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_FLOW_CTRL, xon | (xoff << 8), FTDI_SIO_DISABLE_FLOW_CTRL << 8);
     }
+    
 
     // Emit event "eventtype" with eventdetails
     // 

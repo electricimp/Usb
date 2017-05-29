@@ -90,9 +90,9 @@ usbHost.registerDriver(YourUsbDriver, YourUsbDriver.getIdentifiers());
 
 ```
 
-### transferComplete(eventDetails)
+### _transferComplete(eventDetails)
 
-Called when a usb transfer is completed. Below is an example of the transferComplete method for the FtdiUsbDriver class.
+Private method that will be called when a usb transfer is completed. Below is an example of the _transferComplete method for the FtdiUsbDriver class.
 
 #### Example
 
@@ -102,7 +102,7 @@ Called when a usb transfer is completed. Below is an example of the transferComp
 class YourUsbDriver {
 
     // Called when a Usb request is succesfully completed
-    function transferComplete(eventdetails) {
+    function _transferComplete(eventdetails) {
         local direction = (eventdetails["endpoint"] & 0x80) >> 7;
         if (direction == USB_DIRECTION_IN) {
             local readData = _bulkIn.done(eventdetails);

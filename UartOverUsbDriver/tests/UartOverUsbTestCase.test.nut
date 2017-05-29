@@ -352,7 +352,6 @@ class UARTOverUsbTestCase extends ImpTestCase {
     _device = null;
 
     function setUp() {
-
         uart = hardware.uart1;
         usbHost = USB.Host(hardware.usb);
         usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
@@ -360,7 +359,9 @@ class UARTOverUsbTestCase extends ImpTestCase {
         return "Hi from #{__FILE__}!";
     }
 
-    function testUartOverUsbConnection() {
+
+    // Test connection of valid device instantiated driver
+    function test1UartOverUsbConnection() {
         // Request user to connect the correct device to imp
         this.info("Connect any Uart over Usb device to imp");
 
@@ -384,8 +385,9 @@ class UARTOverUsbTestCase extends ImpTestCase {
         }.bindenv(this))
     }
 
+
     // Tests the driver is compatible with a uart device
-    function testUartPrinterDriver() {
+    function test2UartPrinterDriver() {
         return Promise(function(resolve, reject) {
 
             // Check there is a valid device driver
@@ -413,7 +415,6 @@ class UARTOverUsbTestCase extends ImpTestCase {
         }.bindenv(this))
     }
 
-    // missing test for on and off
 
     function tearDown() {
         return "#{__FILE__} Test finished";

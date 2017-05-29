@@ -34,12 +34,14 @@ class UartOverUsbDriver extends USB.DriverBase {
     _bulkIn = null;
     _bulkOut = null;
 
+
     //
     // Metafunction to return class name when typeof <instance> is run
     //
     function _typeof() {
         return "UartOverUsbDriver";
     }
+
 
     //
     // Returns an array of VID PID combinations
@@ -73,12 +75,13 @@ class UartOverUsbDriver extends USB.DriverBase {
         _bulkOut.write(_data);
     }
 
+
     //
     // Called when a Usb request is succesfully completed
     //
     // @param  {Table} eventdetails Table with the transfer event details
     //
-    function transferComplete(eventdetails) {
+    function _transferComplete(eventdetails) {
         local direction = (eventdetails["endpoint"] & 0x80) >> 7;
         if (direction == USB_DIRECTION_IN) {
             local readData = _bulkIn.done(eventdetails);
@@ -92,6 +95,7 @@ class UartOverUsbDriver extends USB.DriverBase {
         }
     }
 
+
     //
     // Called by Usb host to initialize driver
     //
@@ -104,11 +108,11 @@ class UartOverUsbDriver extends USB.DriverBase {
         _start();
     }
 
+
     //
     // Initialize the read buffer
     //
     function _start() {
         _bulkIn.read(blob(1));
     }
-
 }
