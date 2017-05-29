@@ -6,7 +6,7 @@ The USB class acts as a wrapper around the Imp API `hardware.usb` object and man
 
 ## Drivers
 
-Drivers compatible with the [USB.Host](./USB/) class extend the [USB.DriverBase](./USB-DRIVER-BASE.md) class. Below are the current library drivers available, or [click here](./USB-DRIVER-BASE.md) for documentation on extending the [USB.DriverBase](./USB-DRIVER-BASE.md) class to create a custom driver.
+Drivers compatible with the [USB](./USB/) class extend the [USB.DriverBase](./USB-DRIVER-BASE.md) class. Below are the current library drivers available, or [click here](./USB-DRIVER-BASE.md) for documentation on extending the [USB.DriverBase](./USB-DRIVER-BASE.md) class to create a custom driver.
 
 ### [UartOverUsbDriver](./UartOverUsbDriver/)
 
@@ -15,7 +15,7 @@ The UartOverUsbDriver class creates an interface object that exposes methods sim
 
 ### [FtdiUsbDriver](./FtdiUsbDriver/)
 
-The FtdiUsbDriver class exposes methods to interact with an device connected to usb via an ftdi cable.
+The FtdiUsbDriver class exposes methods to interact with a device connected to usb via an FTDI cable.
 
 
 # License

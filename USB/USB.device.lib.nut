@@ -268,7 +268,6 @@ class USB.Host {
         local vpid = format("%04x%04x", vid, pid);
 
         if ((vpid in _registeredDrivers) && _registeredDrivers[vpid] != null) {
-            server.log("Found valid device")
             return _registeredDrivers[vpid](this);
         }
         return null;
@@ -921,7 +920,7 @@ class USB.DriverBase {
 
         _controlEndpoint.send(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_FLOW_CTRL, xon | (xoff << 8), FTDI_SIO_DISABLE_FLOW_CTRL << 8);
     }
-    
+
 
     // Emit event "eventtype" with eventdetails
     // 

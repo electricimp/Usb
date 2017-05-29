@@ -40,8 +40,8 @@ usbHost <- USB.Host(hardware.usb);
 usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
 
 // Set up callbacks for connection/disconnection events
-usbHost.on("connected",onConnected);
-usbHost.on("disconnected",onDisconnected);
+usbHost.on("connected",onDeviceConnected);
+usbHost.on("disconnected",onDeviceDisconnected);
 
 // Log instructions for user
 server.log("USB listeners opened.  Plug FTDI board in to see logs.");
@@ -100,6 +100,7 @@ function onDeviceConnected(device) {
             device.on("data", function (data){
                 server.log("Recieved " + data + " via usb");
             });
+            server.log("listening for data events");
             break;
     }
 }
@@ -126,18 +127,21 @@ function onDeviceConnected(device) {
         case ("FtdiUsbDriver"):
 
             // Listen for data events
-            device.on("data", function (data){
+            device.on("data", function(data) {
                 server.log("Recieved " + data + " via usb");
             });
+            server.log("listening for data events");
 
-            // Cancel data events listener after 30 seconds
-            imp.wakeup(30, function(){
+            // Cancel data events listener after 5 seconds
+            imp.wakeup(5, function() {
                 device.off("data");
+                server.log("stopped listening for data events");
             }.bindenv(this))
 
             break;
     }
 }
+
 
 ```
 

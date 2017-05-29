@@ -1,6 +1,6 @@
 # UartOverUsbDriver
 
-The UartOverUsbDriver class creates an interface object that exposes methods similar to the [uart](https://electricimp.com/docs/api/hardware/uart/) object to provide compatability for uart drivers over usb. 
+The UartOverUsbDriver class creates an interface object that exposes methods to provide compatability for uart drivers over usb. 
 
 ### Setup
 
@@ -67,6 +67,9 @@ usbHost.on("connected",function (device) {
 usbHost.on("disconnected",function (deviceName) {
     server.log(deviceName + " disconnected");
 });
+
+// Log instructions for user
+server.log("USB listeners opened.  Plug in printer via usb.");
 ```
 
 ## Device Class Usage
@@ -123,7 +126,8 @@ usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
 usbHost.on("connected",function (device) {
     switch (typeof device) {
         case ("UartOverUsbDriver"):
-            device.write("Testing usb over uart");
+            // Write a string out
+            device.write("Hello World");
             break;
     }
 });
