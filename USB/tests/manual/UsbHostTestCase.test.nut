@@ -22,6 +22,26 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+// NOTE: These tests require manual actions as connection and disconnection
+// is tested. Instructions will be displayed as the tests run.
+// ---------------------------------------------------------------------
+
+// Setup
+// ---------------------------------------------------------------------
+
+// Test Hardware
+//  - Imp005 Breakout Board
+//  either
+//  - FT232RL FTDI USB to TTL Serial Adapter Module
+//      - USB wired to USB
+//      - TX & RX wired to UART1
+//  or
+//  - Brother QL-720NW label printer
+
+
+// Tests
+// ---------------------------------------------------------------------
+
 class UsbHostTestCase extends ImpTestCase {
     // UART on imp005
     dataString = "";
