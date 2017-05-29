@@ -31,25 +31,16 @@ class UsbHostTestCase extends ImpTestCase {
     function setUp() {
 
         usbHost = USB.Host(hardware.usb);
+        usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
+        usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
 
         return "Hi from #{__FILE__}!";
     }
 
-    function testRegisterDriver() {
-        return new Promise(function myFunction() {
-            try {
-                usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
-                usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
-                resolve();
-            } catch (e) {
-                reject(e);
-            }
-        }.bindenv(this))
-    }
 
     // Test that a registered driver is returned when corresponding device is
     // connected
-    function testUsbConnection() {
+    function test1UsbConnection() {
         this.info("Connect any registered usb device to imp");
         return Promise(function(resolve, reject) {
 
@@ -59,6 +50,8 @@ class UsbHostTestCase extends ImpTestCase {
                 // A registered driver was found
                 if (device != null) {
                     resolve("Device Connected");
+                } else {
+                    reject("No drivers found");
                 }
             }.bindenv(this));
         }.bindenv(this))
@@ -66,25 +59,16 @@ class UsbHostTestCase extends ImpTestCase {
 
     // Test that a registered driver is returned when corresponding device is
     // connected
-    function testGetDriver() {
-        this.info("Connect any registered usb device to imp");
+    function test2GetDriver() {
         return Promise(function(resolve, reject) {
-
-            // Listen for connection event
-            usbHost.on("connected", function(device) {
-
-                // A registered driver was found
-                if (device != null) {
-                    local driver = usbHost.getDriver();
-                    assertTrue(driver != null);
-                    resolve("Correct driver was received");
-                }
-            }.bindenv(this));
+            local driver = usbHost.getDriver();
+            assertTrue(driver != null);
+            resolve("Correct driver was received");
         }.bindenv(this))
     }
 
     // Tests whether a disconnection event is correctly emitted
-    function testUsbDisconnection() {
+    function test3UsbDisconnection() {
         this.info("Disconnect the usb device from imp");
         return Promise(function(resolve, reject) {
             // Listen for disconnection event
@@ -98,21 +82,21 @@ class UsbHostTestCase extends ImpTestCase {
     }
 
     // Tests that an event handler can be unsubscribed from an event
-    function testOn() {
+    function test4On() {
 
         usbHost = USB.Host(hardware.usb);
 
         return Promise(function(resolve, reject) {
-
-            // Assert there are no event listeners registered
+            
+                // Assert there are no event listeners registered
             assertEqual(0, usbHost._customEventHandlers.len())
 
             // Register two event handlers
             usbHost.on("connected", function() {
-                
+
             });
             usbHost.on("disconnected", function() {
-                
+
             });
 
             // assert there are 2 currently registered event handlers
@@ -124,7 +108,7 @@ class UsbHostTestCase extends ImpTestCase {
     }
 
     // Tests that an event handler can be unsubscribed from an event
-    function testOff() {
+    function test5Off() {
 
         usbHost = USB.Host(hardware.usb);
 
@@ -135,10 +119,10 @@ class UsbHostTestCase extends ImpTestCase {
 
             // Register two event handlers
             usbHost.on("connected", function() {
-                
+
             });
             usbHost.on("disconnected", function() {
-                
+
             });
 
             // assert there are 2 currently registered event handlers

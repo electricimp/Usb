@@ -79,8 +79,8 @@ class USB {
 // 
 class USB.Host {
 
-    _eventHandlers = {};
-    _customEventHandlers = {};
+    _eventHandlers = null;
+    _customEventHandlers = null;
     _driver = null;
     _bulkTransferQueue = null;
     _address = 1;
@@ -100,6 +100,8 @@ class USB.Host {
         _usb = usb;
         _bulkTransferQueue = [];
         _registeredDrivers = {};
+        _eventHandlers = {};
+        _customEventHandlers = {};
 
         if (autoConfPins) {
             // Configure the pins required for usb
@@ -832,7 +834,7 @@ class USB.DriverBase {
     // 
     function _setupEndpoints(deviceAddress, speed, descriptors) {
         _deviceAddress = deviceAddress;
-        _controlEndpoint = ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
+        _controlEndpoint = USB.ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
 
         // Select configuration
         local configuration = descriptors["configurations"][0];
@@ -935,4 +937,3 @@ class USB.DriverBase {
         _bulkIn.read(blob(1));
     }
 };
-

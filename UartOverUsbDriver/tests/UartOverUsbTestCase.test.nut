@@ -364,7 +364,7 @@ class UARTOverUsbTestCase extends ImpTestCase {
         // Request user to connect the correct device to imp
         this.info("Connect any Uart over Usb device to imp");
 
-        return new Promise(function(resolve, reject) {
+        return Promise(function(resolve, reject) {
 
             //Register cb for connection event
             usbHost.on("connected", function(device) {
@@ -385,7 +385,7 @@ class UARTOverUsbTestCase extends ImpTestCase {
     }
 
     // Tests the driver is compatible with a uart device
-    function test2QL720NWDriver() {
+    function testUartPrinterDriver() {
         return Promise(function(resolve, reject) {
 
             // Check there is a valid device driver
