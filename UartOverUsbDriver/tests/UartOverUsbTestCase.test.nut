@@ -350,24 +350,25 @@ class UARTOverUsbTestCase extends ImpTestCase {
     usbHost = null;
     loadPin = null;
     _device = null;
+    getInfo = "/x1B/x69/x53";
 
     function setUp() {
-        uart = hardware.uart1;
-        usbHost = USB.Host(hardware.usb);
-        usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
-
         return "Hi from #{__FILE__}!";
     }
 
 
     // Test connection of valid device instantiated driver
     function test1UartOverUsbConnection() {
+        usbHost = USB.Host(hardware.usb);
+        usbHost._DEBUG =true;
+        usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
+
         // Request user to connect the correct device to imp
         this.info("Connect any Uart over Usb device to imp");
 
         return Promise(function(resolve, reject) {
 
-            //Register cb for connection event
+            // Register cb for connection event
             usbHost.on("connected", function(device) {
 
                 // Check the device is an instance of UartOverUsbDriver
@@ -408,6 +409,36 @@ class UARTOverUsbTestCase extends ImpTestCase {
                 // Requires manual validation
                 resolve("Printed data")
 
+
+            } else {
+                reject("No device connected");
+            }
+        }.bindenv(this))
+    }
+
+
+    // Tests the driver is compatible with a uart device
+    function test3On() {
+        return Promise(function(resolve, reject) {
+
+            local getInfoReq = blob(3);
+
+            // Get printer info
+            getInfoReq.writen(0x1B, 'b');
+            getInfoReq.writen(0x69, 'b');
+            getInfoReq.writen(0x53, 'b');
+
+            // Check there is a valid device driver
+            if (_device != null) {
+
+                local printer = QL720NW(_device);
+
+                _device.on("data", function(data) {
+                    this.info(data);
+                    resolve();
+                }.bindenv(this));
+
+                _device.write(getInfoReq);
 
             } else {
                 reject("No device connected");

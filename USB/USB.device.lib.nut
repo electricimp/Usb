@@ -289,7 +289,7 @@ class USB.Host {
         local descriptors = eventdetails["descriptors"];
         local maxPacketSize = descriptors["maxpacketsize0"];
         if (_DEBUG) {
-            logDescriptors(speed, descriptors);
+            _logDescriptors(speed, descriptors);
         }
 
         // Try to create the driver for connected device
@@ -367,6 +367,7 @@ class USB.Host {
     // @param  {Table} eventdetails Table with the transfer event details
     // 
     function _onTransferCompleted(eventdetails) {
+
         _busy = false;
         if (_driver) {
             // Pass complete event to driver
@@ -640,6 +641,7 @@ class USB.BulkEndpoint {
     _deviceAddress = null;
     _endpointAddress = null;
 
+
     // 
     // Constructor
     // 
@@ -652,6 +654,8 @@ class USB.BulkEndpoint {
     // 
     constructor(usb, speed, deviceAddress, interfaceNumber, endpointAddress, maxPacketSize) {
         _usb = usb;
+        if (_usb._DEBUG) server.log(format("Opening bulk endpoint 0x%02x", endpointAddress));
+
         _deviceAddress = deviceAddress;
         _endpointAddress = endpointAddress;
         _usb._openEndpoint(speed, _deviceAddress, interfaceNumber, USB_ENDPOINT_BULK, maxPacketSize, _endpointAddress);
@@ -837,12 +841,14 @@ class USB.DriverBase {
     // @param  {String}  descriptors   The descriptors received from device
     // 
     function _setupEndpoints(deviceAddress, speed, descriptors) {
+        if (_usb._DEBUG) server.log(format("Driver connecting at address 0x%02x", deviceAddress));
         _deviceAddress = deviceAddress;
         _controlEndpoint = USB.ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
 
         // Select configuration
         local configuration = descriptors["configurations"][0];
 
+        if (_usb._DEBUG) server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
         _controlEndpoint._setConfiguration(configuration["value"]);
 
         // Select interface
@@ -869,6 +875,8 @@ class USB.DriverBase {
     // @param {Integer} device key receieved in descriptors
     // 
     function _configure(device) {
+
+        if (_usb._DEBUG) server.log(format("Configuring for device version 0x%04x", device));
 
         // Set Baud Rate
         local baud = 115200;
