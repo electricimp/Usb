@@ -19,7 +19,7 @@ Instantiates the USB.Host class. It takes `hardware.usb` as a required parameter
 | Key | Data Type | Required | Description |
 | --- | --------- | -------- | ----------- |
 | *usb* | Object | Yes | The usb object from the hardware class. `hardware.usb` |
-| *autoConfPins* | Boolean | No | Setting to false will require pin R and W to be manually configured according to [electric imps docs](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb) for the usb to work.
+| *autoConfPins* | Boolean | No | Set to true by default. Setting to false will require pin R and W to be manually configured according to [electric imps docs](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb) for the usb to work on an imp005.
 
 #### Example
 
@@ -36,8 +36,8 @@ Registers a driver to a devices list of VID/PID combinations. When a device is c
 
 | Key | Data Type | Required | Description |
 | --- | --------- | -------- | ----------- |
-| *driverClass* | Class | Yes | A reference to the class to be instantiated when a device with matching identifiers is connected. Must be a valid usb class that extends the *UsbDriverBase* class. |
-| *identifiers* | Array | Yes | Array of VID/PID combinations. When a device connected that identifies itself with any of the PID/VID combinations provided the driverClass will be instatiated.
+| *driverClass* | Class | Yes | A reference to the class to be instantiated when a device with matching identifiers is connected. Must be a valid usb driver class that extends the *USB.DriverBase* class. |
+| *identifiers* | Array | Yes | Array of VID/PID combinations. When a device connected that identifies itself with any of the PID/VID combinations provided the *driverClass* will be instatiated.
 
 
 #### Example
@@ -151,4 +151,4 @@ imp.wakeup(30,function(){
 
 ## License
 
-The USB.Host is licensed under [MIT License](../LICENSE).
+The USB class is licensed under [MIT License](../LICENSE).
