@@ -59,7 +59,7 @@ class UsbHostTestCase extends ImpTestCase {
 
     // Test that a registered driver is returned when corresponding device is
     // connected
-    function test1UsbConnection() {
+    function test1_UsbConnection() {
         this.info("Connect any registered usb device to imp");
         return Promise(function(resolve, reject) {
 
@@ -78,7 +78,7 @@ class UsbHostTestCase extends ImpTestCase {
 
     // Test that a registered driver is returned when corresponding device is
     // connected
-    function test2GetDriver() {
+    function test2_GetDriver() {
         return Promise(function(resolve, reject) {
             local driver = usbHost.getDriver();
             assertTrue(driver != null);
@@ -87,7 +87,7 @@ class UsbHostTestCase extends ImpTestCase {
     }
 
     // Tests whether a disconnection event is correctly emitted
-    function test3UsbDisconnection() {
+    function test3_UsbDisconnection() {
         this.info("Disconnect the usb device from imp");
         return Promise(function(resolve, reject) {
             // Listen for disconnection event
@@ -101,7 +101,7 @@ class UsbHostTestCase extends ImpTestCase {
     }
 
     // Tests that an event handler can be unsubscribed from an event
-    function test4On() {
+    function test4_On() {
 
         usbHost = USB.Host(hardware.usb);
 
@@ -127,7 +127,7 @@ class UsbHostTestCase extends ImpTestCase {
     }
 
     // Tests that an event handler can be unsubscribed from an event
-    function test5Off() {
+    function test5_Off() {
 
         usbHost = USB.Host(hardware.usb);
 
@@ -158,7 +158,7 @@ class UsbHostTestCase extends ImpTestCase {
         }.bindenv(this))
     }
 
-    function test6UsbAutoConf() {
+    function test6_UsbAutoConf() {
 
         local host = USB.Host(hardware.usb, false);
         local host2 = USB.Host(hardware.usb, true);

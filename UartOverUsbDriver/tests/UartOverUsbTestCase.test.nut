@@ -358,16 +358,15 @@ class UARTOverUsbTestCase extends ImpTestCase {
 
 
     // Test connection of valid device instantiated driver
-    function test1UartOverUsbConnection() {
-        usbHost = USB.Host(hardware.usb);
-        usbHost._DEBUG =true;
-        usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
+    function test1_UartOverUsbConnection() {
+
 
         // Request user to connect the correct device to imp
         this.info("Connect any Uart over Usb device to imp");
 
         return Promise(function(resolve, reject) {
-
+            usbHost = USB.Host(hardware.usb);
+            usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
             // Register cb for connection event
             usbHost.on("connected", function(device) {
 
@@ -388,7 +387,7 @@ class UARTOverUsbTestCase extends ImpTestCase {
 
 
     // Tests the driver is compatible with a uart device
-    function test2UartPrinterDriver() {
+    function test2_UartPrinterDriver() {
         return Promise(function(resolve, reject) {
 
             // Check there is a valid device driver
@@ -418,7 +417,7 @@ class UARTOverUsbTestCase extends ImpTestCase {
 
 
     // Tests the driver is compatible with a uart device
-    function test3On() {
+    function test3_On() {
         return Promise(function(resolve, reject) {
 
             local getInfoReq = blob(3);
@@ -443,6 +442,36 @@ class UARTOverUsbTestCase extends ImpTestCase {
             } else {
                 reject("No device connected");
             }
+        }.bindenv(this))
+    }
+
+    // Tests that an event handler can be unsubscribed from an event
+    function test4_Off() {
+
+        return Promise(function(resolve, reject) {
+
+            // Check there is a valid device driver
+            if (_device != null) {
+
+                _device.on("data", function(data) {
+                    this.info(data);
+                    resolve();
+                }.bindenv(this));
+
+                // Assert there are no event listeners registered
+                assertEqual(1, _device._eventHandlers.len());
+
+                _device.off("data");
+
+                // Assert there are no event listeners registered
+                assertEqual(0, _device._eventHandlers.len());
+
+                resolve();
+
+            } else {
+                reject("No device connected");
+            }
+
         }.bindenv(this))
     }
 

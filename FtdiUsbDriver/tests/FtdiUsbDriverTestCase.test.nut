@@ -1,19 +1,19 @@
 // MIT License
-//
+// 
 // Copyright 2017 Electric Imp
-//
+// 
 // SPDX-License-Identifier: MIT
-//
+// 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-//
+// 
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-//
+// 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
@@ -47,11 +47,6 @@ class FtdiUsbTestCase extends ImpTestCase {
     function setUp() {
         // Initialize UART
         uart = hardware.uart1;
-
-        // Initialize USB Host & register driver to be tested
-        usbHost = USB.Host(hardware.usb);
-        usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
-
         return "Hi from #{__FILE__}!";
     }
 
@@ -59,10 +54,14 @@ class FtdiUsbTestCase extends ImpTestCase {
     // and device driver instantiated is the correct one. 
     // NOTE: Requires manual action from a user to connect correct device before 
     //       or during running the tests.
-    function test1FtdiConnection() {
+    function test1_FtdiConnection() {
         this.info("Connect any Ftdi device to imp");
         return Promise(function(resolve, reject) {
 
+            // Initialize USB Host & register driver to be tested
+            usbHost = USB.Host(hardware.usb);
+            usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
+            
             // Listen for a connection event
             usbHost.on("connected", function(device) {
 
@@ -82,7 +81,7 @@ class FtdiUsbTestCase extends ImpTestCase {
 
     // Test whether a message sent via usb to UART on the same device
     // is successfully received
-    function test2FtdiUsbSending() {
+    function test2_FtdiUsbSending() {
         return Promise(function(resolve, reject) {
 
             // Check there is a valid device driver
@@ -119,7 +118,7 @@ class FtdiUsbTestCase extends ImpTestCase {
 
     // Test whether a message can be successfully received via usb over an
     // ftdi connection
-    function test3FtdiUsbRecieving() {
+    function test3_FtdiUsbRecieving() {
         return Promise(function(resolve, reject) {
 
             // Check there is a valid device driver
@@ -131,13 +130,13 @@ class FtdiUsbTestCase extends ImpTestCase {
                 // Set up a listener for data events
                 _device.on("data", function(data) {
 
-                        // Check the data received matches the sent string
-                        if (data.tostring() == testString) {
-                            resolve("Recieved data on Usb from Uart");
-                        }else {
-                            reject("Invalid data was received on Usb from Uart")
-                        }
-                    }.bindenv(this))
+                    // Check the data received matches the sent string
+                    if (data.tostring() == testString) {
+                        resolve("Recieved data on Usb from Uart");
+                    } else {
+                        reject("Invalid data was received on Usb from Uart")
+                    }
+                }.bindenv(this))
 
                 // Configure with timing
                 uart.configure(115200, 8, PARITY_NONE, 1, 0);
@@ -147,6 +146,37 @@ class FtdiUsbTestCase extends ImpTestCase {
             } else {
                 reject("No device connected");
             }
+        }.bindenv(this))
+    }
+
+
+    // Tests that an event handler can be unsubscribed from an event
+    function test4_Off() {
+
+        return Promise(function(resolve, reject) {
+
+            // Check there is a valid device driver
+            if (_device != null) {
+
+                _device.on("data", function(data) {
+                    this.info(data);
+                    resolve();
+                }.bindenv(this));
+
+                // Assert there are no event listeners registered
+                assertEqual(1, _device._eventHandlers.len());
+
+                _device.off("data");
+
+                // Assert there are no event listeners registered
+                assertEqual(0, _device._eventHandlers.len());
+
+                resolve();
+
+            } else {
+                reject("No device connected");
+            }
+
         }.bindenv(this))
     }
 
