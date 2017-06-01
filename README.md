@@ -1,12 +1,12 @@
 # Usb Drivers
 
-## [UsbHost](./UsbHost/)
+## [USB](./USB/)
 
-The UsbHost class acts as a wrapper around the Imp API hardware.usb object and manages USB device connections, disconnections, transfers and driver selection. This library is a prerequisite to driver libraries.
+The USB class acts as a wrapper around the Imp API `hardware.usb` object and manages USB device connections, disconnections, transfers and driver selection. This library is a prerequisite to driver libraries.
 
 ## Drivers
 
-Drivers compatible with the UsbHost class extend the UsbDriverBase class. Below are the some library drivers, or [click here](./USB-DRIVER-BASE.md) for documentation on extending the UsbDriverBase class to create a custom driver.
+Drivers compatible with the [USB](./USB/) class extend the [USB.DriverBase](./USB-DRIVER-BASE.md) class. Below are the current library drivers available, or [click here](./USB-DRIVER-BASE.md) for documentation on extending the [USB.DriverBase](./USB-DRIVER-BASE.md) class to create a custom driver.
 
 ### [UartOverUsbDriver](./UartOverUsbDriver/)
 
@@ -15,7 +15,7 @@ The UartOverUsbDriver class creates an interface object that exposes methods sim
 
 ### [FtdiUsbDriver](./FtdiUsbDriver/)
 
-The FtdiUsbDriver class exposes methods to interact with an device connected to usb via an ftdi cable.
+The FtdiUsbDriver class exposes methods to interact with a device connected to usb via an FTDI cable.
 
 
 # License

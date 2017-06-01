@@ -1,34 +1,37 @@
 # UartOverUsbDriver
 
-The UartOverUsbDriver class creates an interface object that exposes methods similar to the uart object to provide compatability for uart drivers over usb.
+The UartOverUsbDriver class creates an interface object that exposes methods to provide compatability for uart drivers over usb. 
 
 ### Setup
 
 **To use this library add the following statements to the top of your device code:**
 
 ```
-#require "UsbHost.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.0"
 #require "UartOverUsbDriver.device.lib.nut:1.0.0"
 ```
 
-This class requires the UsbHost class. The usb host will handle the connection and instantiation of this class. The class and its identifiers must be registered with the UsbHost and the device driver will be passed to the connection callback on the UsbHost.
+The [USB.Host](../USB/) will handle the connection/disconnection events and instantiation of this class. This class and its identifiers will be registered with the [USB.Host](../USB/) and when a device with matching identifiers is connected the device driver will be instantiated and passed to the `"connection"` event callback registered with the [USB.Host](../USB/). As this can be confusing an example of receiving an instantiated driver object is shown below:
 
 #### Example
 
-The example shows how to use the Brother QL-720NW uart driver to demonstrate how to use UartOverUsb. Please get the QL720NW.device.nut file from [here](https://github.com/electricimp/QL720NW) and paste the class at the top of your code.
+The example shows how to use the [Brother QL-720NW](https://github.com/electricimp/QL720NW) uart driver to demonstrate how to use UartOverUsb. Please copy the QL720NW.device.nut file from [here](https://github.com/electricimp/QL720NW) and replace the line `class QL720NW {...}` with the class retrieved.
 
 ```squirrel
-#require "UsbHost.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.0"
 #require "UartOverUsbDriver.device.lib.nut:1.0.0"
 
 class QL720NW {...}
+// Instantiate usb host
+usbHost <- USB.Host(hardware.usb);
 
-usbHost <- UsbHost(hardware.usb);
-
-// Register the Uart over Usb driver with usb host
+// For a supported device like the QL720NW we directly register the Uart over Usb driver with usb host
 usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
 
-// To use a device that is not directly supported by the UartOverUsb you can manually pass in identifiers using the following code
+// To use a device that is not directly supported by the 
+// UartOverUsb class you can manually pass in identifiers using 
+// the following code
+
 // vid <- [enter device vid];
 // pid <- [enter device pid];
 // identifier <- {};
@@ -36,15 +39,22 @@ usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
 // identifiers <- [identifier]
 // usbHost.registerDriver(UartOverUsbDriver, identifiers);
 
+
+// Register connection event handler
 usbHost.on("connected",function (device) {
+
     server.log(typeof device + " was connected!");
+    
     switch (typeof device) {
         case ("UartOverUsbDriver"):
-            // We pass the uart over usb interface object into the constructor of
-            // a class that takes the uart object and we can use the class as per
+        
+            // We pass the uart over usb interface object into 
+            // the constructor of a class that takes the
+            // uart object and we can use the class as per
             // its original documentation
             printer <- QL720NW(device);
-
+            
+            // Print the sentence "San Diego 48" 
             printer
                 .setOrientation(QL720NW.LANDSCAPE)
                 .setFont(QL720NW.FONT_SAN_DIEGO)
@@ -57,18 +67,22 @@ usbHost.on("connected",function (device) {
 usbHost.on("disconnected",function (deviceName) {
     server.log(deviceName + " disconnected");
 });
+
+// Log instructions for user
+server.log("USB listeners opened.  Plug in printer via usb.");
 ```
 
 ## Device Class Usage
 
 ### Constructor: UartOverUsbDriver(*usb*)
 
-Class instantiation is handled by the UsbHost class.
+Class instantiation is handled by the [USB.Host](../USB/) class. This class should not be manually instantiated.
+
 
 
 ### getIdentifiers()
 
-Returns an array of tables with VID-PID key value pairs respectively. Identifiers are used by UsbHost to instantiate a matching devices driver.
+Returns an array of tables with VID-PID key value pairs respectively. Identifiers are used by the [USB.Host](../USB/) to instantiate the corresponding devices driver.
 
 
 #### Example
@@ -88,70 +102,6 @@ foreach (i, identifier in identifiers) {
 
 
 
-### on(*eventName, callback*)
-
-Subscribe a callback function to a specific event.
-
-
-| Key | Data Type | Required | Description |
-| --- | --------- | -------- | ----------- |
-| *eventName* | String | Yes | The string name of the event to subscribe to. There is currently 1 event that you can subscibe to: "data"|
-| *callback* | Function | Yes | Function to be called on event |
-
-#### Example
-
-```squirrel
-
-// Callback to handle device connection
-function onDeviceConnected(device) {
-    server.log(typeof device + " was connected!");
-    switch (typeof device) {
-        case "UartOverUsbDriver":
-            device.on("data", function (data){
-                 server.log("Received " + data + " via usb");
-            });
-            break;
-    }
-}
-
-```
-
-### off(*eventName*)
-
-Clears a subscribed callback function from a specific event.
-
-| Key | Data Type | Required | Description |
-| --- | --------- | -------- | ----------- |
-| *eventName* | String | Yes | The string name of the event to unsubscribe from.|
-
-
-```squirrel
-#require "UsbHost.device.lib.nut:1.0.0"
-#require "UartOverUsbDriver.device.lib.nut:1.0.0"
-
-usbHost <- UsbHost(hardware.usb);
-
-// Register the Uart over Usb driver with usb host
-usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
-
-usbHost.on("connected",function (device) {
-    switch (typeof device) {
-        case ("UartOverUsbDriver"):
-            // Listen for data events
-            device.on("data", function (data){
-                 server.log("Received " + data + " via usb");
-            });
-
-            // Stop listening for data after 30 seconds
-            imp.wakeup(30, function(){
-                device.off("data");
-            }.bindenv(this))
-            break;
-    }
-});
-
-```
-
 ### write(data)
 
 Writes String or Blob data out to uart over usb.
@@ -165,10 +115,10 @@ Writes String or Blob data out to uart over usb.
 #### Example
 
 ```squirrel
-#require "UsbHost.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.0"
 #require "UartOverUsbDriver.device.lib.nut:1.0.0"
 
-usbHost <- UsbHost(hardware.usb);
+usbHost <- USB.Host(hardware.usb);
 
 // Register the Uart over Usb driver with usb host
 usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
@@ -176,7 +126,8 @@ usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
 usbHost.on("connected",function (device) {
     switch (typeof device) {
         case ("UartOverUsbDriver"):
-            device.write("Testing usb over uart");
+            // Write a string out
+            device.write("Hello World");
             break;
     }
 });
@@ -185,4 +136,4 @@ usbHost.on("connected",function (device) {
 
 ## License
 
-The UartOverUsbDriver is licensed under [MIT License](./LICENSE).
+The UartOverUsbDriver is licensed under [MIT License](../LICENSE).
