@@ -1,16 +1,16 @@
 # Usb Drivers
 
-The USB libary acts as a wrapper around the Imp API `hardware.usb` object and manages USB device connections, disconnections, transfers and driver selection. 
+The USB libary acts as a wrapper around the Imp API `hardware.usb` object and manages USB device connections, disconnections, transfers and driver selection.
 
 **To use this library add the following statement to the top of your device code:**
 
 ```
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:0.1.0"
 ```
 
-## USB.Host 
+## USB.Host
 
-The USB.Host class wraps the `hardware.usb`. It has methods to subsicribe to events and register drivers (see [USB.DriverBase](#USBDriver) for more details on USB drivers).  
+The USB.Host class wraps the `hardware.usb`. It has methods to subsicribe to events and register drivers (see [USB.DriverBase](#USBDriver) for more details on USB drivers).
 
 ### Class Usage
 
@@ -103,7 +103,7 @@ usbHost.on("connected",function (device) {
 // Unsubscribe from usb connection events after 30 seconds
 imp.wakeup(30,function(){
 	usbHost.off("connected");
-}.bindenv(this))	
+}.bindenv(this))
 ```
 
 
@@ -129,11 +129,11 @@ imp.wakeup(30,function(){
 
 ## USB.DriverBase
 
-The USB.DriverBase class is used as the base for all drivers that use this library. It contains a set of functions that are expected by [USB.Host](#USBhost) as well as some set up functions. There are a few required functions that must be overwritten. All other functions will be documented and can be overwritten only as needed.  
+The USB.DriverBase class is used as the base for all drivers that use this library. It contains a set of functions that are expected by [USB.Host](#USBhost) as well as some set up functions. There are a few required functions that must be overwritten. All other functions will be documented and can be overwritten only as needed.
 
 ### Required Functions
 
-These are the functions your usb driver class must override. The default behavior for most of these function is to throw an error. 
+These are the functions your usb driver class must override. The default behavior for most of these function is to throw an error.
 
 #### _typeof()
 
@@ -180,7 +180,7 @@ usbHost <- USB.Host(hardware.usb);
 usbHost.registerDriver(MyUsbDriver, MyUsbDriver.getIdentifiers());
 ```
 
-#### _transferComplete(*eventDetails*) 
+#### _transferComplete(*eventDetails*)
 
 Called when a usb transfer is completed. This example is taken from our example Ftdi and Uart drivers.
 
@@ -193,7 +193,7 @@ class MyUsbDriver extends USB.DriverBase {
     function _transferComplete(eventdetails) {
 
         local direction = (eventdetails["endpoint"] & 0x80) >> 7;
-        
+
         if (direction == USB_DIRECTION_IN) {
 
             local readData = _bulkIn.done(eventdetails);
@@ -203,10 +203,10 @@ class MyUsbDriver extends USB.DriverBase {
                 // emit data event that the user can subscribe to.
                 _onEvent("data", readData.readblob(readData.len()));
             }
-            
+
             // Blank the buffer
             _bulkIn.read(blob(64 + 2));
-        
+
         } else if (direction == USB_DIRECTION_OUT) {
             _bulkOut.done(eventdetails);
         }
@@ -243,7 +243,7 @@ class MyUsbDriver extends USB.DriverBase {
 This method is called by the USB.Host class after instantiation of the usb driver class. It makes calls to internal functions to set up the various endpoints (control and bulk transfer endpoints), configures the usb parameters like the baud rate and sets up the buffers.
 
 
-### USB.DriverBase Class Functions 
+### USB.DriverBase Class Functions
 
 #### on(*eventName, callback*)
 

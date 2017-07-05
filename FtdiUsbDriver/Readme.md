@@ -1,14 +1,14 @@
 # FtdiUsbDriver
 
-The FtdiUsbDriver class exposes methods to interact with an device connected to usb via an ftdi cable. 
+The FtdiUsbDriver class exposes methods to interact with an device connected to usb via an ftdi cable.
 
 ### Setup
 
 **The USB class must be required before this driver class at the top of the device code. As shown below:**
 
 ```
-#require "USB.device.lib.nut:1.0.0"
-#require "FtdiUsbDriver.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:0.1.0"
+#require "FtdiUsbDriver.device.lib.nut:0.1.0"
 ```
 
 The [USB.Host](../USB/) will handle the connection/disconnection events and instantiation of this class. This class and its identifiers will be registered with the [USB.Host](../USB/) and when a device with matching identifiers is connected the device driver will be instantiated and passed to the `"connection"` event callback registered with the [USB.Host](../USB/). As this can be confusing an example of receiving an instantiated driver object is shown below:
@@ -16,8 +16,8 @@ The [USB.Host](../USB/) will handle the connection/disconnection events and inst
 #### Example
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
-#require "FtdiUsbDriver.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:0.1.0"
+#require "FtdiUsbDriver.device.lib.nut:0.1.0"
 
 // Callback function to handle device connection
 function onDeviceConnected(device) {
@@ -62,7 +62,7 @@ Returns an array of tables with VID-PID key value pairs respectively. Identifier
 #### Example
 
 ```squirrel
-#require "FtdiUsbDriver.device.lib.nut:1.0.0"
+#require "FtdiUsbDriver.device.lib.nut:0.1.0"
 
 local identifiers = FtdiUsbDriver.getIdentifiers();
 
@@ -159,8 +159,8 @@ Writes String or Blob data out to ftdi.
 #### Example
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
-#require "FtdiUsbDriver.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:0.1.0"
+#require "FtdiUsbDriver.device.lib.nut:0.1.0"
 
 usbHost <- USB.Host(hardware.usb);
 

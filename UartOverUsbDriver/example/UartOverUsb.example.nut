@@ -29,12 +29,12 @@
 //  - Brother QL-720NW label printer
 
 // Require USB libraries
-#require "USB.device.lib.nut:1.0.0"
-#require "UartOverUsbDriver.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:0.1.0"
+#require "UartOverUsbDriver.device.lib.nut:0.1.0"
 
 // Driver for printer
 class QL720NW {
-    static version = [0,1,0];
+    static VERSION = "0.1.0";
 
     _uart = null;   // A preconfigured UART
     _buffer = null; // buffer for building text

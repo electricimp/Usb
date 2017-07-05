@@ -29,8 +29,8 @@
 //  - FT232RL FTDI USB to TTL Serial Adapter Module
 
 // Require USB libraries
-#require "USB.device.lib.nut:1.0.0"
-#require "FtdiUsbDriver.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:0.1.0"
+#require "FtdiUsbDriver.device.lib.nut:0.1.0"
 
 // Initialize USB Host
 usbHost <- USB.Host(hardware.usb);
