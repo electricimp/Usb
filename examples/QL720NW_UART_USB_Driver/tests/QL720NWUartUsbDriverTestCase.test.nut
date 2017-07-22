@@ -343,7 +343,7 @@ class QL720NW {
 // Tests
 // ---------------------------------------------------------------------
 
-class UARTOverUsbTestCase extends ImpTestCase {
+class QL720NWUartUsbDriverTestCase extends ImpTestCase {
     // UART on imp005
     uart = null;
     dataString = "";
@@ -366,12 +366,12 @@ class UARTOverUsbTestCase extends ImpTestCase {
 
         return Promise(function(resolve, reject) {
             usbHost = USB.Host(hardware.usb);
-            usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
+            usbHost.registerDriver(QL720NWUartUsbDriver, QL720NWUartUsbDriver.getIdentifiers());
             // Register cb for connection event
             usbHost.on("connected", function(device) {
 
-                // Check the device is an instance of UartOverUsbDriver
-                if (typeof device == "UartOverUsbDriver") {
+                // Check the device is an instance of QL720NWUartUsbDriver
+                if (typeof device == "QL720NWUartUsbDriver") {
 
                     // Store the driver for the next test
                     _device = device;

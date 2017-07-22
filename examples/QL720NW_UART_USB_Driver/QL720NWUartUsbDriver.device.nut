@@ -30,7 +30,6 @@
 
 // Require USB libraries
 #require "USB.device.lib.nut:0.1.0"
-#require "UartOverUsbDriver.device.lib.nut:0.1.0"
 
 // Driver for printer
 class QL720NW {
@@ -339,11 +338,111 @@ class QL720NW {
     }
 }
 
+// Driver for QL720NW label printer use via USB
+class QL720NWUartUsbDriver extends USB.DriverBase {
+
+    // Brother QL720
+    static VID = 0x04f9;
+    static PID = 0x2044;
+
+    _deviceAddress = null;
+    _bulkIn = null;
+    _bulkOut = null;
+
+
+    //
+    // Metafunction to return class name when typeof <instance> is run
+    //
+    function _typeof() {
+        return "QL720NWUartUsbDriver";
+    }
+
+
+    //
+    // Returns an array of VID PID combinations
+    //
+    // @return {Array of Tables} Array of VID PID Tables
+    //
+    function getIdentifiers() {
+        local identifiers = {};
+        identifiers[VID] <-[PID];
+        return [identifiers];
+    }
+
+
+    //
+    // Write bulk transfer on Usb host
+    //
+    // @param  {String/Blob} data data to be sent via usb
+    //
+    function write(data) {
+        local _data = null;
+
+        if (typeof data == "string") {
+            _data = blob();
+            _data.writestring(data);
+        } else if (typeof data == "blob") {
+            _data = data;
+        } else {
+            throw "Write data must of type string or blob";
+            return;
+        }
+        _bulkOut.write(_data);
+    }
+
+
+    //
+    // Called when a Usb request is succesfully completed
+    //
+    // @param  {Table} eventdetails Table with the transfer event details
+    //
+    function _transferComplete(eventdetails) {
+
+        local direction = (eventdetails["endpoint"] & 0x80) >> 7;
+
+        if (direction == USB_DIRECTION_IN) {
+
+            local readData = _bulkIn.done(eventdetails);
+
+            if (readData.len() >= 3) {
+                readData.seek(2);
+                _onEvent("data", readData.readblob(readData.len()));
+            } else {
+                _bulkIn.read(blob(64 + 2));
+            }
+
+        } else if (direction == USB_DIRECTION_OUT) {
+            _bulkOut.done(eventdetails);
+        }
+    }
+
+
+    //
+    // Called by Usb host to initialize driver
+    //
+    // @param  {Integer} deviceAddress The address of the device
+    // @param  {Float} speed           The speed in Mb/s. Must be either 1.5 or 12
+    // @param  {String} descriptors    The device descriptors
+    //
+    function connect(deviceAddress, speed, descriptors) {
+        _setupEndpoints(deviceAddress, speed, descriptors);
+        _start();
+    }
+
+
+    //
+    // Initialize the read buffer
+    //
+    function _start() {
+        _bulkIn.read(blob(64 + 2));
+    }
+}
+
 // Initialize USB Host
 usbHost <- USB.Host(hardware.usb);
 
 // Register the UART over USB driver with USB Host
-usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
+usbHost.registerDriver(QL720NWUartUsbDriver, QL720NWUartUsbDriver.getIdentifiers());
 
 // Subscribe to USB connection events
 usbHost.on("connected",function (device) {
@@ -351,7 +450,7 @@ usbHost.on("connected",function (device) {
     server.log(typeof device + " was connected!");
 
     switch (typeof device) {
-        case "UartOverUsbDriver":
+        case "QL720NWUartUsbDriver":
             // Initialize Printer Driver with USB UART device
             printer <- QL720NW(device);
 

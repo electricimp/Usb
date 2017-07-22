@@ -1,70 +1,25 @@
-# FtdiUsbDriver
+# FT232RL FTDI USB Driver Example
 
-The FtdiUsbDriver class exposes methods to interact with an device connected to usb via an ftdi cable.
+This example shows how to extend the USB.DriverBase class to create a driver for a FT232RL USB to serial breakout.  The example includes the FT232RLFtdiUsbDriver class with methods descibed below, some example code that makes use of the driver, and a folder with tests for the driver class.
 
-### Setup
+## FT232RL FTDI USB Driver
 
-**The USB class must be required before this driver class at the top of the device code. As shown below:**
+The [USB.Host](../USB/) will handle the connection/disconnection events and instantiation of this class. This class and its identifiers will be registered with the [USB.Host](../USB/) and when a device with matching identifiers is connected the device driver will be instantiated and passed to the `"connection"` event callback registered with the [USB.Host](../USB/). As this can be confusing an example of receiving an instantiated driver object is shown in the example file - FT232RLFtdiUsbDriver.device.nut.
 
-```
-#require "USB.device.lib.nut:0.1.0"
-#require "FtdiUsbDriver.device.lib.nut:0.1.0"
-```
+## Class Usage
 
-The [USB.Host](../USB/) will handle the connection/disconnection events and instantiation of this class. This class and its identifiers will be registered with the [USB.Host](../USB/) and when a device with matching identifiers is connected the device driver will be instantiated and passed to the `"connection"` event callback registered with the [USB.Host](../USB/). As this can be confusing an example of receiving an instantiated driver object is shown below:
-
-#### Example
-
-```squirrel
-#require "USB.device.lib.nut:0.1.0"
-#require "FtdiUsbDriver.device.lib.nut:0.1.0"
-
-// Callback function to handle device connection
-function onDeviceConnected(device) {
-    server.log(typeof device + " was connected!");
-    switch (typeof device) {
-        case ("FtdiUsbDriver"):
-            // device is a ftdi device. Handle it here.
-            break;
-    }
-}
-
-// Callback to handle device disconnection
-function onDeviceDisconnected(deviceName) {
-    server.log(deviceName + " disconnected");
-}
-// Instantiated usb host
-usbHost <- USB.Host(hardware.usb);
-
-// Register the Ftdi driver with usb host
-usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
-
-// Set up callbacks for connection/disconnection events
-usbHost.on("connected",onDeviceConnected);
-usbHost.on("disconnected",onDeviceDisconnected);
-
-// Log instructions for user
-server.log("USB listeners opened.  Plug FTDI board in to see logs.");
-```
-
-## Device Class Usage
-
-### Constructor: FtdiUsbDriver(*usb*)
+### Constructor: FT232RLFtdiUsbDriver(*usb*)
 
 Class instantiation is handled by the [USB.Host](../USB/) class. This class should not be manually instantiated.
-
 
 ### getIdentifiers()
 
 Returns an array of tables with VID-PID key value pairs respectively. Identifiers are used by the [USB.Host](../USB/) to instantiate the corresponding devices driver.
 
-
 #### Example
 
 ```squirrel
-#require "FtdiUsbDriver.device.lib.nut:0.1.0"
-
-local identifiers = FtdiUsbDriver.getIdentifiers();
+local identifiers = FT232RLFtdiUsbDriver.getIdentifiers();
 
 foreach (i, identifier in identifiers) {
     foreach (VID, PID in identifier){
@@ -96,7 +51,7 @@ Replace the `onDeviceConnected` function in the example shown in the setup secti
 function onDeviceConnected(device) {
     server.log(typeof device + " was connected!");
     switch (typeof device) {
-        case ("FtdiUsbDriver"):
+        case ("FT232RLFtdiUsbDriver"):
             device.on("data", function (data){
                 server.log("Recieved " + data + " via usb");
             });
@@ -124,7 +79,7 @@ Replace the `onDeviceConnected` function in the example shown in the setup secti
 function onDeviceConnected(device) {
     server.log(typeof device + " was connected!");
     switch (typeof device) {
-        case ("FtdiUsbDriver"):
+        case ("FT232RLFtdiUsbDriver"):
 
             // Listen for data events
             device.on("data", function(data) {
@@ -145,7 +100,6 @@ function onDeviceConnected(device) {
 
 ```
 
-
 ### write(data)
 
 Writes String or Blob data out to ftdi.
@@ -159,17 +113,14 @@ Writes String or Blob data out to ftdi.
 #### Example
 
 ```squirrel
-#require "USB.device.lib.nut:0.1.0"
-#require "FtdiUsbDriver.device.lib.nut:0.1.0"
-
 usbHost <- USB.Host(hardware.usb);
 
 // Register the Ftdi usb driver driver with usb host
-usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
+usbHost.registerDriver(FT232RLFtdiUsbDriver, FT232RLFtdiUsbDriver.getIdentifiers());
 
 usbHost.on("connected",function (device) {
     switch (typeof device) {
-        case ("FtdiUsbDriver"):
+        case ("FT232RLFtdiUsbDriver"):
             device.write("Testing ftdi over usb");
             break;
     }
@@ -178,7 +129,3 @@ usbHost.on("connected",function (device) {
 // Log instructions for user
 server.log("USB listeners opened.  Plug FTDI board in to see logs.");
 ```
-
-## License
-
-The FtdiUsbDriver is licensed under [MIT License](../LICENSE).

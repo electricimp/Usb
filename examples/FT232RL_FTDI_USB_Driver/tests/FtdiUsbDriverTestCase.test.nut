@@ -36,7 +36,7 @@
 // Tests
 // ---------------------------------------------------------------------
 
-class FtdiUsbTestCase extends ImpTestCase {
+class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
     // UART on imp005
     uart = null;
     dataString = "";
@@ -60,13 +60,13 @@ class FtdiUsbTestCase extends ImpTestCase {
 
             // Initialize USB Host & register driver to be tested
             usbHost = USB.Host(hardware.usb);
-            usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
+            usbHost.registerDriver(FT232RLFtdiUsbDriver, FT232RLFtdiUsbDriver.getIdentifiers());
             
             // Listen for a connection event
             usbHost.on("connected", function(device) {
 
-                // Check the device is an instance of FtdiUsbDriver
-                if (typeof device == "FtdiUsbDriver") {
+                // Check the device is an instance of FT232RLFtdiUsbDriver
+                if (typeof device == "FT232RLFtdiUsbDriver") {
 
                     // Store the driver for the next test
                     _device = device;

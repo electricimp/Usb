@@ -10,7 +10,7 @@ The USB libary acts as a wrapper around the Imp API `hardware.usb` object and ma
 
 ## USB.Host
 
-The USB.Host class wraps the `hardware.usb`. It has methods to subsicribe to events and register drivers (see [USB.DriverBase](#USBDriver) for more details on USB drivers).
+The USB.Host class has methods to subsicribe to events and register drivers (see [USB.DriverBase](#USBDriver) for more details on USB drivers).
 
 ### Class Usage
 
@@ -135,25 +135,6 @@ The USB.DriverBase class is used as the base for all drivers that use this libra
 
 These are the functions your usb driver class must override. The default behavior for most of these function is to throw an error.
 
-#### _typeof()
-
-Metamethod that returns the class name. See [metamethods documenation](https://electricimp.com/docs/resources/metamethods/)
-
-##### Example
-```squirrel
-class MyUsbDriver extends USB.DriverBase {
-	// Metafunction to return class name when `typeof` <instance> is run
-    function _typeof() {
-        return "MyUsbDriver";
-    }
-}
-
-myDriver <- MyUsbDriver();
-
-// This will log "MyUsbDriver"
-server.log(typeof myDriver);
-```
-
 #### getIdentifiers()
 
 Method that returns an array of tables containing VID PID pairs. These identifiers are needed when registering a driver with the Usb.Host class, [see registerDriver()](#registerdriverdriverclassidentifiers). Once the driver is registered with USB.Host, when a device with a matching VID PID combo is connected, an instance of this driver will be passed to the callback registered to the "connected" event.
@@ -180,16 +161,35 @@ usbHost <- USB.Host(hardware.usb);
 usbHost.registerDriver(MyUsbDriver, MyUsbDriver.getIdentifiers());
 ```
 
+#### _typeof()
+
+The *_typeof()* method is a squirrel metamethod that returns the class name. See [metamethods documenation](https://electricimp.com/docs/resources/metamethods/)
+
+##### Example
+```squirrel
+class MyUsbDriver extends USB.DriverBase {
+    // Metamethod returns class name when - typeof <instance> - is called
+    function _typeof() {
+        return "MyUsbDriver";
+    }
+}
+
+myDriver <- MyUsbDriver();
+
+// This will log "MyUsbDriver"
+server.log(typeof myDriver);
+```
+
 #### _transferComplete(*eventDetails*)
 
-Called when a usb transfer is completed. This example is taken from our example Ftdi and Uart drivers.
+The *_transferComplete()* method is triggered when a usb transfer is completed. This example code is taken from our example Ftdi and Uart drivers.
 
 ##### Example
 
 ```squirrel
 class MyUsbDriver extends USB.DriverBase {
 
-	// Called when a Usb request is succesfully completed
+    // Called when a Usb request is succesfully completed
     function _transferComplete(eventdetails) {
 
         local direction = (eventdetails["endpoint"] & 0x80) >> 7;
@@ -221,7 +221,7 @@ This is a set of functions that are called during the set up process of the usb 
 
 #### Constructor: USB.DriverBase(*usbHost*)
 
-By default the constructor takes an instance of the USB.Host class as its only parameter and assigns it to internal _usb variable accessible within the class scope. If custom initialization is required override the constructor as shown below but ensure to call the base.constructor() method. If no initialization is required let the parent class handle constructor. The USB driver is initialized by USB.Host class when a new device is connected to the USB port.
+By default the constructor takes an instance of the USB.Host class as its only parameter and assigns it to internal _usb variable accessible within the class scope. If custom initialization is required override the constructor as shown below, making sure to call the base.constructor() method. If no initialization is required let the parent class handle constructor. The USB driver is initialized by USB.Host class when a new device is connected to the USB port.
 
 ##### Example
 
@@ -247,14 +247,13 @@ This method is called by the USB.Host class after instantiation of the usb drive
 
 #### on(*eventName, callback*)
 
-Subscribe a callback function to a specific event. There are no events emitted by default as connection and disconnection are handled by the USB.Host. You can emit custom events in your driver using the internal `_onEvent` function but ensure to document them.
+Subscribe a callback function to a specific event. There are no events emitted by default as connection and disconnection are handled by the USB.Host. You can emit custom events in your driver using the internal `_onEvent` function but be sure to document them.
 
 
 | Key | Data Type | Required | Description |
 | --- | --------- | -------- | ----------- |
 | *eventName* | String | Yes | The string name of the event to subscribe to.|
 | *callback* | Function | Yes | Function to be called on event |
-
 
 
 #### off(*eventName*)
@@ -265,10 +264,10 @@ Clears a subscribed callback function from a specific event.
 | --- | --------- | -------- | ----------- |
 | *eventName* | String | Yes | The string name of the event to unsubscribe from.|
 
+
 #### _onEvent(*eventName, eventdetails*)
 
-
-This is used internal to your class to emit events. The user is able to subscribe to these events using the `on` method defined in the public functions above.
+This method is an internal class funciton used to emit events. The user is able to subscribe to these events using the `on` method defined in the public functions above.
 
 | Key | Data Type | Required | Description |
 | --- | --------- | -------- | ----------- |

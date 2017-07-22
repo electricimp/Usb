@@ -51,8 +51,8 @@ class UsbHostTestCase extends ImpTestCase {
     function setUp() {
 
         usbHost = USB.Host(hardware.usb);
-        usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
-        usbHost.registerDriver(UartOverUsbDriver, UartOverUsbDriver.getIdentifiers());
+        usbHost.registerDriver(FT232RLFtdiUsbDriver, FT232RLFtdiUsbDriver.getIdentifiers());
+        usbHost.registerDriver(QL720NWUartUsbDriver, QL720NWUartUsbDriver.getIdentifiers());
 
         return "Hi from #{__FILE__}!";
     }
