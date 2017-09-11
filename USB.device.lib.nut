@@ -175,8 +175,7 @@ class USB.Host {
         local descr = eventDetails.descriptors;
 
         try {
-            local device = Usb.Device(speed, descr, _address);
-            device.selectDrivers(_drivers);
+            local device = Usb.Device(speed, descr, _address, _drivers);
 
             _devices[_address] <- device;
 
@@ -293,7 +292,23 @@ class USB.Device {
         imp.wakeup(0, function() {_selectDrivers(drivers);} );
     }
 
-    // Selects on of the avalibale device configuration
+    // Helper function for device address assignment.
+    // Note: the function uses 0 as device address therefore can be used only one
+    function setAddress(address) {
+        usb.controltransfer(
+            device._speed,
+            0,
+            epAddress,
+            USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
+            USB_REQUEST_SET_ADDRESS,
+            address,
+            0,
+            _maxPacketSize
+        );
+    }
+
+
+    // Selects on of the available device configuration
     // WARNING: causes all driver to receive disconnect event
     //          and perform new driver lookup sequence
     function selectDeviceConfiguration(configNumber) {
@@ -309,22 +324,29 @@ class USB.Device {
     }
 
     // Request endpoint of required type. Creates if not cached.
-    function getEndpoint(if, type) {
+    function getEndpoint(ifNumber, type) {
 
         foreach (epAddress, ep in _endpoints) {
-
+            if (ep._type == type &&
+                ep._if == ifNumber) {
+                    return ep;
+            }
         }
 
         // TODO: track active interfaces and theirs alternate settings
         foreach (if in _deviceDescriptor.configurations[0].interfaces) {
-            if (if.interfacenumber == if) {
+            if (if.interfacenumber == ifNumber) {
                 foreach (ep in if.endpoints) {
                     if (ep.attributes == type) {
                         local maxSize - ep.maxpacketsize;
                         local address = ep.address;
+
+                        usb.openendpoint(_speed, _address, ifNumber,
+                                          type, maxSize, address, 1);
+
                         local newEp = (type == USB_ENDPOINT_CONTROL) ?
-                                                        USB.ControlEndpoint(this, address, maxSize) :
-                                                        USB.FunctionalEndpoint(this, address, type, maxSize);
+                                        USB.ControlEndpoint(this, ifNumber, address, maxSize) :
+                                        USB.FunctionalEndpoint(this, ifNumber, address, type, maxSize);
                         _endpoints.epAddress <- newEp;
                         return newEp;
                     }
@@ -346,9 +368,13 @@ class USB.Device {
                 if (ep.address == epAddress) {
                     local maxSize - ep.maxpacketsize;
                     local type = ep.attributes;
+
+                    usb.openendpoint(_speed, _address, if.interfacenumber,
+                                        type, maxSize, epAddress, 1);
+
                     local newEp = (type == USB_ENDPOINT_CONTROL) ?
-                                                    USB.ControlEndpoint(this, epAddress, maxSize) :
-                                                    USB.FunctionalEndpoint(this, epAddress, type, maxSize);
+                                        USB.ControlEndpoint(this, ifNumber, epAddress, maxSize) :
+                                        USB.FunctionalEndpoint(this, ifNumber, epAddress, type, maxSize);
                     _endpoints.epAddress <- newEp;
                     return newEp;
                 }
@@ -387,7 +413,20 @@ class USB.Device {
 
     // Select and setup drivers
     function _selectDrivers(drivers) {
-
+        {
+            // step one: try single driver
+            local ifs = _deviceDescriptor.configurations[0].interfaces;
+            foreach (driver in  drivers) {
+                if (null != (instance = driver.match(this, ifs))) {
+                    _drivers.append(instance);
+                    return;
+                }
+            }
+        }
+        {
+            // step two: if device is composite try several drivers
+            // TODO: find and parse IAD (Interface Association Descriptor)
+        }
     }
 
     function _transferEvent(eventDetails) {
@@ -426,17 +465,21 @@ class USB.FunctionalEndpoint {
     // Typically EP is closed when device is detached or configuration is changed
     _closed = false;
 
+    // Endpoint's interface
+    _if = null;
+
     // Callback to be called when transfer request is complete.
     // Since the class supports only single request per time,
     // this flags also indicates that EP is busy
     _transferCb = null;
 
     // Constructor
-    constructor (device, epType, epAddress, maxPacketSize) {
+    constructor (device, ifNumber, epType, epAddress, maxPacketSize) {
         _device = device;
         _epAddress = epAddress;
         _maxPacketSize = maxPacketSize;
         _epType = epType;
+        _if = ifNumber;
     }
 
     // Write data through this endpoint.
@@ -516,11 +559,15 @@ class USB.ControlEndpoint {
     // Typically EP is closed when device is detached or configuration is changed
     _closed = false;
 
+    // Endpoints interface
+    _if = null;
+
     // Constructor
-    constructor (device, epAddress, maxPacketSize) {
+    constructor (device, ifNumber, epAddress, maxPacketSize) {
         _device = device;
         _epAddress = epAddress;
         _maxPacketSize = maxPacketSize;
+        _if = ifNumber;
     }
 
     // Generic function for transferring data over control endpoint.
@@ -538,21 +585,6 @@ class USB.ControlEndpoint {
             index,
             _maxPacketSize,
             data
-        );
-    }
-
-    // Helper function for device address assignment.
-    // Note: the function uses 0 as device address therefore can be used only one
-    function setAddress(address) {
-        usb.controltransfer(
-            device._speed,
-            0,
-            epAddress,
-            USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
-            USB_REQUEST_SET_ADDRESS,
-            address,
-            0,
-            _maxPacketSize
         );
     }
 
