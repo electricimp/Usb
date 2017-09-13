@@ -45,9 +45,27 @@ class FT232RLFtdiUsbDriver extends USB.DriverBase {
     static FTDI_SIO_SET_FLOW_CTRL = 2;
     static FTDI_SIO_DISABLE_FLOW_CTRL = 0;
 
-    _deviceAddress = null;
     _bulkIn = null;
     _bulkOut = null;
+
+    constructor(device, interface) {
+        _bulkIn  = device.getEndpoint(interface.interfacenumber, USB_ENDPOINT_BULK | USB_DIRECTION_IN);
+        _bulkOut = device.getEndpoint(interface.interfacenumber, USB_ENDPOINT_BULK | USB_DIRECTION_OUT);
+    }
+
+    function match(device, interfaces) {
+        if (device.vendorid  == VID &&
+            device.productid == PID) {
+                return FT232RLFtdiUsbDriver(device, interfaces[0]);
+        }
+    }
+
+    // Notify that driver is going to be released
+    // No endpoint operation should be performed at this function.
+    function release() {
+        _bulkIn = null;
+        _bulkOut = null;
+    }
 
     //
     // Metafunction to return class name when typeof <instance> is run
@@ -58,23 +76,11 @@ class FT232RLFtdiUsbDriver extends USB.DriverBase {
 
 
     //
-    // Returns an array of VID PID combination tables.
-    //
-    // @return {Array of Tables} Array of VID PID Tables
-    //
-    function getIdentifiers() {
-        local identifiers = {};
-        identifiers[VID] <-[PID];
-        return [identifiers];
-    }
-
-
-    //
     // Write string or blob to usb
     //
     // @param  {String/Blob} data data to be sent via usb
     //
-    function write(data) {
+    function write(data, onComplete) {
         local _data = null;
 
         // Convert strings to blobs
@@ -89,36 +95,17 @@ class FT232RLFtdiUsbDriver extends USB.DriverBase {
         }
 
         // Write data via bulk transfer
-        _bulkOut.write(_data);
+        _bulkOut.write(_data, onComplete);
     }
 
+    function read(data, onComplete) {
 
-    //
-    // Handle a transfer complete event
-    //
-    // @param  {Table} eventdetails Table with the transfer event details
-    //
-    function _transferComplete(eventdetails) {
-        local direction = (eventdetails["endpoint"] & 0x80) >> 7;
-        if (direction == USB_DIRECTION_IN) {
-            local readData = _bulkIn.done(eventdetails);
-            if (readData.len() >= 3) {
-                readData.seek(2);
-                _onEvent("data", readData.readblob(readData.len()));
-            }
-            // Blank the buffer
-            _bulkIn.read(blob(64 + 2));
-        } else if (direction == USB_DIRECTION_OUT) {
-            _bulkOut.done(eventdetails);
+        if (typeof data != "blob") {
+            throw "Read data must of type blob";
         }
-    }
 
-
-    //
-    // Initialize the buffer.
-    //
-    function _start() {
-        _bulkIn.read(blob(64 + 2));
+        // Write data via bulk transfer
+        _bulkIn.read(data, onComplete);
     }
 }
 
@@ -126,22 +113,7 @@ class FT232RLFtdiUsbDriver extends USB.DriverBase {
 usbHost <- USB.Host(hardware.usb);
 
 // Register the Ftdi driver with USB Host
-usbHost.registerDriver(FT232RLFtdiUsbDriver, FT232RLFtdiUsbDriver.getIdentifiers());
-
-// Subscribe to USB connection events
-usbHost.on("connected",function (device) {
-    server.log(typeof device + " was connected!");
-    switch (typeof device) {
-        case "FT232RLFtdiUsbDriver":
-            server.log("An ftdi compatible device was connected via usb.");
-            break;
-    }
-});
-
-// Subscribe to USB disconnection events
-usbHost.on("disconnected",function(deviceName) {
-    server.log(deviceName + " disconnected");
-});
+usbHost.registerDriver(FT232RLFtdiUsbDriver);
 
 // Log instructions for user
 server.log("USB listeners opened.  Plug and unplug FTDI board in to see logs.");

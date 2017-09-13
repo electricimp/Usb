@@ -417,15 +417,39 @@ class USB.Device {
             // step one: try single driver
             local ifs = _deviceDescriptor.configurations[0].interfaces;
             foreach (driver in  drivers) {
-                if (null != (instance = driver.match(this, ifs))) {
-                    _drivers.append(instance);
-                    return;
+                try {
+                    if (null != (instance = driver.match(this, ifs))) {
+                        _drivers.append(instance);
+                        return;
+                    }
+                } catch (e) {
+                    _log("Error driver initialization: " + e);
                 }
             }
         }
-        {
-            // step two: if device is composite try several drivers
-            // TODO: find and parse IAD (Interface Association Descriptor)
+
+        local devClass      = _deviceDescriptor.class;
+        local devSubClass   = _deviceDescriptor.subclass;
+        local devProtocol   = _deviceDescriptor.protocol;
+
+        // Class information should be determined from the Interface Descriptors
+        if (0 == device && 0 == devSubClass && 0 == devProtocol) {
+            // TODO: find and parse IAD (Interface Association Descriptor), then group interfaces
+            foreach (if in ifs) {
+                foreach (driver in  drivers) {
+                    local ifArr = [if];
+                    try {
+                        if (null != (instance = driver.match(this, ifArr))) {
+                            _drivers.append(instance);
+                            break;
+                        }
+                    } catch (e) {
+                        _log("Error driver initialization: " + e);
+                    }
+                }
+            }
+        } else {
+            _log("No driver was found new device");
         }
     }
 
