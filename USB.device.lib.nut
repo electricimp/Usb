@@ -98,7 +98,7 @@ class USB.Host {
     //
     // @param  {Boolean} flag to specify whether to configure pins for usb usage (see https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb)
     //
-    constructor(autoConfPins = true) {
+    constructor(usb, autoConfPins = true) {
         // TODO: check hardware
         if (autoConfPins) {
             // Configure the pins required for usb
@@ -175,7 +175,7 @@ class USB.Host {
         local descr = eventDetails.descriptors;
 
         try {
-            local device = Usb.Device(speed, descr, _address, _drivers);
+            local device = USB.Device(speed, descr, _address, _drivers);
 
             _devices[_address] <- device;
 
@@ -284,12 +284,12 @@ class USB.Device {
         _deviceDescriptor = deviceDescriptor;
         _address = deviceAddress;
 
-        local ep0 = USB.ControlEndpoint(this, 0, _deviceDescriptor.maxpacketsize);
+        local ep0 = USB.ControlEndpoint(this, _address, 0, _deviceDescriptor["maxpacketsize0"]);
         _endpoints[0] <- ep0;
 
-        ep0.setAddress(address);
+        // ep0.setAddress(_address); // why do we need to setup address again ?
 
-        imp.wakeup(0, function() {_selectDrivers(drivers);} );
+        imp.wakeup(0, (function() {_selectDrivers(drivers);}).bindenv(this));
     }
 
     // Helper function for device address assignment.
@@ -413,9 +413,9 @@ class USB.Device {
 
     // Select and setup drivers
     function _selectDrivers(drivers) {
+        // step one: try single driver
+        local ifs = _deviceDescriptor.configurations[0].interfaces;
         {
-            // step one: try single driver
-            local ifs = _deviceDescriptor.configurations[0].interfaces;
             foreach (driver in  drivers) {
                 try {
                     if (null != (instance = driver.match(this, ifs))) {
@@ -433,7 +433,7 @@ class USB.Device {
         local devProtocol   = _deviceDescriptor.protocol;
 
         // Class information should be determined from the Interface Descriptors
-        if (0 == device && 0 == devSubClass && 0 == devProtocol) {
+        if (/* 0 == device && */ 0 == devSubClass && 0 == devProtocol) {
             // TODO: find and parse IAD (Interface Association Descriptor), then group interfaces
             foreach (dif in ifs) {
                 foreach (driver in  drivers) {
