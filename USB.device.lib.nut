@@ -89,7 +89,10 @@ class USB.Host {
     _address = 1;
 
     // Debug flag
-    _debug = false;
+    _debug = true; //false;
+
+    // USB device pointer
+    _usb = null;
 
     // ------------------------ public API -------------------
 
@@ -106,8 +109,9 @@ class USB.Host {
             hardware.pinR.configure(DIGITAL_OUT, 1);
         }
 
+        _usb = usb;
         // TODO: check for singleton
-        usb.configure(_onUsbEvent.bindenv(this));
+        _usb.configure(_onUsbEvent.bindenv(this));
     }
 
 
@@ -116,7 +120,7 @@ class USB.Host {
     // @param {Class} driverClass Class to be instantiated when a matched device is connected
     //
     function registerDriver(driverClass) {
-        if ("match" in deriverClass &&
+        if ("match" in driverClass &&
             typeof driverClass.match == "function" &&
             "release" in driverClass &&
             typeof driverClass.release == "function") {
@@ -179,7 +183,7 @@ class USB.Host {
 
             _devices[_address] <- device;
 
-            _log("New device installed: " + device);
+            _log("New device detected: " + device + ". Assign address: " + _address);
 
             // address for next device
             _address++;
@@ -188,7 +192,7 @@ class USB.Host {
         }
     }
 
-    // Device detach processing function
+      // Device detach processing function
     function _onDeviceDetached(eventDetails) {
         local address = eventDetails;
         if (address in _devices) {
@@ -292,6 +296,7 @@ class USB.Device {
         imp.wakeup(0, (function() {_selectDrivers(drivers);}).bindenv(this));
     }
 
+
     // Helper function for device address assignment.
     // Note: the function uses 0 as device address therefore can be used only one
     function setAddress(address) {
@@ -324,20 +329,23 @@ class USB.Device {
     }
 
     // Request endpoint of required type. Creates if not cached.
-    function getEndpoint(ifNumber, type) {
+    function getEndpoint(ifNumber, type, bulkDirection) {
 
-        foreach (epAddress, ep in _endpoints) {
+// No idea why but this code lead to funcation exit withou value
+ /*       foreach (epAddress, ep in _endpoints) {
             if (ep._type == type &&
+                (ep._type != USB_ENDPOINT_BULK || (ep._type == USB_ENDPOINT_BULK && (epAddress & 0x80) >> 7 == bulkDirection)) &&
                 ep._if == ifNumber) {
                     return ep;
             }
         }
-
+*/
         // TODO: track active interfaces and theirs alternate settings
         foreach (dif in _deviceDescriptor.configurations[0].interfaces) {
             if (dif.interfacenumber == ifNumber) {
                 foreach (ep in dif.endpoints) {
-                    if (ep.attributes == type) {
+                    if (ep.attributes == type &&
+                    (ep._type != USB_ENDPOINT_BULK || (ep._type == USB_ENDPOINT_BULK && (epAddress & 0x80) >> 7 == bulkDirection))) {
                         local maxSize = ep.maxpacketsize;
                         local address = ep.address;
 
@@ -408,22 +416,32 @@ class USB.Device {
 
     }
 
+    function getVendorId() {
+        return _deviceDescriptor["vendorid"];
+    }
+
+    function getProductId() {
+        return _deviceDescriptor["productid"];
+    }
+
+    function getInterfaces() {
+        return _deviceDescriptor.configurations[0].interfaces;
+    }
 
     // -------------------- Private functions --------------------
 
     // Select and setup drivers
     function _selectDrivers(drivers) {
         // step one: try single driver
-        local ifs = _deviceDescriptor.configurations[0].interfaces;
         {
             foreach (driver in  drivers) {
                 try {
-                    if (null != (instance = driver.match(this, ifs))) {
+                    if (null != (instance = driver.match(this))) {
                         _drivers.append(instance);
                         return;
                     }
                 } catch (e) {
-                    _log("Error driver initialization: " + e);
+//                    _log("Error driver initialization: " + e);
                 }
             }
         }
@@ -434,6 +452,8 @@ class USB.Device {
 
         // Class information should be determined from the Interface Descriptors
         if (/* 0 == device && */ 0 == devSubClass && 0 == devProtocol) {
+            local ifs = _deviceDescriptor.configurations[0].interfaces;
+
             // TODO: find and parse IAD (Interface Association Descriptor), then group interfaces
             foreach (dif in ifs) {
                 foreach (driver in  drivers) {
@@ -444,12 +464,12 @@ class USB.Device {
                             break;
                         }
                     } catch (e) {
-                        _log("Error driver initialization: " + e);
+//                      _log("Error driver initialization: " + e);
                     }
                 }
             }
         } else {
-            _log("No driver was found new device");
+//            _log("No driver was found new device");
         }
     }
 
@@ -548,7 +568,8 @@ class USB.FunctionalEndpoint {
 
         _transferCb = function (error, length) {
             try {
-                onComplete(this, error, blob, length);
+                if (onComplete != null)
+                    onComplete(this, error, blob, length);
             } catch (e) {
                 // TODO: introduce USB generic logger
                 _error(e);
@@ -558,10 +579,10 @@ class USB.FunctionalEndpoint {
 
     // Notifies application about data transfer status
     function _onTransferComplete(error, length) {
+        _transferCb(error, length);
+
         // ready for next request
         _transferCb = null;
-
-        _transferCb(error, length);
     }
 }
 
