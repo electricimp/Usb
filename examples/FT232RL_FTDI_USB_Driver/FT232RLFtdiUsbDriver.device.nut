@@ -28,10 +28,6 @@
 //  - Imp005
 //  - FT232RL FTDI USB to TTL Serial Adapter Module
 
-// Require USB library
-// Please note the USB class must be required before the driver class at the top of the device code
-#require "USB.device.lib.nut:0.1.0"
-
 // Driver for FT232RL FTDI USB to TTL Serial Adapter Module
 class FT232RLFtdiUsbDriver extends USB.DriverBase {
 
@@ -49,8 +45,10 @@ class FT232RLFtdiUsbDriver extends USB.DriverBase {
     _bulkOut = null;
 
     constructor(device, interface) {
-        _bulkIn  = device.getEndpoint(interface.interfacenumber, USB_ENDPOINT_BULK | USB_DIRECTION_IN);
-        _bulkOut = device.getEndpoint(interface.interfacenumber, USB_ENDPOINT_BULK | USB_DIRECTION_OUT);
+        _bulkIn  = device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+        _bulkOut = device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+
+        if (null == _bulkIn || null == _bulkOut) throw "Can't get required endpoints";
     }
 
     function match(device, interfaces) {
@@ -108,12 +106,3 @@ class FT232RLFtdiUsbDriver extends USB.DriverBase {
         _bulkIn.read(data, onComplete);
     }
 }
-
-// Initialize USB Host
-usbHost <- USB.Host(hardware.usb);
-
-// Register the Ftdi driver with USB Host
-usbHost.registerDriver(FT232RLFtdiUsbDriver);
-
-// Log instructions for user
-server.log("USB listeners opened.  Plug and unplug FTDI board in to see logs.");
