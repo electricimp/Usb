@@ -242,13 +242,13 @@ class USB.Host {
         _log("USB reset complete");
     }
 
-    _log(txt) {
+    function _log(txt) {
         if (_debug) {
             server.log("[Usb.Host] " + txt);
         }
     }
 
-    _error(txt) {
+    function _error(txt) {
         server.error("[Usb.Host] " + txt);
     }
 };
@@ -285,7 +285,7 @@ class USB.Device {
         _address = deviceAddress;
 
         local ep0 = USB.ControlEndpoint(this, 0, _deviceDescriptor.maxpacketsize);
-        _endpoints.0 <- ep0;
+        _endpoints[0] <- ep0;
 
         ep0.setAddress(address);
 
@@ -334,11 +334,11 @@ class USB.Device {
         }
 
         // TODO: track active interfaces and theirs alternate settings
-        foreach (if in _deviceDescriptor.configurations[0].interfaces) {
-            if (if.interfacenumber == ifNumber) {
-                foreach (ep in if.endpoints) {
+        foreach (dif in _deviceDescriptor.configurations[0].interfaces) {
+            if (dif.interfacenumber == ifNumber) {
+                foreach (ep in dif.endpoints) {
                     if (ep.attributes == type) {
-                        local maxSize - ep.maxpacketsize;
+                        local maxSize = ep.maxpacketsize;
                         local address = ep.address;
 
                         usb.openendpoint(_speed, _address, ifNumber,
@@ -363,13 +363,13 @@ class USB.Device {
         if (epAddress in _endpoints) return _endpoints.epAddress;
 
         // TODO: track active interfaces and theirs alternate settings
-        foreach (if in _deviceDescriptor.configurations[0].interfaces) {
-            foreach (ep in if.endpoints) {
+        foreach (dif in _deviceDescriptor.configurations[0].interfaces) {
+            foreach (ep in dif.endpoints) {
                 if (ep.address == epAddress) {
-                    local maxSize - ep.maxpacketsize;
+                    local maxSize = ep.maxpacketsize;
                     local type = ep.attributes;
 
-                    usb.openendpoint(_speed, _address, if.interfacenumber,
+                    usb.openendpoint(_speed, _address, dif.interfacenumber,
                                         type, maxSize, epAddress, 1);
 
                     local newEp = (type == USB_ENDPOINT_CONTROL) ?
@@ -388,7 +388,7 @@ class USB.Device {
     // Called by USB.Host when the devices is detached
     function stop() {
         // Close all endpoints at first
-        foreach ( (epAddress, ep) in _endpoints) ep.close();
+        foreach (epAddress, ep in _endpoints) ep.close();
 
         foreach ( driver in _drivers ) {
             try {
@@ -428,16 +428,16 @@ class USB.Device {
             }
         }
 
-        local devClass      = _deviceDescriptor.class;
+        local devClass      = _deviceDescriptor["class"];
         local devSubClass   = _deviceDescriptor.subclass;
         local devProtocol   = _deviceDescriptor.protocol;
 
         // Class information should be determined from the Interface Descriptors
         if (0 == device && 0 == devSubClass && 0 == devProtocol) {
             // TODO: find and parse IAD (Interface Association Descriptor), then group interfaces
-            foreach (if in ifs) {
+            foreach (dif in ifs) {
                 foreach (driver in  drivers) {
-                    local ifArr = [if];
+                    local ifArr = [dif];
                     try {
                         if (null != (instance = driver.match(this, ifArr))) {
                             _drivers.append(instance);
@@ -557,7 +557,7 @@ class USB.FunctionalEndpoint {
     }
 
     // Notifies application about data transfer status
-    fucntion _onTransferComplete(error, length) {
+    function _onTransferComplete(error, length) {
         // ready for next request
         _transferCb = null;
 
