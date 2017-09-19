@@ -199,10 +199,10 @@ class USB.Host {
 
     // Device detach processing function
     function _onDeviceDetached(eventDetails) {
-        local address = eventDetails.address;
+        local address = eventDetails.device;
         if (address in _devices) {
-            local device = _devices.address;
-            delete _devices.address;
+            local device = _devices[address];
+            delete _devices[address];
 
             try {
                 device.stop();
@@ -593,7 +593,7 @@ class USB.FunctionalEndpoint {
                 if (onComplete != null) onComplete(this, error, data, length);
             } catch (e) {
                 // TODO: introduce USB generic logger
-                _error(e);
+                _device._error(e);
             }
         };
     }
