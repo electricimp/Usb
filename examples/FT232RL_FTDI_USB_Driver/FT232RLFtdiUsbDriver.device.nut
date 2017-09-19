@@ -45,8 +45,8 @@ class FT232RLFtdiUsbDriver extends USB.DriverBase {
     _bulkOut = null;
 
     constructor(device, interface) {
-        _bulkIn  = device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
-        _bulkOut = device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+        _bulkIn  = device.getEndpoint(interface, USB_ENDPOINT_BULK | USB_DIRECTION_IN);
+        _bulkOut = device.getEndpoint(interface, USB_ENDPOINT_BULK | USB_DIRECTION_OUT);
 
         if (null == _bulkIn || null == _bulkOut) throw "Can't get required endpoints";
     }
@@ -56,6 +56,7 @@ class FT232RLFtdiUsbDriver extends USB.DriverBase {
             device.productid == PID) {
                 return FT232RLFtdiUsbDriver(device, interfaces[0]);
         }
+        return null;
     }
 
     // Notify that driver is going to be released
@@ -71,7 +72,6 @@ class FT232RLFtdiUsbDriver extends USB.DriverBase {
     function _typeof() {
         return "FT232RLFtdiUsbDriver";
     }
-
 
     //
     // Write string or blob to usb

@@ -365,8 +365,10 @@ class QL720NWUartUsbDriver extends USB.DriverBase {
 
       constructor(device) {
           _device = device;
-          _bulkIn = device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
-          _bulkOut = device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+          _bulkIn = device.getEndpoint(0, USB_ENDPOINT_BULK | USB_DIRECTION_IN);
+          _bulkOut = device.getEndpoint(0, USB_ENDPOINT_BULK | USB_DIRECTION_OUT);
+
+          if (null == _bulkIn || null == _bulkOut) throw "Can't get required endpoints";
 
           // Start driver function
           // TODO: not good place for driver start
@@ -375,29 +377,47 @@ class QL720NWUartUsbDriver extends USB.DriverBase {
           _start();
       }
 
+      function release() {
+          _actions = [];
+          _bulkIn = null;
+          _bulkOut = null;
+      }
     //
     // Called when a Usb request is succesfully completed
     //
     // @param  {Table} eventdetails Table with the transfer event details
     //
-    function _transferComplete() {
-/*
-        local direction = (eventdetails["endpoint"] & 0x80) >> 7;
+    function _transferComplete(action, payload) {
+        if (action == "read") {
 
-        if (direction == USB_DIRECTION_IN) {
-
-            local readData = _bulkIn.done(eventdetails);
-
-            if (readData.len() >= 3) {
-                readData.seek(2);
-                _onEvent("data", readData.readblob(readData.len()));
+            if (payload.len() >= 3) {
+                payload.seek(2);
+                _onEvent("data", payload.readblob(payload.len()));
             } else {
-                _bulkIn.read(blob(64 + 2));
+                _pushAction("read", blob(64 + 2), _transferComplete.bindenv(this));
             }
 
-        } else if (direction == USB_DIRECTION_OUT) {
-            _bulkOut.done(eventdetails);
-        } */
+        }
+    }
+
+    _actions = [];
+
+    function pushAction(type, data, callback) {
+      _actions.push({type:type, data:data, callback:callback});
+      _actionHandler(true);
+    }
+
+    function _actionHandler(start = false) {
+       action = _actions.pop();
+       if (action.type == "write") {
+         _bulkOut.write(action.data, _actionHandler.bindenv(this));
+       }
+       else if (action.type == "read") {
+         _bulkIn.read(action.data, _actionHandler.bindenv(this));
+       }
+       else {
+         throw "Unknow action";
+       }
     }
 
     //
@@ -417,14 +437,15 @@ class QL720NWUartUsbDriver extends USB.DriverBase {
             throw "Write data must of type string or blob";
             return;
         }
-        _bulkOut.write(_data, _transferComplete.bindenv(this));
+
+        _pushAction("write", data, (_transferComplete).bindenv(this));
     }
 
     //
     // Initialize the read buffer
     //
     function _start() {
-        _bulkIn.read(blob(64 + 2), _transferComplete.bindenv(this));
+        _pushAction("read", blob(64 + 2), _transferComplete.bindenv(this));
     }
 }
 

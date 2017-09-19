@@ -343,7 +343,9 @@ class USB.Device {
     }
 
     // Request endpoint of required type. Creates if not cached.
-    function getEndpoint(ifs, type, dir) {
+    function getEndpoint(ifs, ctype) {
+       local type = ctype & USB_ENDPOINT_TYPE_MASK;
+       local dir = ctype & !USB_ENDPOINT_TYPE_MASK;
 
        foreach ( epAddress, ep  in _endpoints) {
             if (ep._type == type &&

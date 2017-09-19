@@ -1,4 +1,4 @@
-#require "USB.device.lib.nut:0.1.0"
+#require "USB.device.lib.nut:0.2.0"
 
 // Initialize USB Host
 usbHost <- USB.Host(hardware.usb);
