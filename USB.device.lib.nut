@@ -38,6 +38,7 @@ class USB {
         const USB_SETUP_TYPE_STANDARD = 0x00;
         const USB_SETUP_TYPE_CLASS = 0x20;
         const USB_SETUP_TYPE_VENDOR = 0x40;
+        const USB_SETUP_TYPE_MASK   = 0x60;
         const USB_SETUP_RECIPIENT_DEVICE = 0x00;
         const USB_SETUP_RECIPIENT_INTERFACE = 0x01;
         const USB_SETUP_RECIPIENT_ENDPOINT = 0x02;
@@ -324,22 +325,6 @@ class USB.Device {
             0,
             _deviceDescriptor["maxpacketsize0"]
         );
-    }
-
-
-    // Selects on of the available device configuration
-    // WARNING: causes all driver to receive disconnect event
-    //          and perform new driver lookup sequence
-    function selectDeviceConfiguration(configNumber) {
-
-    }
-
-
-    // Selects on of the available device configuration
-    // WARNING: causes related driver to receive disconnect event
-    //          and perform new driver lookup sequence
-    function setAlternateInterface(ifs, altNumber) {
-
     }
 
     // Request endpoint of required type. Creates if not cached.
@@ -643,6 +628,8 @@ class USB.ControlEndpoint {
     // Note! This operation is synchronous.
     function transfer(reqType, type, value, index, data = null) {
         if (_closed) throw "Closed";
+
+        if ((reqType & USB_SETUP_TYPE_MASK) != USB_SETUP_TYPE_VENDOR) throw "Only vendor request is allowed";
 
         _device._usb.controltransfer(
             device._speed,
