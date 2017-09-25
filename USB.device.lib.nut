@@ -360,9 +360,6 @@ class USB.Device {
                     }
                 }
             }
-            else {
-                server.log("CCCCCCCCCCUNNNNNNNNNNNNNNNNNNNT");
-            }
         }
 
         // No EP found
