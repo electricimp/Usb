@@ -113,17 +113,42 @@ descriptor and device driver instances. There is no way to extend.
 
 #### constructor(*usb, speed, deviceDescriptor, deviceAddress, drivers*)
 
+| Parameter 	 | Data Type | Default | Description |
+| -------------- | --------- | ------- | ----------- |
+| *usb* 		     | Object 	 | n/a 	   | The imp API hardware usb object `hardware.usb` |
+| *speed* | Number   | n/a  | Usb device speed. |
+| *deviceDescriptor* | desviceDescriptor   | n/a  | Usb device descriptor. |
+| *deviceAddress* | Number   | n/a  | Usb device descriptor. |
+| *drivers* | USB.DriverBase[] | n/a  | the list of registered `USB.DeviceDriver` classes. |
+
+
 #### setAddress(*address*)
 
 Set up custom device address. throw an exception if device address busy.
 
+| Parameter 	 | Data Type | Default | Description |
+| -------------- | --------- | ------- | ----------- |
+| *address* 		     | Number 	 | n/a 	   | a new usb device address |
+
 #### getEndpoint(*ifs, type, direction*)
 
+
 Return cached or instantiate a new one `USB.Endpoint` object which is corresponding to the requested argument. And return null otherwise.
+
+| Parameter 	 | Data Type | Default | Description |
+| -------------- | --------- | ------- | ----------- |
+| *ifs* 		     | Interface 	 | n/a 	   | usb device interface descriptor |
+| *type* 		     | Number 	 | n/a 	   | endpoint type |
+| *direction* 		     | Number 	 | n/a 	   | endpoint direction |
 
 #### getEndpointByAddress(*epAddress*)
 
 Return cached endpoint by the address
+
+| Parameter 	 | Data Type | Default | Description |
+| -------------- | --------- | ------- | ----------- |
+| *epAddress* 		     | Number 	 | n/a 	   | address of the usb endpoint |
+
 
 #### stop()
 
@@ -131,7 +156,7 @@ Stop all drivers. Happens on device disconnected.
 
 #### toString()
 
-Helper method to print device details
+Helper method to print device details.
 
 #### getVendorId()
 
@@ -143,11 +168,21 @@ Get the device product ID
 
 ### Internal methods
 
-#### _selectDrivers(drivers)
-#### _transferEvent(eventDetails)
-#### _log(txt)
-#### _error(txt)
+#### `_selectDrivers(drivers)`
 
+Implement driver match mechanism. TBD: describe driver match algorithm
+
+#### `_transferEvent(eventDetails)`
+
+Handle transfer complete event for a concrete device
+
+#### `_log(txt)`
+
+USB namespace common logging
+
+#### `_error(txt)`
+
+handle errors
 
 
 ## USB.DriverBase
