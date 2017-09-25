@@ -5,12 +5,12 @@ The USB libary acts as a wrapper around the Imp API `hardware.usb` object and ma
 **To use this library add the following statement to the top of your device code:**
 
 ```
-#require "USB.device.lib.nut:0.1.0"
+#require "USB.device.lib.nut:0.2.0"
 ```
 
 ## USB.Host
 
-The USB.Host class has methods to subsicribe to events and register drivers (see [USB.DriverBase](#USBDriver) for more details on USB drivers).
+The USB.Host class has methods to encapsulate the `hardware.usb` api and register drivers (see [USB.DriverBase](#USBDriver) for more details on USB drivers).
 
 ### Class Usage
 
@@ -31,25 +31,23 @@ usbHost <- USB.Host(hardware.usb);
 
 ### Class Methods
 
-#### registerDriver(*driverClass, identifiers*)
+#### registerDriver(*driverClass*)
 
-Registers a driver to a devices list of VID/PID combinations. When a device is connected via usb its VID/PID combination will be looked up and the matching driver will be instantiated to interface with device.
+Registers a driver to a devices list. Driver class should be inherited from the USB.DriverBase class and re-implement `USB.DriverBase.match` method. When a device is connected via usb then static method "match" will be called for each driver. The `match` method could check device VID/PID combination or it could implement more complex solution based on device class, subclass and interfaces.
 
 
 | Parameter 	| Data Type | Required | Description |
 | ------------- | --------- | -------- | ----------- |
 | *driverClass* | Class 	| Yes 	   | A reference to the class to be instantiated when a device with matching identifiers is connected. Must be a valid usb driver class that extends the *USB.DriverBase* class. |
-| *identifiers* | Array 	| Yes 	   | Array of VID/PID combinations. When a device connected that identifies itself with any of the PID/VID combinations provided the *driverClass* will be instatiated.
-
 
 ##### Example
 
 ```squirrel
 // Register the Ftdi driver with usb host
-usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
+usbHost.registerDriver(FtdiUsbDriver);
 ```
 
-#### on(*eventName, callback*)
+#### addEventListener(*eventName, callback*)
 
 Subscribe a callback function to a specific event. There are currently 2 events that you can subscibe to `"connected"` and `"disconnected"`.
 
@@ -63,9 +61,9 @@ Subscribe a callback function to a specific event. There are currently 2 events 
 
 ```squirrel
 // Subscribe to usb connection events
-usbHost.on("connected",function (device) {
+usbHost.addEventListener("connected",function (driver) {
     server.log(typeof device + " was connected!");
-    switch (typeof device) {
+    switch (typeof driver) {
         case "FtdiUsbDriver":
             // device is a ftdi device. Handle it here.
             break;
@@ -73,13 +71,13 @@ usbHost.on("connected",function (device) {
 });
 
 // Subscribe to usb disconnection events
-usbHost.on("disconnected",function(deviceName) {
+usbHost.addEventListener("disconnected",function(deviceName) {
     server.log(deviceName + " disconnected");
 });
 
 ```
 
-#### off(*eventName*)
+#### removeEventListener(*eventName*)
 
 Clears a subscribed callback function from a specific event.
 
@@ -91,7 +89,7 @@ Clears a subscribed callback function from a specific event.
 
 ```squirrel
 // Subscribe to usb connection events
-usbHost.on("connected",function (device) {
+usbHost.addEventListener("connected",function (device) {
     server.log(typeof device + " was connected!");
     switch (typeof device) {
         case "FtdiUsbDriver":
@@ -102,28 +100,7 @@ usbHost.on("connected",function (device) {
 
 // Unsubscribe from usb connection events after 30 seconds
 imp.wakeup(30,function(){
-	usbHost.off("connected");
-}.bindenv(this))
-```
-
-
-#### getDriver()
-
-Returns the driver for the currently connected devices. Returns `null` if no device is connected or a corresponding driver to the device was not found.
-
-##### Example
-
-```squirrel
-// Register the Ftdi driver with usb host
-usbHost.registerDriver(FtdiUsbDriver, FtdiUsbDriver.getIdentifiers());
-
-// Check if a recognized usb device is connected in 30 seconds
-imp.wakeup(30,function(){
-    local driver = usbHost.getDriver();
-    if (driver != null){
-    	server.log(typeof driver);
-       // do something with driver here
-    }
+	usbHost.removeEventListener("connected");
 }.bindenv(this))
 ```
 
@@ -135,9 +112,9 @@ The USB.DriverBase class is used as the base for all drivers that use this libra
 
 These are the functions your usb driver class must override. The default behavior for most of these function is to throw an error.
 
-#### getIdentifiers()
+#### match(*deviceObject, interfaces*)
 
-Method that returns an array of tables containing VID PID pairs. These identifiers are needed when registering a driver with the Usb.Host class, [see registerDriver()](#registerdriverdriverclassidentifiers). Once the driver is registered with USB.Host, when a device with a matching VID PID combo is connected, an instance of this driver will be passed to the callback registered to the "connected" event.
+Method that returns a driver object or null. These method checks if current driver could support all the provided interface for the current device or not. Match method could be based on VID, PID, device class, subclass and interfaces. This method is mandatory and it is not possible to register driver withou this method, [see registerDriver()](#registerdriverdriverclassidentifiers). Once the driver is registered with USB.Host, then `mathc()` method will be called  on each device "connected" event.
 
 ##### Example
 
@@ -147,18 +124,23 @@ class MyUsbDriver extends USB.DriverBase {
     static VID = 0x01f9;
     static PID = 0x1044;
 
-   // Returns an array of VID PID combinations
-    function getIdentifiers() {
-        local identifiers = {};
-        identifiers[VID] <-[PID];
-        return [identifiers];
+    _device = null;
+
+    constructor(device) {
+      _device = device;
+    }
+    // Returns an array of VID PID combinations
+    function match(device, interface) {
+        if (device._vid == VID && device._pid == PID)
+          return new MyUsbDriver(device);
+        return null;
     }
 }
 
 usbHost <- USB.Host(hardware.usb);
 
 // Register the Usb driver with usb host
-usbHost.registerDriver(MyUsbDriver, MyUsbDriver.getIdentifiers());
+usbHost.registerDriver(MyUsbDriver);
 ```
 
 #### _typeof()
