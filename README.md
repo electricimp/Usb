@@ -104,6 +104,52 @@ imp.wakeup(30,function(){
 }.bindenv(this))
 ```
 
+## USB.DeviceClass
+
+The USB.DeviceClass is an internal abstraction which allow us to wrap USB device
+descriptor and device driver instances. There is no way to extend.
+
+### Public methods
+
+#### constructor(*usb, speed, deviceDescriptor, deviceAddress, drivers*)
+
+#### setAddress(*address*)
+
+Set up custom device address. throw an exception if device address busy.
+
+#### getEndpoint(*ifs, type, direction*)
+
+Return cached or instantiate a new one `USB.Endpoint` object which is corresponding to the requested argument. And return null otherwise.
+
+#### getEndpointByAddress(*epAddress*)
+
+Return cached endpoint by the address
+
+#### stop()
+
+Stop all drivers. Happens on device disconnected.
+
+#### toString()
+
+Helper method to print device details
+
+#### getVendorId()
+
+Get the device vendor ID
+
+#### getProductId()
+
+Get the device product ID
+
+### Internal methods
+
+#### _selectDrivers(drivers)
+#### _transferEvent(eventDetails)
+#### _log(txt)
+#### _error(txt)
+
+
+
 ## USB.DriverBase
 
 The USB.DriverBase class is used as the base for all drivers that use this library. It contains a set of functions that are expected by [USB.Host](#USBhost) as well as some set up functions. There are a few required functions that must be overwritten. All other functions will be documented and can be overwritten only as needed.
@@ -162,46 +208,11 @@ myDriver <- MyUsbDriver();
 server.log(typeof myDriver);
 ```
 
-#### _transferComplete(*eventDetails*)
-
-The *_transferComplete()* method is triggered when a usb transfer is completed. This example code is taken from our example Ftdi and Uart drivers.
-
-##### Example
-
-```squirrel
-class MyUsbDriver extends USB.DriverBase {
-
-    // Called when a Usb request is succesfully completed
-    function _transferComplete(eventdetails) {
-
-        local direction = (eventdetails["endpoint"] & 0x80) >> 7;
-
-        if (direction == USB_DIRECTION_IN) {
-
-            local readData = _bulkIn.done(eventdetails);
-            if (readData.len() >= 3) {
-                // skip first two bytes
-                readData.seek(2);
-                // emit data event that the user can subscribe to.
-                _onEvent("data", readData.readblob(readData.len()));
-            }
-
-            // Blank the buffer
-            _bulkIn.read(blob(64 + 2));
-
-        } else if (direction == USB_DIRECTION_OUT) {
-            _bulkOut.done(eventdetails);
-        }
-    }
-
-}
-```
-
 ### USB.DriverBase Setup Functions
 
 This is a set of functions that are called during the set up process of the usb driver by the USB.Host. They are already implemented within the UsbDriverBase class and should not require changes.
 
-#### Constructor: USB.DriverBase(*usbHost*)
+#### Constructor: USB.DriverBase(*device, interfaces*)
 
 By default the constructor takes an instance of the USB.Host class as its only parameter and assigns it to internal _usb variable accessible within the class scope. If custom initialization is required override the constructor as shown below, making sure to call the base.constructor() method. If no initialization is required let the parent class handle constructor. The USB driver is initialized by USB.Host class when a new device is connected to the USB port.
 
