@@ -73,6 +73,9 @@ class USB {
         const USB_DIRECTION_OUT = 0x0;
         const USB_DIRECTION_IN = 0x80;
         const USB_DIRECTION_MASK = 0x80;
+
+        const USB_TYPE_STALL_ERROR = 4;
+
     }
 }
 
@@ -328,14 +331,11 @@ class USB.Device {
     }
 
     // Request endpoint of required type. Creates if not cached.
-    function getEndpoint(ifs, ctype) {
-       local type = ctype & USB_ENDPOINT_TYPE_MASK;
-       local dir = ctype & !USB_ENDPOINT_TYPE_MASK;
-
+    function getEndpoint(ifs, type, direction) {
        foreach ( epAddress, ep  in _endpoints) {
             if (ep._type == type &&
                 ep._if == ifs &&
-                (ep._address & USB_DIRECTION_MASK) == dir) {
+                (ep._address & USB_DIRECTION_MASK) == direction) {
                     return ep;
             }
         }
@@ -345,12 +345,12 @@ class USB.Device {
             if (dif == ifs) {
                 foreach (ep in dif.endpoints) {
                     if ( ep.attributes == type &&
-                         (ep.address & USB_DIRECTION_MASK) == dir) {
+                         (ep.address & USB_DIRECTION_MASK) == direction) {
                         local maxSize = ep.maxpacketsize;
                         local address = ep.address;
 
                         _usb.openendpoint(_speed, this._address, dif.interfacenumber,
-                                          type, maxSize, address);
+                                          type, maxSize, address, 255);
 
                         local newEp = (type == USB_ENDPOINT_CONTROL) ?
                                         USB.ControlEndpoint(this, dif, address, maxSize) :
@@ -359,6 +359,9 @@ class USB.Device {
                         return newEp;
                     }
                 }
+            }
+            else {
+                server.log("CCCCCCCCCCUNNNNNNNNNNNNNNNNNNNT");
             }
         }
 
@@ -377,7 +380,7 @@ class USB.Device {
                     local maxSize = ep.maxpacketsize;
                     local type = ep.attributes;
 
-                    usb.openendpoint(_speed, _address, dif,
+                    _usb.openendpoint(_speed, _address, dif,
                                         type, maxSize, epAddress, 1);
 
                     local newEp = (type == USB_ENDPOINT_CONTROL) ?
@@ -479,7 +482,7 @@ class USB.Device {
             local error = (eventDetails.state != 0) ? eventDetails.state : null;
             local len = eventDetails.length;
 
-            ep._onTransferComplete(error, len);
+            ep._onTransferComplete(error, len, eventDetails.endpoint);
         } else {
             _log("Unexpected transfer for unknown endpoint: " + epAddress);
         }
@@ -584,11 +587,38 @@ class USB.FunctionalEndpoint {
     }
 
     // Notifies application about data transfer status
-    function _onTransferComplete(error, length) {
+    function _onTransferComplete(error, length, endpoint) {
         _transferCb(error, length);
 
         // ready for next request
         _transferCb = null;
+
+        if (error == USB_TYPE_STALL_ERROR)
+            imp.wakeup(0, (function() {
+                this.clearStall(endpoint);
+            }).bindenv(this));
+    }
+
+    function clearStall(endpoint) {
+        // Attempt to clear the stall
+        try {
+            _device._usb.controltransfer(
+                _device._speed,
+                _device._address,
+                0,
+                USB_SETUP_RECIPIENT_ENDPOINT | USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_STANDARD,
+                USB_REQUEST_CLEAR_FEATURE,
+                0,    // Feature selector: 0 = ENDPOINT_HALT
+                endpoint,
+               _maxPacketSize);
+        } catch(error) {
+            // Attempt failed
+            server.error("Control transfer failed. Error: " + error);
+               return false;
+        }
+
+        // Attempt successful
+        return true;
     }
 }
 
@@ -666,5 +696,4 @@ class USB.DriverBase {
     function release() {
 
     }
-
 }

@@ -45,8 +45,8 @@ class FT232RLFtdiUsbDriver extends USB.DriverBase {
     _bulkOut = null;
 
     constructor(device, interface) {
-        _bulkIn  = device.getEndpoint(interface, USB_ENDPOINT_BULK | USB_DIRECTION_IN);
-        _bulkOut = device.getEndpoint(interface, USB_ENDPOINT_BULK | USB_DIRECTION_OUT);
+        _bulkIn  = device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+        _bulkOut = device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
 
         if (null == _bulkIn || null == _bulkOut) throw "Can't get required endpoints";
     }

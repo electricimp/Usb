@@ -365,8 +365,8 @@ class QL720NWUartUsbDriver extends USB.DriverBase {
 
       constructor(device) {
           _device = device;
-          _bulkIn = device.getEndpoint(0, USB_ENDPOINT_BULK | USB_DIRECTION_IN);
-          _bulkOut = device.getEndpoint(0, USB_ENDPOINT_BULK | USB_DIRECTION_OUT);
+          _bulkIn = device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+          _bulkOut = device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
 
           if (null == _bulkIn || null == _bulkOut) throw "Can't get required endpoints";
 
