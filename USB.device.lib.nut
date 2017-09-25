@@ -222,6 +222,11 @@ class USB.Host {
     // Data transfer status processing function
     function _onTransferComplete(eventDetails) {
         local address = eventDetails.device;
+        local error = eventDetails.state;
+
+        // check for UNRECOVERABLE error
+        if (_checkError(error)) return;
+
         if (address in _devices) {
             local device = _devices[address];
             try {
@@ -232,6 +237,23 @@ class USB.Host {
         } else {
             _log("transfer event for unknown device: "+ address);
         }
+    }
+
+    // Checks error class
+    // Returns  TRUE if error is critical and USB need to be reset
+    //          FALSE otherwise
+    function _checkError(error) {
+        if ((error > 0  && error < 4)   ||
+            (error > 4  && error < 8)   ||
+            (error > 9 && errror < 12)  ||
+            error == 14 || error > 17) {
+            // all this errors are critical
+            _error("Critical error received: " + error);
+            imp.wakeup(0, _reset.bindenv(this));
+            return true;
+        }
+
+        return false;
     }
 
     // USB critical error processing function
@@ -249,8 +271,8 @@ class USB.Host {
 
     // USB reset function
     function _reset() {
-        usb.disable();
-        usb.configure(_onUsbEvent.bindenv(this));
+        _usb.disable();
+        _usb.configure(_onUsbEvent.bindenv(this));
 
         _log("USB reset complete");
     }
