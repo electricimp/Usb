@@ -470,16 +470,35 @@ class USB.Device {
         }
     }
 
+    function _clearStall(endpoint) {
+        // Attempt to clear the stall
+        try {
+            getEndpointByAddress(0).transfer(
+                USB_SETUP_RECIPIENT_ENDPOINT | USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_STANDARD,
+                USB_REQUEST_CLEAR_FEATURE,
+                0,
+                endpoint);
+            _log("STALLed pipe " + endpoint + " was reset");
+        } catch(error) {
+            // Attempt failed
+            _error("_clearStall failed. Error: " + error);
+            return false;
+        }
+
+        // Attempt successful
+        return true;
+    }
+
     function _transferEvent(eventDetails) {
         local epAddress = eventDetails.endpoint;
-
         if (epAddress in _endpoints) {
             // TODO: check relation of ep with interface and ep type
             local ep = _endpoints[epAddress];
             local error = (eventDetails.state != 0) ? eventDetails.state : null;
             local len = eventDetails.length;
 
-            ep._onTransferComplete(error, len, eventDetails.endpoint);
+            ep._onTransferComplete(error, len);
+
         } else {
             _log("Unexpected transfer for unknown endpoint: " + epAddress);
         }
@@ -553,6 +572,14 @@ class USB.FunctionalEndpoint {
         }
     }
 
+    // Reset the pipe.
+    // Return
+    //      TRUE if pipe was reset
+    //      FALSE if device rejects reset
+    function reset() {
+        return _device._clearStall(_address);
+    }
+
     // Mark as closed. All further operation causes exception.
     function close() {
         _closed = true;
@@ -584,38 +611,11 @@ class USB.FunctionalEndpoint {
     }
 
     // Notifies application about data transfer status
-    function _onTransferComplete(error, length, endpoint) {
+    function _onTransferComplete(error, length) {
         _transferCb(error, length);
 
         // ready for next request
         _transferCb = null;
-
-        if (error == USB_TYPE_STALL_ERROR)
-            imp.wakeup(0, (function() {
-                this.clearStall(endpoint);
-            }).bindenv(this));
-    }
-
-    function clearStall(endpoint) {
-        // Attempt to clear the stall
-        try {
-            _device._usb.controltransfer(
-                _device._speed,
-                _device._address,
-                0,
-                USB_SETUP_RECIPIENT_ENDPOINT | USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_STANDARD,
-                USB_REQUEST_CLEAR_FEATURE,
-                0,    // Feature selector: 0 = ENDPOINT_HALT
-                endpoint,
-               _maxPacketSize);
-        } catch(error) {
-            // Attempt failed
-            server.error("Control transfer failed. Error: " + error);
-               return false;
-        }
-
-        // Attempt successful
-        return true;
     }
 }
 
