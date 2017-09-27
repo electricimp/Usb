@@ -46,6 +46,15 @@ Registers a driver to a devices list. Driver class should be inherited from the 
 usbHost.registerDriver(FtdiUsbDriver);
 ```
 
+#### unregisterDriver(*driverClass*)
+
+Unregister driver to do not instantiate it anymore on device connect/disconnect.
+
+| Parameter 	| Data Type | Required | Description |
+| ------------- | --------- | -------- | ----------- |
+| *driverClass* | Class 	| Yes 	   | A reference to the driver class. Must be a valid usb driver class that extends the *USB.DriverBase* class. |
+
+
 #### addEventListener(*eventName, callback*)
 
 Subscribe a callback function to a specific event. There are currently 2 events that you can subscribe to `"connected"` and `"disconnected"`.
@@ -296,9 +305,60 @@ The USB.DriverBase class is used as the base for all drivers that use this libra
 
 These are the functions your usb driver class must override. The default behavior for most of these function is to throw an error.
 
+#### Constructor: USB.DriverBase(*device, interfaces*)
+
+By default the constructor should be private and takes an instance of the USB.Device class and list of Interfaces as parameters. Instantiation of the driver object should happen in the `match` method only.
+It is possible to get an access to the working `usb` object via `device._usb` but it is not recommended.
+All initialization of endpoints should happen in constructor. There is no extra methods for a lazy initialization of the driver.
+
+##### Example
+
+```squirrel
+class MyUsbDriver extends USB.DriverBase {
+
+    _device = null;
+    _bulkIn = null;
+    _bulkOut = null;
+
+    constructor(device, interfaces) {
+      _device = device;
+      _bulkIn = device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+      _bulkOut = device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+      this.start();
+    }
+
+    function match(device, interfaces) {
+      if (_checkMatch(device, interfaces))
+        return new MyUsbDriver(deivce,interfaces);
+      return null;
+    }
+
+    function _checkMatch(device, interfaces) {
+      // Implement device match here
+      return true;
+    }
+
+    function start() {
+      imp.wakeup(0, (function(action, error, payload, length) {
+          if (_bulkIn != null) {
+            _bulkIn.read(blob(64), function() {
+
+            });
+          }
+      }).bindenv(this));
+    }
+
+    function release() {
+        _bulkIn = null;
+        _bulkOut = null;
+    }
+}
+```
+
+
 #### match(*deviceObject, interfaces*)
 
-Method that returns a driver object or null. These method checks if current driver could support all the provided interface for the current device or not. Match method could be based on VID, PID, device class, subclass and interfaces. This method is mandatory and it is not possible to register driver withou this method, [see registerDriver()](#registerdriverdriverclassidentifiers). Once the driver is registered with USB.Host, then `mathc()` method will be called  on each device "connected" event.
+Method that returns a driver object or null. These method checks if current driver could support all the provided interface for the current device or not. Match method could be based on VID, PID, device class, subclass and interfaces. This method is mandatory and it is not possible to register driver withou this method, [see registerDriver()](#registerdriverdriverclassidentifiers). Once the driver is registered with USB.Host, then `match()` method will be called  on each device "connected" event.
 
 ##### Example
 
@@ -327,7 +387,7 @@ usbHost <- USB.Host(hardware.usb);
 usbHost.registerDriver(MyUsbDriver);
 ```
 
-#### _typeof()
+#### `_typeof()``
 
 The *_typeof()* method is a squirrel metamethod that returns the class name. See [metamethods documenation](https://electricimp.com/docs/resources/metamethods/)
 
@@ -346,65 +406,10 @@ myDriver <- MyUsbDriver();
 server.log(typeof myDriver);
 ```
 
-### USB.DriverBase Setup Functions
 
-This is a set of functions that are called during the set up process of the usb driver by the USB.Host. They are already implemented within the UsbDriverBase class and should not require changes.
+#### release()
 
-#### Constructor: USB.DriverBase(*device, interfaces*)
-
-By default the constructor takes an instance of the USB.Host class as its only parameter and assigns it to internal _usb variable accessible within the class scope. If custom initialization is required override the constructor as shown below, making sure to call the base.constructor() method. If no initialization is required let the parent class handle constructor. The USB driver is initialized by USB.Host class when a new device is connected to the USB port.
-
-##### Example
-
-```squirrel
-class MyUsbDriver extends USB.DriverBase {
-
-    _customOpt = null;
-
-    constructor(usb, customOpt) {
-        _customOpt = customOpt;
-        base.constructor(usb);
-    }
-
-}
-```
-
-#### connect(*deviceAddress, speed, descriptors*)
-
-This method is called by the USB.Host class after instantiation of the usb driver class. It makes calls to internal functions to set up the various endpoints (control and bulk transfer endpoints), configures the usb parameters like the baud rate and sets up the buffers.
-
-
-### USB.DriverBase Class Functions
-
-#### on(*eventName, callback*)
-
-Subscribe a callback function to a specific event. There are no events emitted by default as connection and disconnection are handled by the USB.Host. You can emit custom events in your driver using the internal `_onEvent` function but be sure to document them.
-
-
-| Key | Data Type | Required | Description |
-| --- | --------- | -------- | ----------- |
-| *eventName* | String | Yes | The string name of the event to subscribe to.|
-| *callback* | Function | Yes | Function to be called on event |
-
-
-#### off(*eventName*)
-
-Clears a subscribed callback function from a specific event.
-
-| Key | Data Type | Required | Description |
-| --- | --------- | -------- | ----------- |
-| *eventName* | String | Yes | The string name of the event to unsubscribe from.|
-
-
-#### _onEvent(*eventName, eventdetails*)
-
-This method is an internal class funciton used to emit events. The user is able to subscribe to these events using the `on` method defined in the public functions above.
-
-| Key | Data Type | Required | Description |
-| --- | --------- | -------- | ----------- |
-| *eventName* | String | Yes | The string name of the event to emit to.|
-| *eventdetails* | Any | Yes | If a callback is subscribed to the corresponding eventName the callback is called with eventDetails as the arguement. |
-
+Release all instantiate resource before driver close. Uses for a driver disconnection.
 
 ## Driver Examples
 
