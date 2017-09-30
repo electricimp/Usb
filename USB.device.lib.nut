@@ -618,6 +618,9 @@ class USB.FunctionalEndpoint {
     // this flags also indicates that EP is busy
     _transferCb = null;
 
+    // Watchdog timer
+    _timer = null;
+
     // Constructor
     // Parameters:
     //      device          - USB.Device instance, owner of this endpoint
@@ -704,6 +707,9 @@ class USB.FunctionalEndpoint {
                 _device._error(e);
             }
         };
+
+        _timer = imp.wakeup(5, _onTimeout.bindenv(this));
+
     }
 
     // Notifies application about data transfer status
@@ -711,10 +717,27 @@ class USB.FunctionalEndpoint {
     //  error  - transfer status code
     //  length - the lenght of data was transmitted
     function _onTransferComplete(error, length) {
+
+        if (null == _transferCb) {
+            _device.error("Unexpected transfer event: there is no listener for it");
+            return;
+        }
+
         _transferCb(error, length);
 
         // ready for next request
         _transferCb = null;
+
+        if (_timer) {
+            imp.cancelwakeup(_timer);
+            _timer = null;
+        }
+    }
+
+    // Auxilary function to handle transfer timeout state
+    function _onTimeout() {
+        _timer = null;
+        _onTransferComplete(USB_TYPE_TIMEOUT, 0);
     }
 }
 
