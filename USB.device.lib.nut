@@ -134,6 +134,16 @@ class USB.Host {
         _drivers = driverList;
     }
 
+    // Reset the BUS.
+    // Can be used by driver or application in response to unrecoverable error
+    // like unending bulk transfer or halt condition during conrtol transfer
+    function reset() {
+        _usb.disable();
+        _usb.configure(_onUsbEvent.bindenv(this));
+
+        _log("USB reset complete");
+    }
+
     // Auxilar function to get list of attached devices.
     // Returns:
     //      an array of HOST.Device instances
@@ -298,15 +308,7 @@ class USB.Host {
             }
         }
 
-        imp.wakeup(0, _reset.bindenv(this));
-    }
-
-    // USB reset function
-    function _reset() {
-        _usb.disable();
-        _usb.configure(_onUsbEvent.bindenv(this));
-
-        _log("USB reset complete");
+        imp.wakeup(0, reset.bindenv(this));
     }
 
     // Information level logger
@@ -746,7 +748,7 @@ class USB.ControlEndpoint {
     //      device          - USB.Device instance, owner of this endpoint
     //      ifs             - interface descriptor this enpoint servers for
     //      epAddress       - unique endpoint address
-    //      maxPacketSize   - maximum packet size for this endpint
+    //      maxPacketSize   - maximum packet size for this endpoint
     constructor (device, ifs, epAddress, maxPacketSize) {
         _device = device;
         _address = epAddress;
@@ -755,8 +757,8 @@ class USB.ControlEndpoint {
     }
 
     // Generic function for transferring data over control endpoint.
-    // Only vendor specific requirests are allowed.
-    // For other control operation use USB.Device public API
+    // Note! Only vendor specific requirests are allowed.
+    // For other control operation use USB.Device, USB.ControlEndpoint public API
     //
     // Parameters:
     //      reqType     - USB request type
@@ -764,6 +766,7 @@ class USB.ControlEndpoint {
     //      value       - A value determined by the specific USB request
     //      index       - An index value determined by the specific USB request
     //      data        - [optional] Optional storage for incoming or outgoing data
+    //
     // Note! This operation is synchronous.
     function transfer(reqType, req, value, index, data = null) {
         if ((reqType & USB_SETUP_TYPE_MASK) != USB_SETUP_TYPE_VENDOR) throw "Only vendor request is allowed";
@@ -777,6 +780,7 @@ class USB.ControlEndpoint {
         );
     }
 
+    // Reset given endpoint
     function clearStall(epAddress) {
         // Attempt to clear the stall
         try {
