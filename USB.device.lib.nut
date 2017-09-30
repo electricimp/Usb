@@ -136,7 +136,7 @@ class USB.Host {
 
     // Reset the BUS.
     // Can be used by driver or application in response to unrecoverable error
-    // like unending bulk transfer or halt condition during conrtol transfer
+    // like unending bulk transfer or halt condition during conrtol transferz
     function reset() {
         _usb.disable();
         _usb.configure(_onUsbEvent.bindenv(this));
@@ -781,14 +781,14 @@ class USB.ControlEndpoint {
     }
 
     // Reset given endpoint
-    function clearStall(epAddress) {
+    function clearStall() {
         // Attempt to clear the stall
         try {
             _transfer(
                 USB_SETUP_RECIPIENT_ENDPOINT | USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_STANDARD,
                 USB_REQUEST_CLEAR_FEATURE,
                 0,
-                endpoint);
+                _address);
         } catch(error) {
             // Attempt failed
             return false;
@@ -822,8 +822,10 @@ class USB.ControlEndpoint {
     }
 }
 
-
-class USB.DriverBase {
+// Interface class for all drivers.
+// Driver developer is not required to subclass it though.
+// No class hierarhy is verified by any USB.* functions.
+class USB.Driver {
 
     // Queried by USB.Host if this driver supports
     // given interface function of the device.
