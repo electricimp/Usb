@@ -22,6 +22,10 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
+
+
+// The class that introduces USB namespace and related constants.
+// Not intended to use by any developers.
 class USB {
 
     static VERSION = "0.2.0";
@@ -81,8 +85,9 @@ class USB {
 
 
 //
-// Usb wrapper class.
-//
+// The main interface to start working with USB devices.
+// Here an application registers drivers and assigns listeners
+// for important events like device connection/detachment.
 class USB.Host {
 
     // The list of registered drivers
@@ -100,15 +105,23 @@ class USB.Host {
     // USB device pointer
     _usb = null;
 
+    // Listener for some USB events
+    _listener = null;
+
     // ------------------------ public API -------------------
 
     //
     // Constructor
+    // Parameters:
+    //      usb          - an instance of object that implements hardware.usb API
+    //      driverList   - a list of spcecial classes that implemet USB.Driver API.
+    //      autoConfPins - flag to specify whether to configure pins for usb usage
+    //                     (see https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb)
     //
-    // @param  {Boolean} flag to specify whether to configure pins for usb usage (see https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb)
-    //
-    constructor(usb, autoConfPins = true) {
-        // TODO: check hardware
+    constructor(usb, driverList, autoConfPins = true) {
+
+        foreach (driver in driverList) _checkDriver(driver);
+
         if (autoConfPins) {
             // Configure the pins required for usb
             hardware.pinW.configure(DIGITAL_IN_PULLUP);
@@ -116,16 +129,38 @@ class USB.Host {
         }
 
         _usb = usb;
-        // TODO: check for singleton
         _usb.configure(_onUsbEvent.bindenv(this));
+
+        _drivers = driverList;
     }
 
+    // Auxilar function to get list of attached devices.
+    // Returns:
+    //      an array of HOST.Device instances
+    function getAttachedDevices() {
+        return _devices;
+    }
 
-    // Add the driver to driver lookup table
-    //
-    // @param {Class} driverClass Class to be instantiated when a matched device is connected
-    //
-    function registerDriver(driverClass) {
+    // Assign listener about device and  driver driver status changes.
+    // Parameters:
+    //      listener  - null or the function that receives two parameters:
+    //                     evetType - "connected",  "disconnected",
+    //                                "started", "stopped"
+    //                      eventObject - depending on event type it could be
+    //                                    either USB.Device or USB.Driver instance
+    function setEventListener(listener) {
+        if (typeof listener != "function" || lsistener != null) throw "Invalid paramater";
+
+        _listener = listener;
+
+        foreach(device in _devices) device._listener = listener;
+    }
+
+    // ------------------------ private API -------------------
+
+
+    // Checks if given parameter implement USB.Drvier API
+    function _checkDriver(driverClass) {
         if ("match" in driverClass &&
             typeof driverClass.match == "function" &&
             "release" in driverClass &&
@@ -137,27 +172,6 @@ class USB.Host {
             throw "Invalid driver class";
         }
     }
-
-    //
-    //
-    // @param {Class} driverClass Class to be removed from the supported driver list
-    //
-    function unregisterDriver(driverClass) {
-        local index = _drivers.find(driverClass);
-        if (null != index) _drivers.remove(index);
-    }
-
-    //
-    // Method for debug purpose to list device descriptions
-    // for all connected devices/configs/interfaces/endpoints.
-    //
-    function printDevices(printer) {
-        foreach (device in _devices) {
-            printer(device._deviceDescriptor);
-        }
-    }
-
-    // ------------------------ private API -------------------
 
     // The function that will be called in response to a USB event.
     // Parameters:
@@ -183,12 +197,17 @@ class USB.Host {
     }
 
     // New device processing function
+    // Creates new USB.Device instance, notifies application listener
+    // with "connected" event
     function _onDeviceConnected(eventDetails) {
-        local speed = eventDetails.speed;
-        local descr = eventDetails.descriptors;
-
         try {
+            local speed = eventDetails.speed;
+            local descr = eventDetails.descriptors;
+
             local device = USB.Device(_usb, speed, descr, _address, _drivers);
+
+            // a copy application callback
+            device._listener = _listener;
 
             _devices[_address] <- device;
 
@@ -196,12 +215,17 @@ class USB.Host {
 
             // address for next device
             _address++;
+
+            if (null != _listener) _listener("connected", descr);
+
         } catch (e) {
             _error("Error driver instantiation: " + e);
         }
     }
 
-    // Device detach processing function
+    // Device detach processing function.
+    // Stops corresponding USB.Device instance, notifies application listener
+    // with "disconnected" event
     function _onDeviceDetached(eventDetails) {
         local address = eventDetails.device;
         if (address in _devices) {
@@ -211,6 +235,9 @@ class USB.Host {
             try {
                 device.stop();
                 _log("Device " + device + " is removed");
+
+                if (null != _listener) _listener("disconnected", device);
+
             } catch (e) {
                 _error("Error on device " + device + " release: " + e);
             }
@@ -220,12 +247,19 @@ class USB.Host {
     }
 
     // Data transfer status processing function
+    // Checks transfer status and either notify USB.Device about event or
+    // schdules bus reset if status is critical error
     function _onTransferComplete(eventDetails) {
         local address = eventDetails.device;
         local error = eventDetails.state;
 
         // check for UNRECOVERABLE error
-        if (_checkError(error)) return;
+        if (_checkError(error)) {
+            // all this errors are critical
+            _error("Critical error received: " + error);
+            imp.wakeup(0, _onError.bindenv(this));
+            return;
+        }
 
         if (address in _devices) {
             local device = _devices[address];
@@ -247,16 +281,14 @@ class USB.Host {
             (error > 4  && error < 8)   ||
             (error > 9 && errror < 12)  ||
             error == 14 || error > 17) {
-            // all this errors are critical
-            _error("Critical error received: " + error);
-            imp.wakeup(0, _reset.bindenv(this));
             return true;
         }
 
         return false;
     }
 
-    // USB critical error processing function
+    // USB critical error processing function.
+    // Stops all registered USB.Devices and schedules bus reset
     function _onError(eventDetails) {
         foreach(device in _devices) {
             try {
@@ -277,19 +309,24 @@ class USB.Host {
         _log("USB reset complete");
     }
 
+    // Information level logger
     function _log(txt) {
         if (_debug) {
             server.log("[Usb.Host] " + txt);
         }
     }
 
+    // Error level logger
     function _error(txt) {
         server.error("[Usb.Host] " + txt);
     }
 };
 
 
-
+// The class that represents attached device.
+// It manages its configuration, interfaces and endpoints.
+// An application does not need such object normally.
+// It is usually used by drivers to acquire required endpoints
 class USB.Device {
 
     // Assigned device address
@@ -314,6 +351,9 @@ class USB.Device {
     // debug flag
     _debug = true;
 
+    // Listener for some USB events
+    _listener = null;
+
     // Constructs device peer.
     // Parameters:
     //      speed            - supported device speed
@@ -329,7 +369,7 @@ class USB.Device {
         local ep0 = USB.ControlEndpoint(this, _address, 0, _deviceDescriptor["maxpacketsize0"]);
         _endpoints[0] <- ep0;
 
-        //When a device is first connected you can communicate with it at address 0x00.
+        // When a device is first connected you can communicate with it at address 0x00.
         // This should be set to a unique value for the device, using a set address control transfer.
         setAddress(_address);
 
@@ -338,7 +378,11 @@ class USB.Device {
 
 
     // Helper function for device address assignment.
-    // Note: the function uses 0 as device address therefore can be used only one
+    //
+    // Parameters:
+    //      address - new device address to assign
+    //
+    // Note: the function uses 0 as device address therefore can be used only once
     function setAddress(address) {
         _usb.controltransfer(
             _speed,
@@ -352,12 +396,21 @@ class USB.Device {
         );
     }
 
-    // Request endpoint of required type. Creates if not cached.
-    function getEndpoint(ifs, type, direction) {
+    // Request endpoint of required type.
+    // The function creates new endpoint if it is not cached.
+    // Parameters:
+    //      ifs     - interface descriptor
+    //      type    - the type of endpoint
+    //      dir     - endpoint direction
+    //
+    //  Returns:
+    //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint, depending on type parameter,
+    //      or NULL if no required endpoint found in provided interface
+    function getEndpoint(ifs, type, dir) {
        foreach ( epAddress, ep  in _endpoints) {
             if (ep._type == type &&
                 ep._if == ifs &&
-                (ep._address & USB_DIRECTION_MASK) == direction) {
+                (ep._address & USB_DIRECTION_MASK) == dir) {
                     return ep;
             }
         }
@@ -389,6 +442,13 @@ class USB.Device {
     }
 
     // Request endpoint with given address. Creates if not cached.
+    // The function creates new endpoint if it is not cached.
+    // Parameters:
+    //      epAddress - required endpoint address
+    //
+    //  Returns:
+    //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint,
+    //      or NULL if no required endpoint found in the device configuration
     function getEndpointByAddress(epAddress) {
         if (epAddress in _endpoints) return _endpoints.epAddress;
 
@@ -416,6 +476,7 @@ class USB.Device {
     }
 
     // Called by USB.Host when the devices is detached
+    // Closes all open endppoint and releases all drivers
     function stop() {
         // Close all endpoints at first
         foreach (epAddress, ep in _endpoints) ep.close();
@@ -423,6 +484,9 @@ class USB.Device {
         foreach ( driver in _drivers ) {
             try {
                 driver.release();
+
+                if (_listener) _listener("stopped", driver);
+
             } catch (e) {
                 _error("Driver.release exception: " + e);
             }
@@ -433,36 +497,34 @@ class USB.Device {
         _deviceDescriptor = null;
     }
 
-    // Prints device information
-    function toString() {
-
-    }
-
+    // Returns device vendor ID
     function getVendorId() {
         return _deviceDescriptor["vendorid"];
     }
 
+    // Returns device product ID
     function getProductId() {
         return _deviceDescriptor["productid"];
     }
 
     // -------------------- Private functions --------------------
 
-    // Select and setup drivers
+    // Selects and starts matched drivers from provided list.
     function _selectDrivers(drivers) {
         local devClass      = _deviceDescriptor["class"];
-        local devSubClass   = _deviceDescriptor.subclass;
-        local devProtocol   = _deviceDescriptor.protocol;
         local ifs = _deviceDescriptor.configurations[0].interfaces;
 
         // if this is not composite device
-        if ( 0 !=  devClass &&  0 != devSubClass && 0 != devProtocol) {
+        if ( 0 !=  devClass) {
 
             foreach (driver in  drivers) {
                 try {
                     local instance;
                     if (null != (instance = driver.match(this, ifs))) {
                         _drivers.append(instance);
+
+                        if (_listener) _listener("started", instance);
+
                         return;
                     }
                 } catch (e) {
@@ -481,6 +543,9 @@ class USB.Device {
                         local instance;
                         if (null != (instance = driver.match(this, ifArr))) {
                             _drivers.append(instance);
+
+                            if (_listener) _listener("started", instance);
+
                             break;
                         }
                     } catch (e) {
@@ -492,25 +557,8 @@ class USB.Device {
         }
     }
 
-    function _clearStall(endpoint) {
-        // Attempt to clear the stall
-        try {
-            getEndpointByAddress(0).transfer(
-                USB_SETUP_RECIPIENT_ENDPOINT | USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_STANDARD,
-                USB_REQUEST_CLEAR_FEATURE,
-                0,
-                endpoint);
-            _log("STALLed pipe " + endpoint + " was reset");
-        } catch(error) {
-            // Attempt failed
-            _error("_clearStall failed. Error: " + error);
-            return false;
-        }
-
-        // Attempt successful
-        return true;
-    }
-
+    // Proxy function for tarnsfer event.
+    // Looking up for corresponding endpoint and passes the event if found
     function _transferEvent(eventDetails) {
         local epAddress = eventDetails.endpoint;
         if (epAddress in _endpoints) {
@@ -526,19 +574,22 @@ class USB.Device {
         }
     }
 
+    // Information level logger
     function _log(txt) {
         if (_debug) {
             server.log("[Usb.Device] " + txt);
         }
     }
 
+    // Error level logger
     function _error(txt) {
         server.error("[Usb.Device] " + txt);
     }
 }
 
 
-// Represent all non-control endpoints
+// The class that represent all non-control endpoints, e.g. buld, interrupt etc
+// This class is managed by USB.Device and should be acquired through USB.Device instance
 class USB.FunctionalEndpoint {
     // Owner
     _device = null;
@@ -566,6 +617,12 @@ class USB.FunctionalEndpoint {
     _transferCb = null;
 
     // Constructor
+    // Parameters:
+    //      device          - USB.Device instance, owner of this endpoint
+    //      ifs             - interface descriptor this enpoint servers for
+    //      epAddress       - unique endpoint address
+    //      epType          - endpoint type
+    //      maxPacketSize   - maximum packet size for this endpint
     constructor (device, ifs, epAddress, epType, maxPacketSize) {
         _device = device;
         _address = epAddress;
@@ -575,7 +632,12 @@ class USB.FunctionalEndpoint {
     }
 
     // Write data through this endpoint.
-    // Throws if EP is closed of has incompatible type
+    // Throws if EP is closed, has incompatible type or already busy
+    // Parameter:
+    //  data        - data blob to be sent through this endpoint
+    //  onComplete  - callback for transfer status notification
+    //
+    //  Returns nothing
     function write(data, onComplete) {
         if (_address & USB_DIRECTION_MASK) {
             throw "Invalid endpoint direction: " + _address;
@@ -585,7 +647,12 @@ class USB.FunctionalEndpoint {
     }
 
     // Read data through this endpoint.
-    // Throws if EP is closed or has incompatible type
+    // Throws if EP is closed, has incompatible type or already busy
+    // Parameter:
+    //  data        - data blob where received data to be stored
+    //  onComplete  - callback for transfer status notification
+    //
+    //  Returns nothing
     function read(data, onComplete) {
         if (_address & USB_DIRECTION_MASK) {
             _transfer(data, onComplete);
@@ -594,15 +661,15 @@ class USB.FunctionalEndpoint {
         }
     }
 
-    // Reset the pipe.
+    // Clear stall status of this pipe
     // Return
     //      TRUE if pipe was reset
-    //      FALSE if device rejects reset
+    //      FALSE if device rejects reset request
     function reset() {
-        return _device._clearStall(_address);
+        return _device.getEndpointByAddress(0).clearStall(_address);
     }
 
-    // Mark as closed. All further operation causes exception.
+    // Mark this endpoint as closed. All further operation causes exception.
     function close() {
         _closed = true;
     }
@@ -610,6 +677,12 @@ class USB.FunctionalEndpoint {
     // --------------------- Private functions -----------------
 
     // Transfer initiator
+    // Throws if EP is closed or already busy
+    // Parameter:
+    //  data        - data blob to be sent/received
+    //  onComplete  - callback for transfer status notification
+    //
+    //  Returns nothing
     function _transfer(data, onComplete) {
         if (_closed) throw "Closed";
 
@@ -626,13 +699,15 @@ class USB.FunctionalEndpoint {
             try {
                 if (onComplete != null) onComplete(this, error, data, length);
             } catch (e) {
-                // TODO: introduce USB generic logger
                 _device._error(e);
             }
         };
     }
 
     // Notifies application about data transfer status
+    // Parameters:
+    //  error  - transfer status code
+    //  length - the lenght of data was transmitted
     function _onTransferComplete(error, length) {
         _transferCb(error, length);
 
@@ -643,6 +718,7 @@ class USB.FunctionalEndpoint {
 
 // Represent control endpoints.
 // This class is required due to specific EI usb API
+// This class is managed by USB.Device and should be acquired through USB.Device instance
 class USB.ControlEndpoint {
 
     // to keep consistency with functional endpoint
@@ -666,6 +742,11 @@ class USB.ControlEndpoint {
     _if = null;
 
     // Constructor
+    // Parameters:
+    //      device          - USB.Device instance, owner of this endpoint
+    //      ifs             - interface descriptor this enpoint servers for
+    //      epAddress       - unique endpoint address
+    //      maxPacketSize   - maximum packet size for this endpint
     constructor (device, ifs, epAddress, maxPacketSize) {
         _device = device;
         _address = epAddress;
@@ -674,11 +755,54 @@ class USB.ControlEndpoint {
     }
 
     // Generic function for transferring data over control endpoint.
+    // Only vendor specific requirests are allowed.
+    // For other control operation use USB.Device public API
+    //
+    // Parameters:
+    //      reqType     - USB request type
+    //      req         - The specific USB request
+    //      value       - A value determined by the specific USB request
+    //      index       - An index value determined by the specific USB request
+    //      data        - [optional] Optional storage for incoming or outgoing data
     // Note! This operation is synchronous.
-    function transfer(reqType, type, value, index, data = null) {
-        if (_closed) throw "Closed";
-
+    function transfer(reqType, req, value, index, data = null) {
         if ((reqType & USB_SETUP_TYPE_MASK) != USB_SETUP_TYPE_VENDOR) throw "Only vendor request is allowed";
+
+        _transfer(
+            reqType,
+            req,
+            value,
+            index,
+            data
+        );
+    }
+
+    function clearStall(epAddress) {
+        // Attempt to clear the stall
+        try {
+            _transfer(
+                USB_SETUP_RECIPIENT_ENDPOINT | USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_STANDARD,
+                USB_REQUEST_CLEAR_FEATURE,
+                0,
+                endpoint);
+        } catch(error) {
+            // Attempt failed
+            return false;
+        }
+
+        // Attempt successful
+        return true;
+    }
+
+    // Mark as closed. All further operation causes exception.
+    function close() {
+        _closed = true;
+    }
+
+    // --------------------- private API -------------------
+
+    function _transfer() {
+        if (_closed) throw "Closed";
 
         _device._usb.controltransfer(
             device._speed,
@@ -691,11 +815,6 @@ class USB.ControlEndpoint {
             _maxPacketSize,
             data
         );
-    }
-
-    // Mark as closed. All further operation causes exception.
-    function close() {
-        _closed = true;
     }
 }
 
