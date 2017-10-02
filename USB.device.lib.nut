@@ -134,9 +134,9 @@ class USB.Host {
         _drivers = driverList;
     }
 
-    // Reset the BUS.
+    // Reset the USB BUS.
     // Can be used by driver or application in response to unrecoverable error
-    // like unending bulk transfer or halt condition during conrtol transferz
+    // like unending bulk transfer or halt condition during conrtol transfers
     function reset() {
         _usb.disable();
         _usb.configure(_onUsbEvent.bindenv(this));
@@ -146,7 +146,7 @@ class USB.Host {
 
     // Auxilar function to get list of attached devices.
     // Returns:
-    //      an array of HOST.Device instances
+    //      an array of USB.Device instances
     function getAttachedDevices() {
         return _devices;
     }
@@ -154,8 +154,8 @@ class USB.Host {
     // Assign listener about device and  driver driver status changes.
     // Parameters:
     //      listener  - null or the function that receives two parameters:
-    //                     evetType - "connected",  "disconnected",
-    //                                "started", "stopped"
+    //                      evetType - "connected",  "disconnected",
+    //                                 "started", "stopped"
     //                      eventObject - depending on event type it could be
     //                                    either USB.Device or USB.Driver instance
     function setEventListener(listener) {
@@ -171,7 +171,8 @@ class USB.Host {
 
     // Checks if given parameter implement USB.Drvier API
     function _checkDriver(driverClass) {
-        if ("match" in driverClass &&
+        if (typeof driverClass == "class" &&
+            "match" in driverClass &&
             typeof driverClass.match == "function" &&
             "release" in driverClass &&
             typeof driverClass.release == "function") {
@@ -353,7 +354,7 @@ class USB.Device {
     // debug flag
     _debug = true;
 
-    // Listener for some USB events
+    // Listener callback of USB events
     _listener = null;
 
     // Constructs device peer.
@@ -398,16 +399,16 @@ class USB.Device {
         );
     }
 
-    // Request endpoint of required type.
-    // The function creates new endpoint if it is not cached.
+    // Request endpoint of required type and direction.
+    // The function creates new endpoint if it was not cached.
     // Parameters:
-    //      ifs     - interface descriptor
+    //      ifs     - array of interface descriptors
     //      type    - the type of endpoint
     //      dir     - endpoint direction
     //
     //  Returns:
     //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint, depending on type parameter,
-    //      or NULL if no required endpoint found in provided interface
+    //      or `null` if there is no required endpoint found in provided interface
     function getEndpoint(ifs, type, dir) {
        foreach ( epAddress, ep  in _endpoints) {
             if (ep._type == type &&
@@ -439,12 +440,12 @@ class USB.Device {
             }
         }
 
-        // No EP found
+        // No endpoint found
         return null;
     }
 
     // Request endpoint with given address. Creates if not cached.
-    // The function creates new endpoint if it is not cached.
+    // The function creates new a endpoint if it was not cached.
     // Parameters:
     //      epAddress - required endpoint address
     //
