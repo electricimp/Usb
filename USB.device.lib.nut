@@ -392,8 +392,12 @@ class USB.Device {
     // Parameters:
     //      address - new device address to assign
     //
+    // Throws exception if the device was detached
+    //
     // Note: the function uses 0 as device address therefore can be used only once
     function setAddress(address) {
+        _checkStopped();
+
         _usb.controltransfer(
             _speed,
             0,
@@ -416,8 +420,13 @@ class USB.Device {
     //  Returns:
     //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint, depending on type parameter,
     //      or `null` if there is no required endpoint found in provided interface
+    //
+    // Throws exception if the device was detached
+    //
     function getEndpoint(ifs, type, dir) {
-       foreach ( epAddress, ep  in _endpoints) {
+        _checkStopped();
+
+        foreach ( epAddress, ep  in _endpoints) {
             if (ep._type == type &&
                 ep._if == ifs &&
                 (ep._address & USB_DIRECTION_MASK) == dir) {
@@ -430,7 +439,7 @@ class USB.Device {
             if (dif == ifs) {
                 foreach (ep in dif.endpoints) {
                     if ( ep.attributes == type &&
-                         (ep.address & USB_DIRECTION_MASK) == direction) {
+                         (ep.address & USB_DIRECTION_MASK) == dir) {
                         local maxSize = ep.maxpacketsize;
                         local address = ep.address;
 
@@ -459,7 +468,12 @@ class USB.Device {
     //  Returns:
     //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint,
     //      or NULL if no required endpoint found in the device configuration
+    //
+    // Throws exception if the device was detached
+    //
     function getEndpointByAddress(epAddress) {
+        _checkStopped();
+
         if (epAddress in _endpoints) return _endpoints.epAddress;
 
         // TODO: track active interfaces and theirs alternate settings
@@ -475,7 +489,7 @@ class USB.Device {
                     local newEp = (type == USB_ENDPOINT_CONTROL) ?
                                         USB.ControlEndpoint(this, dif, epAddress, maxSize) :
                                         USB.FunctionalEndpoint(this, dif, epAddress, type, maxSize);
-                    _endpoints[epAddress.toString()] <- newEp;
+                    _endpoints[epAddress] <- newEp;
                     return newEp;
                 }
             }
@@ -487,7 +501,12 @@ class USB.Device {
 
     // Called by USB.Host when the devices is detached
     // Closes all open endppoint and releases all drivers
+    //
+    // Throws exception if the device was detached
+    //
     function stop() {
+        _checkStopped();
+
         // Close all endpoints at first
         foreach (epAddress, ep in _endpoints) ep.close();
 
@@ -505,19 +524,36 @@ class USB.Device {
         _drivers = null;
         _endpoints = null;
         _deviceDescriptor = null;
+        _listener = null;
+        _usb = null;
     }
 
     // Returns device vendor ID
+    //
+    // Throws exception if the device was detached
+    //
     function getVendorId() {
+        _checkStopped();
+
         return _deviceDescriptor["vendorid"];
     }
 
     // Returns device product ID
+    //
+    // Throws exception if the device was detached
+    //
     function getProductId() {
+        _checkStopped();
+
         return _deviceDescriptor["productid"];
     }
 
     // -------------------- Private functions --------------------
+
+    // Device run status check
+    function _checkStopped() {
+        if (null == _usb) throw "Detached";
+    }
 
     // Selects and starts matched drivers from provided list.
     function _selectDrivers(drivers) {

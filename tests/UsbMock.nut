@@ -48,11 +48,11 @@ class UsbMock {
         _cb = null;
     }
 
-    function generaltransfer() {
+    function generaltransfer(deviceAddress, endpointAddress, type, data) {
         _checkStatus();
     }
 
-    function openendpoint() {
+    function openendpoint(speed, deviceAddress, interface, type, maxpacketsize, endpointAddress, interval) {
         _checkStatus();
     }
 
@@ -63,7 +63,7 @@ class UsbMock {
     }
 
     function _checkSpeed(speed) {
-        if (speed != 1.5 || speed != 2) throw "Invalid speed value: " + speed;
+        if (speed != 1.5 && speed != 2) throw "Invalid speed value: " + speed;
     }
 
     function _checkEpAddress(endpointAddress) {
