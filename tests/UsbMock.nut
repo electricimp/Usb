@@ -24,7 +24,7 @@
 
 class UsbMock {
 
-    validSizes = [8, 16, 32, 64];
+    static validSizes = [8, 16, 32, 64];
 
     _cb = null;
 
@@ -71,7 +71,7 @@ class UsbMock {
     }
 
     function  _checkPktSize(size) {
-        foreeach (validSize in validSizes) if (validSize == size) return;
+        foreach (validSize in validSizes) if (validSize == size) return;
 
         throw "Invalid max packet size:" + size;
     }

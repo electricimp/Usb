@@ -1,10 +1,10 @@
 {
     "modelId": "W2Oas1QobbHA" /* Test */,
     "devices": [
-        "2371857838a609ee" /* SmallOne */
+        "5000d8c46a56cf98" /* SmallOne */
     ],
     "agentFile": false,
-    "deviceFile": false,
+    "deviceFile": "USB.device.lib.nut",
     "stopOnFailure": false,
     "timeout": 30,
     "tests": [

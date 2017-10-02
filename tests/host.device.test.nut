@@ -22,6 +22,73 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+@include __PATH__+"/UsbMock.nut"
+@include __PATH__+"/CorrectDriver.nut"
+
 // Sanity test for USB.Host
 class UsbHostSanity extends ImpTestCase {
+
+    _usb = null;
+
+    _drivers = [CorrectDriver];
+
+    function setUp() {
+        _usb = UsbMock();
+    }
+
+    function testSimpleSetup1() {
+        local host = USB.Host(_usb, _drivers, true);
+    }
+
+    function testSimpleSetup2() {
+        local host = USB.Host(_usb, _drivers, false);
+    }
+
+    function testSimpleSetup3() {
+        local host = USB.Host(_usb, null);
+    }
+
+    function testSimpleSetup4() {
+        local host = USB.Host(_usb, []);
+    }
+
+    function testNegativeSetup1() {
+        try {
+            local host = USB.Host(_usb, [UsbMock], true);
+            assertTrue(false);
+        } catch (e) {
+            // it is OK
+        }
+    }
+
+    function testReset1() {
+        local host = getValidHost();
+        host.reset();
+    }
+
+    function testGetAttachedDevices() {
+        local host = getValidHost();
+        host.getAttachedDevices();
+    }
+
+    function testSetListener() {
+        local host = getValidHost();
+        host.setEventListener(getValidHost);
+        host.setEventListener(null);
+    }
+
+    function testSetListenerNegative() {
+        local host = getValidHost();
+        try {
+            host.setEventListener("");
+            assertTrue(false, "setEventListener must throw ex");
+        } catch(e) {
+            // OK
+        }
+    }
+
+
+    function getValidHost() {
+        return USB.Host(_usb, _drivers, true);
+    }
 }

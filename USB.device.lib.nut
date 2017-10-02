@@ -120,12 +120,19 @@ class USB.Host {
     //
     constructor(usb, driverList, autoConfPins = true) {
 
+        if (null == driverList) driverList = [];
+
         foreach (driver in driverList) _checkDriver(driver);
 
         if (autoConfPins) {
-            // Configure the pins required for usb
-            hardware.pinW.configure(DIGITAL_IN_PULLUP);
-            hardware.pinR.configure(DIGITAL_OUT, 1);
+            if ("pinW" in hardware &&
+                "pinR" in hardware) {
+                // Configure the pins required for usb
+                hardware.pinW.configure(DIGITAL_IN_PULLUP);
+                hardware.pinR.configure(DIGITAL_OUT, 1);
+            } else {
+                throw "Invalid hardware is used";
+            }
         }
 
         _usb = usb;
@@ -159,7 +166,7 @@ class USB.Host {
     //                      eventObject - depending on event type it could be
     //                                    either USB.Device or USB.Driver instance
     function setEventListener(listener) {
-        if (typeof listener != "function" || lsistener != null) throw "Invalid paramater";
+        if (typeof listener != "function" && listener != null) throw "Invalid paramater";
 
         _listener = listener;
 
