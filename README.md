@@ -50,9 +50,7 @@ for important events like device connect/disconnect.
 
 If you have more then on USB port on development board then you should create USB.Host for each of them.
 
-### Class Usage
-
-#### Constructor: USB.Host(*usb, drivers, [, autoConfigPins]*)
+#### USB.Host(*usb, drivers, [, autoConfigPins]*)
 
 Instantiates the USB.Host class. It takes `hardware.usb` as a required parameter and an optional boolean flag.
 
@@ -70,8 +68,6 @@ Instantiates the USB.Host class. It takes `hardware.usb` as a required parameter
 
 usbHost <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2]);
 ```
-
-### Class Methods
 
 #### setEventListener(callback*)
 
@@ -143,8 +139,6 @@ It is parsing device description and manages its configuration, interfaces and e
 An application does not need to extend device object normally.
 It is usually used by drivers to acquire required endpoints.
 
-### Public methods
-
 #### constructor(*usb, speed, deviceDescriptor, deviceAddress, drivers*)
 Constructs device peer
 
@@ -211,8 +205,6 @@ Throws exception if the device was detached
 Represent control endpoints.
 This class is required due to specific EI usb API
 This class is managed by USB.Device and should be acquired through USB.Device instance
-
-### Public API
 
 ``` squirrel
 // Reset functional endpoint via control endpoint
@@ -290,7 +282,7 @@ Asynchronous write date through the endpoint. Throw and exception if endpoint cl
 | *onComplete* 		     | Function 	 | n/a 	   | callback for transfer status notification |
 
 
-**Callback Funciton**
+**Callback Function**
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
@@ -320,6 +312,7 @@ Throw an examption if EP is closed, has incompatible type or already busy
 
 
 **Callback Function**
+
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
 | *error*  | Number  | the usb error number |
@@ -388,11 +381,11 @@ catch (e) {
 
 ## USB.Driver
 
-The USB.Driver class is used as the base for all drivers that use this library. It contains a set of functions that are expected by [USB.Host](#USBhost) as well as some set up functions. There are a few required functions that must be overwritten. All other functions will be documented and can be overwritten only as needed.
+The USB.Driver class is used as the base for all drivers that use this library. It contains a set of functions that are expected by [USB.Host](#USBhost) as well as some set up functions. There are a few required functions that must be overwritten.
 
 ### Required Functions
 
-These are three functions should be implemented for usb drive.
+These are three functions must be implemented for usb drive.
 
 #### constructor(*device, interfaces*)
 
@@ -447,7 +440,11 @@ class MyUsbDriver extends USB.Driver {
 
 #### match(*deviceObject, interfaces*)
 
-Method that returns a driver object or null. These method checks if current driver could support all the provided interface for the current device or not. Match method could be based on VID, PID, device class, subclass and interfaces. This method is mandatory and it is not possible to register driver withou this method, [see registerDriver()](#registerdriverdriverclassidentifiers). Once the driver is registered with USB.Host, then `match()` method will be called  on each device "connected" event.
+Method that returns a driver object or null. These method checks if current driver could support all the provided interface for the current device or not. Match method could be based on VID, PID, device class, subclass and interfaces. This method is mandatory and it is not possible to register driver without this method. Once the driver is registered with USB.Host, then `match()` method will be called on each device "connected" event.
+
+#### release()
+
+Release all instantiate resource before driver close. Uses for a driver disconnection.
 
 ##### Example
 
@@ -476,7 +473,7 @@ usbHost <- USB.Host(hardware.usb);
 usbHost.registerDriver(MyUsbDriver);
 ```
 
-#### `_typeof()``
+#### ``_typeof() [optional]``
 
 The *_typeof()* method is a squirrel metamethod that returns the class name. See [metamethods documenation](https://electricimp.com/docs/resources/metamethods/)
 
@@ -495,10 +492,6 @@ myDriver <- MyUsbDriver();
 server.log(typeof myDriver);
 ```
 
-
-#### release()
-
-Release all instantiate resource before driver close. Uses for a driver disconnection.
 
 ## Driver Examples
 
