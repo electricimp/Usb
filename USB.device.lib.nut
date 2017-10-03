@@ -606,6 +606,10 @@ class USB.Device {
     // Proxy function for tarnsfer event.
     // Looking up for corresponding endpoint and passes the event if found
     function _transferEvent(eventDetails) {
+        // Do nothing for a closed device
+        if (null == _usb)
+          return;
+
         local epAddress = eventDetails.endpoint;
         if (epAddress in _endpoints) {
             // TODO: check relation of ep with interface and ep type
@@ -715,12 +719,14 @@ class USB.FunctionalEndpoint {
     //      TRUE if pipe was reset
     //      FALSE if device rejects reset request
     function reset() {
+        _transferCb = null;
         return _device.getEndpointByAddress(0).clearStall(_address);
     }
 
     // Mark this endpoint as closed. All further operation causes exception.
     function close() {
         _closed = true;
+        _transferCb = null;
     }
 
     // --------------------- Private functions -----------------
@@ -761,6 +767,12 @@ class USB.FunctionalEndpoint {
     //  error  - transfer status code
     //  length - the lenght of data was transmitted
     function _onTransferComplete(error, length) {
+        // Cancel timer because callback happened
+        if (_timer) {
+            imp.cancelwakeup(_timer);
+            _timer = null;
+        }
+
 
         if (null == _transferCb) {
             _device.error("Unexpected transfer event: there is no listener for it");
@@ -771,11 +783,6 @@ class USB.FunctionalEndpoint {
 
         // ready for next request
         _transferCb = null;
-
-        if (_timer) {
-            imp.cancelwakeup(_timer);
-            _timer = null;
-        }
     }
 
     // Auxilary function to handle transfer timeout state

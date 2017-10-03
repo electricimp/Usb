@@ -1,6 +1,6 @@
-# Usb Drivers
+# Usb Drivers Framework
 
-The USB libary acts as a wrapper around the Imp API `hardware.usb` object and manages USB device connections, disconnections, transfers and driver selection.
+Usb Drivers Framework was intended to simplify and standardize USB driver creation and handling.
 
 **To use this library add the following statement to the top of your device code:**
 
@@ -8,25 +8,31 @@ The USB libary acts as a wrapper around the Imp API `hardware.usb` object and ma
 #require "USB.device.lib.nut:0.2.0"
 ```
 
+The USB Driver Framework acts over the native imp `hardware.usb` interface and manages USB device connections, disconnections events and provides an abstractions for Host, Devices, Drivers and Endpoints.
+
 ## USB.Host
 
 The USB.Host class has methods to encapsulate the `hardware.usb` configuration api and register drivers (see [USB.DriverBase](#USBDriver) for more details on USB drivers).
 
 ### Class Usage
 
-#### Constructor: USB.Host(*usb[, autoConfigPins]*)
+Imp board is always acts as USB.Host and should be instantiated on start.
+If you have more then on USB port on development board then you should create USB.Host for each of them.
+
+#### Constructor: USB.Host(*usb, drivers, [, autoConfigPins]*)
 
 Instantiates the USB.Host class. It takes `hardware.usb` as a required parameter and an optional boolean flag.
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
 | *usb* 		 | Object 	 | n/a 	   | The imp API hardware usb object `hardware.usb` |
+| *drivers* 		 | USB.DriverBase[] 	 | n/a 	   | An array of the pre-defined drivers |
 | *autoConfPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps docs](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb). These pins must be configured for the usb to work on an imp005. |
 
 ##### Example
 
 ```squirrel
-usbHost <- USB.Host(hardware.usb);
+usbHost <- USB.Host(hardware.usb, []);
 ```
 
 ### Class Methods
