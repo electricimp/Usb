@@ -23,9 +23,9 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 
-@include __PATH__+"/UsbMock.nut"
-@include __PATH__+"/CorrectDriver.nut"
-@include __PATH__+"/DescriptorMock.nut"
+@include __PATH__+"/../UsbMock.nut"
+@include __PATH__+"/../CorrectDriver.nut"
+@include __PATH__+"/../DescriptorMock.nut"
 
 // Sanity test for USB.FunctionalEndpoint
 class UsbFunctionalEndpointSanity extends ImpTestCase {
