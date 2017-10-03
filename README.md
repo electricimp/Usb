@@ -42,7 +42,7 @@ usbHost <- USB.Host(hardware.usb, [MyUsbDriver]);
 
 ----
 
-## USB.Host
+## USB.Host class
 
 The main interface to start working with USB devices.
 Provides public API for an application to registers drivers and assigns listeners
@@ -84,10 +84,10 @@ There are two events could be generated: `"connected"` and `"disconnected"`.
 
 ##### Callback function
 
-| Parameter   | Data Type | Required | Description |
-| ----------- | --------- | -------- | ----------- |
-| *eventType*  | String  | Yes      | Name of the event "connected" or "disconnected" |
-| *object* | Any | No | an event payload data |
+| Parameter   | Data Type | Description |
+| ----------- | --------- | ----------- |
+| *eventType*  | String  |  Name of the event "connected" or "disconnected" |
+| *object* | Any |  an event payload data |
 
 ##### Example (subscribe)
 
@@ -135,7 +135,7 @@ imp.wakeup(30,function(){
 
 ------
 
-## USB.DeviceClass
+## USB.Device сlass
 
 The class that represents attached device.
 It is parsing device description and manages its configuration, interfaces and endpoints.
@@ -206,7 +206,7 @@ Throws exception if the device was detached
 
 --------
 
-## USB.ControlEndpoint
+## USB.ControlEndpoint class
 
 Represent control endpoints.
 This class is required due to specific EI usb API
@@ -282,20 +282,36 @@ This class is managed by USB.Device and should be acquired through USB.Device in
 
 #### write(data, onComplete)
 
-Asynchronous write date to the endpoint. Throw and exception if endpoint doesn't support USB_DIRECTION_OUT.
+Asynchronous write date through the endpoint. Throw and exception if endpoint close or it doesn't support USB_DIRECTION_OUT.
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *data* 		   | Blob | n/a 	   | payload to write to the endpoint |
-| *onComplete* 		     | Function 	 | n/a 	   | callback method to get write details |
+| *data* 		   | Blob | n/a 	   | payload data blob to be sent through this endpoint |
+| *onComplete* 		     | Function 	 | n/a 	   | callback for transfer status notification |
+
+
+**Callback Funciton**
+
+| Parameter   | Data Type | Description |
+| ----------- | --------- | ----------- |
+| *error*  | Number  | the usb error type |
+| *len*  | Number  | written payload length |
+
 
 ```squirrel
-
-TBD: write example goes here
+try {
+    local payload = blob(16);
+    device.getEndpointByAddress(epAddress).write(payload, function(error, len) {
+      if (len > 0) {
+        server.log("Payload: " + len);
+      }
+    }.bindenv(this));
 
 ```
 
 #### read(data, onComplete)
+Read data through this endpoint.
+Throw an examption if EP is closed, has incompatible type or already busy
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
@@ -303,13 +319,69 @@ TBD: write example goes here
 | *onComplete* 		     | Function 	 | n/a 	   | callback method to get read details |
 
 
+**Callback Function**
+| Parameter   | Data Type | Description |
+| ----------- | --------- | ----------- |
+| *error*  | Number  | the usb error number |
+| *len*  | Number  | readed payload length |
+
+```squirrel
+try {
+    local payload = blob(16);
+    device.getEndpointByAddress(epAddress).read(payload, function(error, len) {
+        if (len > 0) {
+            server.log("Payload: " + payload);
+        }
+    }.bindenv(this));
+}
+catch (e) {
+}
+
+```
+
+
 #### reset()
 
-Make a reset of the current endpoint on stall or any other non-critical issues
+Make a reset of the current endpoint on stall or any other non-critical issue,
+
+```squirrel
+try {
+    local payload = blob(16);
+    local endpoint = device.getEndpointByAddress(epAddress);
+    endpoint.read(payload, function(error, len) {
+        if (error == USB_TYPE_STALL_ERROR) {
+            server.log("Reset endpoint on stall");
+            endpoint.reset();
+        }
+    }.bindenv(this));
+}
+catch (e) {
+  server.log("Endpoint is closed");
+}
+
+```
 
 #### close()
 
-Close current endpoint and block read and write operations. Uses on safe device disconnection.
+Mark this endpoint as closed. All further operation causes exception.
+
+
+```squirrel
+try {
+    local payload = blob(16);
+    local endpoint = device.getEndpointByAddress(epAddress);
+    // Close endpoint
+    endpoint.close();
+    // This method should throw an exeption now:
+    endpoint.read(payload, function(error, len) {
+        // empty
+    }.bindenv(this));
+}
+catch (e) {
+  server.log("Endpoint is closed");
+}
+
+```
 
 -------
 
@@ -320,9 +392,9 @@ The USB.Driver class is used as the base for all drivers that use this library. 
 
 ### Required Functions
 
-These are the functions your usb driver class must override. The default behavior for most of these function is to throw an error.
+These are three functions should be implemented for usb drive.
 
-#### Constructor: USB.Driver(*device, interfaces*)
+#### constructor(*device, interfaces*)
 
 By default the constructor should be private and takes an instance of the USB.Device class and list of Interfaces as parameters. Instantiation of the driver object should happen in the `match` method only.
 It is possible to get an access to the working `usb` object via `device._usb` but it is not recommended.
