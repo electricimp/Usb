@@ -878,15 +878,15 @@ class USB.ControlEndpoint {
 
     // --------------------- private API -------------------
 
-    function _transfer() {
+    function _transfer(reqType, req, value, index, data = null) {
         if (_closed) throw "Closed";
 
         _device._usb.controltransfer(
-            device._speed,
-            device._address,
+            _device._speed,
+            _device._address,
             _address,
             reqType,
-            type,
+            req,
             value,
             index,
             _maxPacketSize,
