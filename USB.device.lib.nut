@@ -474,7 +474,7 @@ class USB.Device {
     function getEndpointByAddress(epAddress) {
         _checkStopped();
 
-        if (epAddress in _endpoints) return _endpoints.epAddress;
+        if (epAddress in _endpoints) return _endpoints[epAddress];
 
         // TODO: track active interfaces and theirs alternate settings
         foreach (dif in _deviceDescriptor.configurations[0].interfaces) {
@@ -854,14 +854,14 @@ class USB.ControlEndpoint {
     }
 
     // Reset given endpoint
-    function clearStall() {
+    function clearStall(address) {
         // Attempt to clear the stall
         try {
             _transfer(
                 USB_SETUP_RECIPIENT_ENDPOINT | USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_STANDARD,
                 USB_REQUEST_CLEAR_FEATURE,
                 0,
-                _address);
+                address);
         } catch(error) {
             // Attempt failed
             return false;
