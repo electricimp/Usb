@@ -158,7 +158,7 @@ class USB.Host {
         return _devices;
     }
 
-    // Assign listener about device and  driver driver status changes.
+    // Assign listener about device and  driver status changes.
     // Parameters:
     //      listener  - null or the function that receives two parameters:
     //                      evetType - "connected",  "disconnected",
@@ -638,7 +638,7 @@ class USB.Device {
 }
 
 
-// The class that represent all non-control endpoints, e.g. buld, interrupt etc
+// The class that represent all non-control endpoints, e.g. bulk, interrupt etc
 // This class is managed by USB.Device and should be acquired through USB.Device instance
 class USB.FunctionalEndpoint {
     // Owner
@@ -772,7 +772,6 @@ class USB.FunctionalEndpoint {
             imp.cancelwakeup(_timer);
             _timer = null;
         }
-
 
         if (null == _transferCb) {
             _device.error("Unexpected transfer event: there is no listener for it");
