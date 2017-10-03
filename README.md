@@ -7,17 +7,48 @@ Usb Drivers Framework was intended to simplify and standardize USB driver creati
 ```
 #require "USB.device.lib.nut:0.2.0"
 ```
+USB stack consists of five simple abstractions:
+- **USB.Host** - the main etrance point for an application. Responsible for drivers registration and events handling
+- **USB.Device** - wrapper for USB device description, instantiated for each connected device
+- **USB.DriverBase** - base api which should re-implement each USB driver
+- **USB.ControlEndpoint** - provides api for control endpoint
+- **USB.FunctionalEndpoint** - provides api for bulk or interrupt endpoints
 
-The USB Driver Framework acts over the native imp `hardware.usb` interface and manages USB device connections, disconnections events and provides an abstractions for Host, Devices, Drivers and Endpoints.
+```squirrel
+class MyUsbDriver extends USB.DriverBase {
+
+    static VID = 0x01f9;
+    static PID = 0x1044;
+
+    _device = null;  /* USB.Device */
+    _bulk = null;    /* USB.FunctionalEndpoint */
+    _control = null; /* USB.ControlEndpoint */
+
+    constructor(device) {
+      _device = device;
+      _bulk = _device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+      _control = _device.getEndpointByAddress(0);
+    }
+    // Returns an array of VID PID combinations
+    function match(device, interface) {
+        if (device.getVendorId() == VID && device.getProductId() == PID)
+          return new MyUsbDriver(device);
+        return null;
+    }
+}
+
+usbHost <- USB.Host(hardware.usb, [MyUsbDriver]);
+```
 
 ## USB.Host
 
-The USB.Host class has methods to encapsulate the `hardware.usb` configuration api and register drivers (see [USB.DriverBase](#USBDriver) for more details on USB drivers).
+The main interface to start working with USB devices.
+Provides public API for an application to registers drivers and assigns listeners
+for important events like device connection/detachment.
+
+If you have more then on USB port on development board then you should create USB.Host for each of them.
 
 ### Class Usage
-
-Imp board is always acts as USB.Host and should be instantiated on start.
-If you have more then on USB port on development board then you should create USB.Host for each of them.
 
 #### Constructor: USB.Host(*usb, drivers, [, autoConfigPins]*)
 
@@ -37,45 +68,22 @@ usbHost <- USB.Host(hardware.usb, []);
 
 ### Class Methods
 
-#### registerDriver(*driverClass*)
+#### setEventListener(callback*)
 
-Registers a driver to a devices list. Driver class should be inherited from the USB.DriverBase class and re-implement `USB.DriverBase.match` method. When a device is connected via usb then static method "match" will be called for each driver. The `match` method could check device VID/PID combination or it could implement more complex solution based on device class, subclass and interfaces.
-
-| Parameter 	| Data Type | Required | Description |
-| ------------- | --------- | -------- | ----------- |
-| *driverClass* | Class 	| Yes 	   | A reference to the class to be instantiated when a device with matching identifiers is connected. Must be a valid usb driver class that extends the *USB.DriverBase* class. |
-
-##### Example
-
-```squirrel
-// Register the Ftdi driver with usb host
-usbHost.registerDriver(FtdiUsbDriver);
-```
-
-#### unregisterDriver(*driverClass*)
-
-Unregister driver to do not instantiate it anymore on device connect/disconnect.
-
-| Parameter 	| Data Type | Required | Description |
-| ------------- | --------- | -------- | ----------- |
-| *driverClass* | Class 	| Yes 	   | A reference to the driver class. Must be a valid usb driver class that extends the *USB.DriverBase* class. |
-
-
-#### addEventListener(*eventName, callback*)
-
-Subscribe a callback function to a specific event. There are currently 2 events that you can subscribe to `"connected"` and `"disconnected"`.
-
+Assign listener about device and  driver driver status changes.
+There are two events could be generated: `"connected"` and `"disconnected"`.
 
 | Parameter   | Data Type | Required | Description |
 | ----------- | --------- | -------- | ----------- |
-| *eventName* | String 	  | Yes 	 | The string name of the event to subscribe to |
-| *callback*  | Function  | Yes 	 | Function to be called on event |
+| *callback*  | Function  | Yes      | Function to be called on event |
+
+
 
 ##### Example
 
 ```squirrel
 // Subscribe to usb connection events
-usbHost.addEventListener("connected",function (driver) {
+usbHost.setEventListener(function (eventType, eventObject) {
     server.log(typeof device + " was connected!");
     switch (typeof driver) {
         case "FtdiUsbDriver":
@@ -103,9 +111,9 @@ Clears a subscribed callback function from a specific event.
 
 ```squirrel
 // Subscribe to usb connection events
-usbHost.addEventListener("connected",function (device) {
-    server.log(typeof device + " was connected!");
-    switch (typeof device) {
+usbHost.setEventListener(function (eventName, driver) {
+    server.log(typeof device + " was " + eventName);
+    switch (typeof driver) {
         case "FtdiUsbDriver":
             // device is a ftdi device. Handle it here.
             break;
@@ -114,7 +122,7 @@ usbHost.addEventListener("connected",function (device) {
 
 // Unsubscribe from usb connection events after 30 seconds
 imp.wakeup(30,function(){
-	usbHost.removeEventListener("connected");
+	usbHost.setEventListener(null);
 }.bindenv(this))
 ```
 
