@@ -10,12 +10,12 @@ Usb Drivers Framework was intended to simplify and standardize USB driver creati
 USB stack consists of five simple abstractions:
 - **USB.Host** - the main etrance point for an application. Responsible for drivers registration and events handling
 - **USB.Device** - wrapper for USB device description, instantiated for each connected device
-- **USB.DriverBase** - base api which should re-implement each USB driver
+- **USB.Driver** - base api which should re-implement each USB driver
 - **USB.ControlEndpoint** - provides api for control endpoint
 - **USB.FunctionalEndpoint** - provides api for bulk or interrupt endpoints
 
 ```squirrel
-class MyUsbDriver extends USB.DriverBase {
+class MyUsbDriver extends USB.Driver {
 
     static VID = 0x01f9;
     static PID = 0x1044;
@@ -40,11 +40,13 @@ class MyUsbDriver extends USB.DriverBase {
 usbHost <- USB.Host(hardware.usb, [MyUsbDriver]);
 ```
 
+----
+
 ## USB.Host
 
 The main interface to start working with USB devices.
 Provides public API for an application to registers drivers and assigns listeners
-for important events like device connection/detachment.
+for important events like device connect/disconnect.
 
 If you have more then on USB port on development board then you should create USB.Host for each of them.
 
@@ -57,57 +59,62 @@ Instantiates the USB.Host class. It takes `hardware.usb` as a required parameter
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
 | *usb* 		 | Object 	 | n/a 	   | The imp API hardware usb object `hardware.usb` |
-| *drivers* 		 | USB.DriverBase[] 	 | n/a 	   | An array of the pre-defined drivers |
+| *drivers* 		 | USB.Driver[] 	 | n/a 	   | An array of the pre-defined drivers |
 | *autoConfPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps docs](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb). These pins must be configured for the usb to work on an imp005. |
 
 ##### Example
 
 ```squirrel
-usbHost <- USB.Host(hardware.usb, []);
+#require "MyCustomDriver1.device.lib.nut:1.2.3"
+#require "MyCustomDriver2.device.lib.nut:1.0.0"
+
+usbHost <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2]);
 ```
 
 ### Class Methods
 
 #### setEventListener(callback*)
 
-Assign listener about device and  driver driver status changes.
+Assign listener about device and  driver status changes.
 There are two events could be generated: `"connected"` and `"disconnected"`.
 
 | Parameter   | Data Type | Required | Description |
 | ----------- | --------- | -------- | ----------- |
 | *callback*  | Function  | Yes      | Function to be called on event |
 
+##### Callback function
 
+| Parameter   | Data Type | Required | Description |
+| ----------- | --------- | -------- | ----------- |
+| *eventType*  | String  | Yes      | Name of the event "connected" or "disconnected" |
+| *object* | Any | No | an event payload data |
 
-##### Example
+##### Example (subscribe)
 
 ```squirrel
 // Subscribe to usb connection events
 usbHost.setEventListener(function (eventType, eventObject) {
-    server.log(typeof device + " was connected!");
-    switch (typeof driver) {
-        case "FtdiUsbDriver":
-            // device is a ftdi device. Handle it here.
-            break;
-    }
-});
+    server.log(typeof eventObject + " was connected!");
 
-// Subscribe to usb disconnection events
-usbHost.addEventListener("disconnected",function(deviceName) {
-    server.log(deviceName + " disconnected");
+    switch (eventType) {
+        case "connected":
+           switch (typeof eventObject) {
+               case "FtdiUsbDriver":
+                   // device is a ftdi device. Handle it here.
+                   break;
+           }
+           break;
+        case "disconnected":
+	   // Handle device disconnect
+	   break;
+    }
 });
 
 ```
 
-#### removeEventListener(*eventName*)
+##### Example (unsubscribe)
 
-Clears a subscribed callback function from a specific event.
-
-| Parameter   | Data Type | Required | Description |
-| ----------- | --------- | -------- | ----------- |
-| *eventName* | String    | Yes      | The string name of the event to unsubscribe from |
-
-##### Example
+It is necessary to set `null` as event listener to unsubscribe from it
 
 ```squirrel
 // Subscribe to usb connection events
@@ -126,14 +133,20 @@ imp.wakeup(30,function(){
 }.bindenv(this))
 ```
 
+------
+
 ## USB.DeviceClass
 
-The USB.DeviceClass is an internal abstraction which allow us to wrap USB device
-descriptor and device driver instances. There is no way to extend or change this structure.
+The class that represents attached device.
+It is parsing device description and manages its configuration, interfaces and endpoints.
+
+An application does not need to extend device object normally.
+It is usually used by drivers to acquire required endpoints.
 
 ### Public methods
 
 #### constructor(*usb, speed, deviceDescriptor, deviceAddress, drivers*)
+Constructs device peer
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
@@ -141,12 +154,12 @@ descriptor and device driver instances. There is no way to extend or change this
 | *speed* | Number   | n/a  | Usb device speed. |
 | *deviceDescriptor* | desviceDescriptor   | n/a  | Usb device descriptor. |
 | *deviceAddress* | Number   | n/a  | Usb device descriptor. |
-| *drivers* | USB.DriverBase[] | n/a  | the list of registered `USB.DeviceDriver` classes. |
+| *drivers* | USB.Driver[] | n/a  | the list of registered `USB.DeviceDriver` classes. |
 
 
 #### setAddress(*address*)
 
-Set up custom device address. throw an exception if device address busy.
+Set up custom device address. Throw an exception if device address is invalid or if device was disconnected.
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
@@ -154,18 +167,21 @@ Set up custom device address. throw an exception if device address busy.
 
 #### getEndpoint(*ifs, type, direction*)
 
-
-Return cached object or instantiate a new one `USB.Endpoint` object which is corresponding to the requested argument. And return null otherwise.
+Request endpoint of required type and direction.
+The function return cached object or instantiate a new one object (`USB.ControlEndpoint` or `USB.FunctionalEndpoint`) which is corresponding to the requested argument and return null otherwise.
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
 | *ifs* 		     | Interface 	 | n/a 	   | usb device interface descriptor |
-| *type* 		     | Number 	 | n/a 	   | endpoint type |
-| *direction* 		     | Number 	 | n/a 	   | endpoint direction |
+| *type* 		     | Number 	 | n/a 	   | the type of endpoint |
+| *direction* 		     | Number 	 | n/a 	   | the type of endpoint's direction |
+
 
 #### getEndpointByAddress(*epAddress*)
 
-Return cached endpoint by the address
+Request endpoint with given address.
+The function creates new a endpoint if it was not cached.
+Return null if there is no enpoint with such address
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
@@ -174,46 +190,27 @@ Return cached endpoint by the address
 
 #### stop()
 
-Stop all drivers. Happens on device disconnected.
-
-#### toString()
-
-Helper method to print device details.
+Called by USB.Host when the devices is detached
+Closes all open endppoint and releases all drivers
 
 #### getVendorId()
 
-Get the device vendor ID
+Return the device vendor ID
+Throws exception if the device was detached
 
 #### getProductId()
 
-Get the device product ID
+Return the device product ID
 
-### Internal methods
+Throws exception if the device was detached
 
-#### `_selectDrivers(drivers)`
-
-Implement driver match mechanism. TBD: describe driver match algorithm
-
-#### `_transferEvent(eventDetails)`
-
-Handle transfer complete event for a concrete device
-
-#### `_log(txt)`
-
-USB namespace common logging
-
-#### `_error(txt)`
-
-handle errors
-
+--------
 
 ## USB.ControlEndpoint
 
-Control endpoint is an abstraction over the USB endpoints.
-
-TBD: control transfer description
-
-Note: Each endpoint object should be allocated via `UBS.Device.getEndpoint` API.
+Represent control endpoints.
+This class is required due to specific EI usb API
+This class is managed by USB.Device and should be acquired through USB.Device instance
 
 ### Public API
 
@@ -231,7 +228,7 @@ device
 
 #### constructor (device, ifs, epAddress, maxPacketSize)
 
-Constructor is public API but it is not recommended to use it for end point allocation.
+Constructor is public API but it is not recommended to use it for end point creation.
 Please, use `USB.Device.getEndpoint` for endpoint allocation
 
 | Parameter 	 | Data Type | Default | Description |
@@ -245,28 +242,32 @@ Please, use `USB.Device.getEndpoint` for endpoint allocation
 #### transfer(reqType, type, value, index, data = null)
 
 Generic function for transferring data over control endpoint.
-Note: This operation is synchronous.
+**Note:** Only vendor specific requirests are allowed. For other control operation use USB.Device, USB.ControlEndpoint public API
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *reqType* 		   | Number | n/a 	   |  |
-| *type* 		     | Number 	 | n/a 	   |  |
-| *value* 		     | Number 	 | n/a 	   |  |
-| *index* 		     | Number 	 | n/a 	   |  |
-| *data* 		     | Blob 	 | null 	   | data to transfer |
+| *reqType* 		   | Number | n/a 	   |  USB request type |
+| *req* 		     | Number 	 | n/a 	   |  The specific USB request |
+| *value* 		     | Number 	 | n/a 	   |  A value determined by the specific USB request|
+| *index* 		     | Number 	 | n/a 	   | An index value determined by the specific USB request |
+| *data* 		     | Blob 	 | null 	   | [optional] Optional storage for incoming or outgoing payload|
+
+#### clearStall()
+
+Reset given endpoint
 
 #### close()
 
-Close current endpoint for data transfer. Uses for a device safe disconnect.
+Close current endpoint for all operations.
+All further operation causes exception.
+Uses for a device safe disconnect.
 
+------------
 
 ## USB.FunctionalEndpoint
-Functional endpoint is an abstraction over the USB endpoints. It is uses for a
-BULK and Interrupt endpoints.
 
-TBD: bulk transfer description
-
-Note: Each endpoint object should be allocated via `UBS.Device.getEndpoint` API.
+The class that represent all non-control endpoints, e.g. bulk, interrupt and isochronous
+This class is managed by USB.Device and should be acquired through USB.Device instance api.
 
 
 #### constructor (device, ifs, epAddress, epType, maxPacketSize)
@@ -310,16 +311,18 @@ Make a reset of the current endpoint on stall or any other non-critical issues
 
 Close current endpoint and block read and write operations. Uses on safe device disconnection.
 
+-------
 
-## USB.DriverBase
 
-The USB.DriverBase class is used as the base for all drivers that use this library. It contains a set of functions that are expected by [USB.Host](#USBhost) as well as some set up functions. There are a few required functions that must be overwritten. All other functions will be documented and can be overwritten only as needed.
+## USB.Driver
+
+The USB.Driver class is used as the base for all drivers that use this library. It contains a set of functions that are expected by [USB.Host](#USBhost) as well as some set up functions. There are a few required functions that must be overwritten. All other functions will be documented and can be overwritten only as needed.
 
 ### Required Functions
 
 These are the functions your usb driver class must override. The default behavior for most of these function is to throw an error.
 
-#### Constructor: USB.DriverBase(*device, interfaces*)
+#### Constructor: USB.Driver(*device, interfaces*)
 
 By default the constructor should be private and takes an instance of the USB.Device class and list of Interfaces as parameters. Instantiation of the driver object should happen in the `match` method only.
 It is possible to get an access to the working `usb` object via `device._usb` but it is not recommended.
@@ -328,7 +331,7 @@ All initialization of endpoints should happen in constructor. There is no extra 
 ##### Example
 
 ```squirrel
-class MyUsbDriver extends USB.DriverBase {
+class MyUsbDriver extends USB.Driver {
 
     _device = null;
     _bulkIn = null;
@@ -377,7 +380,7 @@ Method that returns a driver object or null. These method checks if current driv
 ##### Example
 
 ```squirrel
-class MyUsbDriver extends USB.DriverBase {
+class MyUsbDriver extends USB.Driver {
 
     static VID = 0x01f9;
     static PID = 0x1044;
@@ -407,7 +410,7 @@ The *_typeof()* method is a squirrel metamethod that returns the class name. See
 
 ##### Example
 ```squirrel
-class MyUsbDriver extends USB.DriverBase {
+class MyUsbDriver extends USB.Driver {
     // Metamethod returns class name when - typeof <instance> - is called
     function _typeof() {
         return "MyUsbDriver";
