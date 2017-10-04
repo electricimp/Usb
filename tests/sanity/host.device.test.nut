@@ -55,11 +55,21 @@ class UsbHostSanity extends ImpTestCase {
     function testNegativeSetup1() {
         try {
             local host = USB.Host(_usb, [UsbMock], true);
-            assertTrue(false);
+            assertTrue(false, "Exception exptected in case of wrong driver");
         } catch (e) {
-            // it is OK
+            // expected behavior
         }
     }
+
+    function testNegativeSetup1() {
+        try {
+            local host = USB.Host(_usb, [CorrectDriver, UsbMock], true);
+            assertTrue(false, "Exception exptected in case of wrong driver");
+        } catch (e) {
+           // expected behavior
+        }
+    }
+
 
     function testReset1() {
         local host = getValidHost();
@@ -68,7 +78,7 @@ class UsbHostSanity extends ImpTestCase {
 
     function testGetAttachedDevices() {
         local host = getValidHost();
-        host.getAttachedDevices();
+        assertEqual([], host.getAttachedDevices(), " Attached devices list is not empy");;
     }
 
     function testSetListener() {
@@ -86,7 +96,6 @@ class UsbHostSanity extends ImpTestCase {
             // OK
         }
     }
-
 
     function getValidHost() {
         return USB.Host(_usb, _drivers, true);
