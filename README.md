@@ -8,11 +8,11 @@ Usb Drivers Framework was intended to simplify and standardize USB driver creati
 #require "USB.device.lib.nut:0.2.0"
 ```
 USB stack consists of five simple abstractions:
-- **USB.Host** - the main entrance point for an application. Responsible for drivers registration and events handling
-- **USB.Device** - wrapper for USB device description, instantiated for each connected device
-- **USB.Driver** - base api which should re-implement each USB driver
-- **USB.ControlEndpoint** - provides api for control endpoint
-- **USB.FunctionalEndpoint** - provides api for bulk or interrupt endpoints
+- **[USB.Host](#usbhost-class)** - the main entrance point for an application. Responsible for drivers registration and events handling
+- **[USB.Device](#usbdevice-сlass)** - wrapper for USB device description, instantiated for each connected device
+- **[USB.Driver](#usbdriver)** - base api which should re-implement each USB driver
+- **[USB.ControlEndpoint](#usbcontrolendpoint-class)** - provides api for control endpoint
+- **[USB.FunctionalEndpoint](#usbfunctionalendpoint)** - provides api for bulk or interrupt endpoints
 
 ```squirrel
 class MyUsbDriver extends USB.Driver {
@@ -24,15 +24,16 @@ class MyUsbDriver extends USB.Driver {
     _bulk = null;    /* USB.FunctionalEndpoint */
     _control = null; /* USB.ControlEndpoint */
 
-    constructor(device) {
+    constructor(device, interfaces) {
       _device = device;
-      _bulk = _device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+      _bulk = _device.getEndpoint(interfaces[0], USB_ENDPOINT_BULK, USB_DIRECTION_IN);
       _control = _device.getEndpointByAddress(0);
     }
-    // Returns an array of VID PID combinations
-    function match(device, interface) {
+
+    // Returns driver instance if matched
+    function match(device, interfaces) {
         if (device.getVendorId() == VID && device.getProductId() == PID)
-          return new MyUsbDriver(device);
+          return new MyUsbDriver(device, interfaces);
         return null;
     }
 }
