@@ -59,7 +59,7 @@ Instantiates the USB.Host class. It takes `hardware.usb` as a required parameter
 | -------------- | --------- | ------- | ----------- |
 | *usb* 		 | Object 	 | n/a 	   | The imp API hardware usb object `hardware.usb` |
 | *drivers* 		 | USB.Driver[] 	 | n/a 	   | An array of the pre-defined drivers |
-| *autoConfPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps docs](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb). These pins must be configured for the usb to work on an imp005. |
+| *autoConfPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps docs](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb). These pins must be configured for the usb to work on an **imp005**. |
 
 ##### Example
 
@@ -70,64 +70,46 @@ Instantiates the USB.Host class. It takes `hardware.usb` as a required parameter
 usbHost <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2]);
 ```
 
-#### setEventListener(callback*)
+#### setEventListener(*callback*)
 
 Assign listener about device and  driver status changes.
-There are two events could be generated: `"connected"` and `"disconnected"`.
+There are four events could be generated: `"connected"`/`"disconnected"` for device status and `"started"`/`"stopped"` for driver status.
 
 | Parameter   | Data Type | Required | Description |
 | ----------- | --------- | -------- | ----------- |
 | *callback*  | Function  | Yes      | Function to be called on event |
 
+Setting of **NULL** clears previously assigned listener.
+
 ##### Callback function
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
-| *eventType*  | String  |  Name of the event "connected" or "disconnected" |
-| *object* | Any |  an event payload data |
+| *eventType*  | String  |  Name of the event "connected", "disconnected", "started", "stopped" |
+| *object* | USB.Device |  The device peer for "connected"/"disconnected" event |
+| *object* | USB.Driver |  Driver instance for "started"/"stopped" event |
 
 ##### Example (subscribe)
 
 ```squirrel
 // Subscribe to usb connection events
 usbHost.setEventListener(function (eventType, eventObject) {
-    server.log(typeof eventObject + " was connected!");
-
     switch (eventType) {
         case "connected":
-           switch (typeof eventObject) {
-               case "FtdiUsbDriver":
-                   // device is a ftdi device. Handle it here.
-                   break;
-           }
-           break;
+            server.log("New device found");
+            break;
         case "disconnected":
-	   // Handle device disconnect
-	   break;
-    }
-});
-
-```
-
-##### Example (unsubscribe)
-
-It is necessary to set `null` as event listener to unsubscribe from it
-
-```squirrel
-// Subscribe to usb connection events
-usbHost.setEventListener(function (eventName, driver) {
-    server.log(typeof device + " was " + eventName);
-    switch (typeof driver) {
-        case "FtdiUsbDriver":
-            // device is a ftdi device. Handle it here.
+            server.log("Device detached");
+            break;
+        case "started":
+            server.log("Driver found and started " + (typeof eventObject));
+            break;
+        case "stopped":
+            server.log("Driver stopped " + (typeof eventObject));
             break;
     }
 });
 
-// Unsubscribe from usb connection events after 30 seconds
-imp.wakeup(30,function(){
-	usbHost.setEventListener(null);
-}.bindenv(this))
 ```
 
 ------
@@ -135,9 +117,9 @@ imp.wakeup(30,function(){
 ## USB.Device class
 
 The class that represents attached device.
-It is parsing device description and manages its configuration, interfaces and endpoints.
+It is parsing device description, lookup for a drivers and control drivers lifecycle. All management of configurations, interfaces and endpoints **MUST** go through Device object.
 
-An application does not need to extend device object normally.
+An application does not need to use device object normally.
 It is usually used by drivers to acquire required endpoints.
 
 #### constructor(*usb, speed, deviceDescriptor, deviceAddress, drivers*)
@@ -146,41 +128,43 @@ Constructs device peer
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
 | *usb* 		     | Object 	 | n/a 	   | The imp API hardware usb object `hardware.usb` |
-| *speed* | Number   | n/a  | Usb device speed. |
+| *speed* | Number   | n/a  | Usb device speed (Mb/s). |
 | *deviceDescriptor* | deviceDescriptor   | n/a  | Usb device descriptor. |
-| *deviceAddress* | Number   | n/a  | Usb device descriptor. |
-| *drivers* | USB.Driver[] | n/a  | the list of registered `USB.DeviceDriver` classes. |
+| *deviceAddress* | Number   | n/a  | Usb device logical address assigned by [USB.Host](#usbhost-class). |
+| *drivers* | USB.Driver[] | n/a  | An array of known drivers |
 
 
 #### setAddress(*address*)
 
-Set up custom device address. Throw an exception if device address is invalid or if device was disconnected.
+Assigns new logical device address. Throws an exception if device was disconnected or the address was assigned already.
 
-| Parameter 	 | Data Type | Default | Description |
-| -------------- | --------- | ------- | ----------- |
-| *address* 		     | Number 	 | n/a 	   | a new usb device address |
+| Parameter Data | Type | Description |
+| -------------- | --------- | ----------- |
+| *address* | Number | a new usb device address |
 
 #### getEndpoint(*ifs, type, direction*)
 
-Request endpoint of required type and direction.
-The function return cached object or instantiate a new one object (`USB.ControlEndpoint` or `USB.FunctionalEndpoint`) which is corresponding to the requested argument and return null otherwise.
+Request endpoint of required type and direction, and that are described at given interface.
+The function returns cached object or instantiates a new one object (`USB.ControlEndpoint` or `USB.FunctionalEndpoint`) which is corresponding to the requested argument and return null otherwise.
 
-| Parameter 	 | Data Type | Default | Description |
-| -------------- | --------- | ------- | ----------- |
-| *ifs* 		     | Interface 	 | n/a 	   | usb device interface descriptor |
-| *type* 		     | Number 	 | n/a 	   | the type of endpoint |
-| *direction* 		     | Number 	 | n/a 	   | the type of endpoint's direction |
+| Parameter 	 | Data Type | Description |
+| -------------- | --------- | ----------- |
+| *ifs*      | Any | interface ID  |
+| *type*      | Number | the type of endpoint |
+| *direction*  | Number | the type of endpoint's direction |
+
+**NOTE** Interface ID is delivered to an driver through `USB.Driver.match` function at drivers lookup stage. So far it is just interface descriptor table, but can be changed with future framework updates.
 
 
 #### getEndpointByAddress(*epAddress*)
 
 Request endpoint with given address.
-The function creates new a endpoint if it was not cached.
-Return null if there is no endpoint with such address
+The function searches for the address across all available interface and returns null if there is no endpoint with such address. New endpoint is stored at cache.
 
-| Parameter 	 | Data Type | Default | Description |
-| -------------- | --------- | ------- | ----------- |
-| *epAddress* 		     | Number 	 | n/a 	   | address of the usb endpoint |
+
+| Parameter 	 | Data Type | Description |
+| -------------- | --------- | ----------- |
+| *epAddress* | Number | address of the usb endpoint |
 
 
 #### stop()
