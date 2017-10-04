@@ -56,6 +56,13 @@ class UsbMock {
         _checkStatus();
     }
 
+    // ------------- test API ----------------
+
+    function triggerEvent(event, payload) {
+      if (_cb != null)
+          _cb(event, payload);
+    }
+
     // ------------- private API --------------
 
     function _checkStatus() {
@@ -75,4 +82,5 @@ class UsbMock {
 
         throw "Invalid max packet size:" + size;
     }
+
 }
