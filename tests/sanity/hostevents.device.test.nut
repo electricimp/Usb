@@ -22,9 +22,9 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-@include __PATH__+"/../CorrectDriver.nut"
-@include __PATH__+"/../DescriptorMock.nut"
-@include __PATH__+"/../UsbMock.nut"
+@include __PATH__ + "/../CorrectDriver.nut"
+@include __PATH__ + "/../DescriptorMock.nut"
+@include __PATH__ + "/../UsbMock.nut"
 
 // Sanity test for USB.Host
 class UsbHostEventsSanity extends ImpTestCase {
@@ -36,99 +36,96 @@ class UsbHostEventsSanity extends ImpTestCase {
     function setUp() {
         _usb = UsbMock();
     }
-/*
-    function testGetAttachedDevices() {
+
+    function test01GetAttachedDevices() {
         local host = USB.Host(_usb, _drivers, true);
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 
-        local devices = host.getAttachedDevices();
-
-        assertTrue(devices.len() == 1, "Expected one device item");;
-        assertEqual("instance", typeof (devices[1]), "Unexpected driver");
-    }
-
-    function testReset1() {
-        local host = USB.Host(_usb, _drivers, true);
-        host.reset();
-    }
-*/
-    function testSetListenerOnConnect() {
-      return Promise(function(resolve, reject) {
-        local host = USB.Host(_usb, _drivers, true);
-        local counter = 0;
-        host.setEventListener(function(type, payload) {
-            if (counter == 0) {
-                assertEqual("connected", type, "Unexpected type of event.");
-                // payload is description
-                assertEqual("table", typeof payload, "Unextepced device type")
-            } else if (counter == 1) {
-                assertEqual("started", type, "Unexpected type of event.");
-                // payload is driver instance
-                assertEqual("CorrectDriver", typeof payload, "Unextepced driver type")
-            } else {
-                // no more events expected
-                assertTrue(false, "Unextepced event.");
-            }
-            counter++;
-
+        return Promise(function(resolve, reject) {
+            imp.wakeup(0, function() {
+                local devices = host.getAttachedDevices();
+                assertTrue(devices.len() == 1, "Expected one device item");
+                assertEqual("instance", typeof(devices[1]), "Unexpected driver");
+                resolve();
+            }.bindenv(this));
         }.bindenv(this));
-
-        _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
-
-        // reject this test on failure
-        imp.wakeup(0, function() {
-            host.setEventListener(null);
-            if (counter == 2)
-                resolve()
-            else
-                reject();
-          }.bindenv(this));
-
-        }.bindenv(this));
-        //
     }
 
-    function testSetListenerDisconnect() {
-      return Promise(function(resolve, reject) {
-        local host = USB.Host(_usb, _drivers, true);
-        _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
-
-        imp.wakeup(0, function() {
-          local counter = 0;
-          host.setEventListener(function(type, payload) {
-              if (counter == 1) {
-                  assertEqual("disconnected", type, "Unexpected type of event.");
-                  // payload is description
-                  assertEqual("instance", typeof payload, "Unextepced device type")
-              } else if (counter == 0) {
-                  assertEqual("stopped", type, "Unexpected type of event.");
-                  // payload is driver instance
-                  assertEqual("instance", typeof payload, "Unextepced driver type")
-              } else {
-                  // no more events expected
-                  assertTrue(false, "Unextepced event.");
-              }
-              counter++;
+    function test02SetListenerOnConnect() {
+        return Promise(function(resolve, reject) {
+            local host = USB.Host(_usb, _drivers, true);
+            local counter = 0;
+            host.setEventListener(function(type, payload) {
+                counter++;
+                if (counter == 1) {
+                    assertEqual("connected", type, "Unexpected type of event.");
+                    // payload is description
+                    assertEqual("instance", typeof payload, "Unextepced device type")
+                } else if (counter == 2) {
+                    assertEqual("started", type, "Unexpected type of event.");
+                    // payload is driver instance
+                    assertEqual("CorrectDriver", typeof payload, "Unextepced driver type")
+                } else {
+                    // no more events expected
+                    assertTrue(false, "Unextepced event.");
+                }
             }.bindenv(this));
 
-            // Trigger disconnect event
-            _usb.triggerEvent(USB_DEVICE_DISCONNECTED, {"device":1});
+            _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 
             // reject this test on failure
-            imp.wakeup(0, function() {
+            imp.wakeup(1, function() {
                 host.setEventListener(null);
                 if (counter == 2)
                     resolve()
                 else
-                    reject();
-
+                    reject("Unexpected number of events received: " + counter);
             }.bindenv(this));
-        }.bindenv(this));
 
-      }.bindenv(this));
-        //
+        }.bindenv(this));
     }
 
+    function test03SetListenerDisconnect() {
+        return Promise(function(resolve, reject) {
+            local host = USB.Host(_usb, _drivers, true);
 
+            _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
+
+            imp.wakeup(0, function() {
+                local counter = 0;
+                host.setEventListener(function(type, payload) {
+                    if (counter == 1) {
+                        assertEqual("disconnected", type, "Unexpected type of event.");
+                        // payload is description
+                        assertEqual("instance", typeof payload, "Unextepced device type")
+                    } else if (counter == 0) {
+                        assertEqual("stopped", type, "Unexpected type of event.");
+                        // payload is driver instance
+                        assertEqual("instance", typeof payload, "Unextepced driver type")
+                    } else {
+                        // no more events expected
+                        assertTrue(false, "Unextepced event.");
+                    }
+                    counter++;
+                }.bindenv(this));
+
+                // Trigger disconnect event
+                _usb.triggerEvent(USB_DEVICE_DISCONNECTED, {
+                    "device": 1
+                });
+
+                // reject this test on failure
+                imp.wakeup(0, function() {
+                    host.setEventListener(null);
+                    if (counter == 2)
+                        resolve()
+                    else
+                        reject();
+
+                }.bindenv(this));
+            }.bindenv(this));
+
+        }.bindenv(this));
+    }
 }
