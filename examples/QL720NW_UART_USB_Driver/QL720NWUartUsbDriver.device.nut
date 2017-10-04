@@ -29,11 +29,11 @@
 //  - Brother QL-720NW label printer
 
 // Require USB libraries
-#require "USB.device.lib.nut:0.1.0"
+#require "USB.device.lib.nut:0.2.0"
 
 // Driver for printer
 class QL720NW {
-    static VERSION = "0.1.0";
+    static VERSION = "0.2.0";
 
     _uart = null;   // A preconfigured UART
     _buffer = null; // buffer for building text
@@ -339,7 +339,7 @@ class QL720NW {
 }
 
 // Driver for QL720NW label printer use via USB
-class QL720NWUartUsbDriver extends USB.DriverBase {
+class QL720NWUartUsbDriver extends USB.Driver {
       // Brother QL720
       static VID = 0x04f9;
       static PID = 0x2044;
@@ -353,7 +353,7 @@ class QL720NWUartUsbDriver extends USB.DriverBase {
       // Metafunction to return class name when typeof <instance> is run
       //
       function _typeof() {
-          return "QL720NWUart:UsbDriver";
+          return "QL720NWUartUsbDriver";
       }
 
       function match(device) {
@@ -368,12 +368,9 @@ class QL720NWUartUsbDriver extends USB.DriverBase {
           _bulkIn = device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
           _bulkOut = device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
 
-          if (null == _bulkIn || null == _bulkOut) throw "Can't get required endpoints";
+          if (null == _bulkIn || null == _bulkOut)
+              throw "Can't get required endpoints";
 
-          // Start driver function
-          // TODO: not good place for driver start
-          //       because we could get callback earlier than drvier instance
-          //       will be in the list of drivers
           _start();
       }
 
@@ -389,20 +386,18 @@ class QL720NWUartUsbDriver extends USB.DriverBase {
     //
     function _transferComplete(action, payload) {
         if (action == "read") {
-
             if (payload.len() >= 3) {
                 payload.seek(2);
                 _onEvent("data", payload.readblob(payload.len()));
             } else {
                 _pushAction("read", blob(64 + 2), _transferComplete.bindenv(this));
             }
-
         }
     }
 
     _actions = [];
 
-    function pushAction(type, data, callback) {
+    function _pushAction(type, data, callback) {
       _actions.push({type:type, data:data, callback:callback});
       _actionHandler(true);
     }
@@ -450,13 +445,12 @@ class QL720NWUartUsbDriver extends USB.DriverBase {
 }
 
 // Initialize USB Host
-usbHost <- USB.Host(hardware.usb);
-
-// Register the UART over USB driver with USB Host
-usbHost.registerDriver(QL720NWUartUsbDriver);
+usbHost <- USB.Host(hardware.usb, [QL720NWUartUsbDriver]);
 
 // Subscribe to USB connection events
-usbHost.on("connected",function (device) {
+usbHost.setEventListener(function (eventType, device) {
+    if (eventType != "connected")
+        return;
 
     server.log(typeof device + " was connected!");
 
@@ -486,9 +480,4 @@ usbHost.on("connected",function (device) {
             printer.writeBarcode(imp.getmacaddress(), barcodeConfig).print();
             break;
     }
-});
-
-// Subscribe to USB disconnection events
-usbHost.on("disconnected",function(deviceName) {
-    server.log(deviceName + " disconnected");
 });
