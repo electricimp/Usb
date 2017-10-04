@@ -114,7 +114,7 @@ class USB.Host {
     // Constructor
     // Parameters:
     //      usb          - an instance of object that implements hardware.usb API
-    //      driverList   - a list of spcecial classes that implemet USB.Driver API.
+    //      driverList   - a list of special classes that implement USB.Driver API.
     //      autoConfPins - flag to specify whether to configure pins for usb usage
     //                     (see https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb)
     //
@@ -143,7 +143,7 @@ class USB.Host {
 
     // Reset the USB BUS.
     // Can be used by driver or application in response to unrecoverable error
-    // like unending bulk transfer or halt condition during conrtol transfers
+    // like unending bulk transfer or halt condition during control transfers
     function reset() {
         _usb.disable();
         _usb.configure(_onUsbEvent.bindenv(this));
@@ -151,7 +151,7 @@ class USB.Host {
         _log("USB reset complete");
     }
 
-    // Auxilar function to get list of attached devices.
+    // Auxillary function to get list of attached devices.
     // Returns:
     //      an array of USB.Device instances
     function getAttachedDevices() {
@@ -161,12 +161,12 @@ class USB.Host {
     // Assign listener about device and  driver status changes.
     // Parameters:
     //      listener  - null or the function that receives two parameters:
-    //                      evetType - "connected",  "disconnected",
+    //                      eventType - "connected",  "disconnected",
     //                                 "started", "stopped"
     //                      eventObject - depending on event type it could be
     //                                    either USB.Device or USB.Driver instance
     function setEventListener(listener) {
-        if (typeof listener != "function" && listener != null) throw "Invalid paramater";
+        if (typeof listener != "function" && listener != null) throw "Invalid paramter";
 
         _listener = listener;
 
@@ -176,7 +176,7 @@ class USB.Host {
     // ------------------------ private API -------------------
 
 
-    // Checks if given parameter implement USB.Drvier API
+    // Checks if given parameter implement USB.Driver API
     function _checkDriver(driverClass) {
         if (typeof driverClass == "class" &&
             "match" in driverClass &&
@@ -266,7 +266,7 @@ class USB.Host {
 
     // Data transfer status processing function
     // Checks transfer status and either notify USB.Device about event or
-    // schdules bus reset if status is critical error
+    // schedules bus reset if status is critical error
     function _onTransferComplete(eventDetails) {
         local address = eventDetails.device;
         local error = eventDetails.state;
@@ -297,7 +297,7 @@ class USB.Host {
     function _checkError(error) {
         if ((error > 0  && error < 4)   ||
             (error > 4  && error < 8)   ||
-            (error > 9 && errror < 12)  ||
+            (error > 9 && error < 12)  ||
             error == 14 || error > 17) {
             return true;
         }
@@ -500,7 +500,7 @@ class USB.Device {
     }
 
     // Called by USB.Host when the devices is detached
-    // Closes all open endppoint and releases all drivers
+    // Closes all open endpoint and releases all drivers
     //
     // Throws exception if the device was detached
     //
@@ -603,7 +603,7 @@ class USB.Device {
         }
     }
 
-    // Proxy function for tarnsfer event.
+    // Proxy function for transfer event.
     // Looking up for corresponding endpoint and passes the event if found
     function _transferEvent(eventDetails) {
         // Do nothing for a closed device
@@ -672,10 +672,10 @@ class USB.FunctionalEndpoint {
     // Constructor
     // Parameters:
     //      device          - USB.Device instance, owner of this endpoint
-    //      ifs             - interface descriptor this enpoint servers for
+    //      ifs             - interface descriptor this endpoint servers for
     //      epAddress       - unique endpoint address
     //      epType          - endpoint type
-    //      maxPacketSize   - maximum packet size for this endpint
+    //      maxPacketSize   - maximum packet size for this endpoint
     constructor (device, ifs, epAddress, epType, maxPacketSize) {
         _device = device;
         _address = epAddress;
@@ -765,7 +765,7 @@ class USB.FunctionalEndpoint {
     // Notifies application about data transfer status
     // Parameters:
     //  error  - transfer status code
-    //  length - the lenght of data was transmitted
+    //  length - the length of data was transmitted
     function _onTransferComplete(error, length) {
         // Cancel timer because callback happened
         if (_timer) {
@@ -784,7 +784,7 @@ class USB.FunctionalEndpoint {
         _transferCb = null;
     }
 
-    // Auxilary function to handle transfer timeout state
+    // Auxillary function to handle transfer timeout state
     function _onTimeout() {
         _timer = null;
         _onTransferComplete(USB_TYPE_TIMEOUT, 0);
@@ -830,7 +830,7 @@ class USB.ControlEndpoint {
     }
 
     // Generic function for transferring data over control endpoint.
-    // Note! Only vendor specific requirests are allowed.
+    // Note! Only vendor specific requires are allowed.
     // For other control operation use USB.Device, USB.ControlEndpoint public API
     //
     // Parameters:
@@ -878,6 +878,15 @@ class USB.ControlEndpoint {
 
     // --------------------- private API -------------------
 
+    // Generic function for transferring data over control endpoint.
+    //
+    // Parameters:
+    //      reqType     - USB request type
+    //      req         - The specific USB request
+    //      value       - A value determined by the specific USB request
+    //      index       - An index value determined by the specific USB request
+    //      data        - [optional] Optional storage for incoming or outgoing data
+    //
     function _transfer(reqType, req, value, index, data = null) {
         if (_closed) throw "Closed";
 
@@ -897,7 +906,7 @@ class USB.ControlEndpoint {
 
 // Interface class for all drivers.
 // Driver developer is not required to subclass it though.
-// No class hierarhy is verified by any USB.* functions.
+// No class hierarchy is verified by any USB.* functions.
 class USB.Driver {
 
     // Queried by USB.Host if this driver supports

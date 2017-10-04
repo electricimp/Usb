@@ -22,7 +22,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-// Mock driver with correct fucntionality
+// Mock driver with correct functionality
 
 class CorrectDriver extends USB.Driver {
 
