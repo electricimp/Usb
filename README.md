@@ -8,7 +8,7 @@ Usb Drivers Framework was intended to simplify and standardize USB driver creati
 #require "USB.device.lib.nut:0.2.0"
 ```
 USB stack consists of five simple abstractions:
-- **USB.Host** - the main etrance point for an application. Responsible for drivers registration and events handling
+- **USB.Host** - the main entrance point for an application. Responsible for drivers registration and events handling
 - **USB.Device** - wrapper for USB device description, instantiated for each connected device
 - **USB.Driver** - base api which should re-implement each USB driver
 - **USB.ControlEndpoint** - provides api for control endpoint
@@ -131,7 +131,7 @@ imp.wakeup(30,function(){
 
 ------
 
-## USB.Device сlass
+## USB.Device class
 
 The class that represents attached device.
 It is parsing device description and manages its configuration, interfaces and endpoints.
@@ -146,7 +146,7 @@ Constructs device peer
 | -------------- | --------- | ------- | ----------- |
 | *usb* 		     | Object 	 | n/a 	   | The imp API hardware usb object `hardware.usb` |
 | *speed* | Number   | n/a  | Usb device speed. |
-| *deviceDescriptor* | desviceDescriptor   | n/a  | Usb device descriptor. |
+| *deviceDescriptor* | deviceDescriptor   | n/a  | Usb device descriptor. |
 | *deviceAddress* | Number   | n/a  | Usb device descriptor. |
 | *drivers* | USB.Driver[] | n/a  | the list of registered `USB.DeviceDriver` classes. |
 
@@ -175,7 +175,7 @@ The function return cached object or instantiate a new one object (`USB.ControlE
 
 Request endpoint with given address.
 The function creates new a endpoint if it was not cached.
-Return null if there is no enpoint with such address
+Return null if there is no endpoint with such address
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
@@ -185,7 +185,7 @@ Return null if there is no enpoint with such address
 #### stop()
 
 Called by USB.Host when the devices is detached
-Closes all open endppoint and releases all drivers
+Closes all open endpoint and releases all drivers
 
 #### getVendorId()
 
@@ -234,7 +234,7 @@ Please, use `USB.Device.getEndpoint` for endpoint allocation
 #### transfer(reqType, type, value, index, data = null)
 
 Generic function for transferring data over control endpoint.
-**Note:** Only vendor specific requirests are allowed. For other control operation use USB.Device, USB.ControlEndpoint public API
+**Note:** Only vendor specific requires are allowed. For other control operation use USB.Device, USB.ControlEndpoint public API
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
@@ -303,7 +303,7 @@ try {
 
 #### read(data, onComplete)
 Read data through this endpoint.
-Throw an examption if EP is closed, has incompatible type or already busy
+Throw an exception if EP is closed, has incompatible type or already busy
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
@@ -316,7 +316,7 @@ Throw an examption if EP is closed, has incompatible type or already busy
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
 | *error*  | Number  | the usb error number |
-| *len*  | Number  | readed payload length |
+| *len*  | Number  | read payload length |
 
 ```squirrel
 try {
@@ -365,7 +365,7 @@ try {
     local endpoint = device.getEndpointByAddress(epAddress);
     // Close endpoint
     endpoint.close();
-    // This method should throw an exeption now:
+    // This method should throw an exception now:
     endpoint.read(payload, function(error, len) {
         // empty
     }.bindenv(this));
@@ -411,7 +411,7 @@ class MyUsbDriver extends USB.Driver {
 
     function match(device, interfaces) {
       if (_checkMatch(device, interfaces))
-        return new MyUsbDriver(deivce,interfaces);
+        return new MyUsbDriver(device,interfaces);
       return null;
     }
 
@@ -475,7 +475,7 @@ usbHost.registerDriver(MyUsbDriver);
 
 #### ``_typeof() [optional]``
 
-The *_typeof()* method is a squirrel metamethod that returns the class name. See [metamethods documenation](https://electricimp.com/docs/resources/metamethods/)
+The *_typeof()* method is a squirrel metamethod that returns the class name. See [metamethods documentation](https://electricimp.com/docs/resources/metamethods/)
 
 ##### Example
 ```squirrel
@@ -497,7 +497,7 @@ server.log(typeof myDriver);
 
 ### [UartOverUsbDriver](./UartOverUsbDriver/)
 
-The UartOverUsbDriver class creates an interface object that exposes methods similar to the uart object to provide compatability for uart drivers over usb.
+The UartOverUsbDriver class creates an interface object that exposes methods similar to the uart object to provide compatibility for uart drivers over usb.
 
 
 ### [FtdiUsbDriver](./FtdiUsbDriver/)
