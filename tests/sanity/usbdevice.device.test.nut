@@ -50,7 +50,7 @@ class UsbDeviceSanity extends ImpTestCase {
         dev.stop();
     }
 
-    // any state modification fucntions must throw an exception after stop
+    // any state modification functions must throw an exception after stop
     function testNegative1() {
         local dev = getValidDevice();
 
@@ -87,13 +87,13 @@ class UsbDeviceSanity extends ImpTestCase {
         }
         try {
             dev.getVendorId();
-            assertTrue(false, "getVendorIds must throw an exception in detached statee" );
+            assertTrue(false, "getVendorIds must throw an exception in detached state" );
         } catch (e) {
             // OK
         }
         try {
             dev.getProductId();
-            assertTrue(false, "getProductId must throw an exception in detached statee" );
+            assertTrue(false, "getProductId must throw an exception in detached state" );
         } catch (e) {
             // OK
         }
