@@ -596,7 +596,7 @@ class USB.Device {
                             break;
                         }
                     } catch (e) {
-                      _log("Error driver initialization: " + e);
+                        _log("Error driver initialization: " + e);
                     }
                 }
             }

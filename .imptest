@@ -1,13 +1,11 @@
 {
-    "apiKey": "c3ed2b360c177e1898d4ec28311fd9e8",
-    "modelId": "MPvz_owofPIj" /* TestModel2 */,
+    "modelId": "W2Oas1QobbHA" /* Test */,
     "devices": [
-        "5000a408eab997b6" /* 5000a408eab997b6 */
+        "5000d8c46a56cf98" /* SmallOne */
     ],
     "agentFile": false,
     "deviceFile": "USB.device.lib.nut",
-    "stopOnFailure": true,
-    "timeout": 60,
+    "stopOnFailure": false,
     "tests": [
         "*.test.nut",
         "tests/**/*.test.nut"
