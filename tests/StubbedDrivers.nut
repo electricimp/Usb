@@ -131,3 +131,78 @@ class TestDriver3 extends USB.Driver {
         return null;
     }
 }
+
+
+deviceInterface4 <- {
+    "interfacenumber" : 0,
+    "altsetting" : 0,
+    "class" : 0xFF,
+    "subclass" : 0xFF,
+    "protocol" : 0xFF,
+    "interface" : 0,
+    "endpoints" : [bulkIn, bulkOut]
+}
+
+deviceInterface5 <- {
+    "interfacenumber" : 1,
+    "altsetting" : 0,
+    "class" : 0xFF,
+    "subclass" : 0xFF,
+    "protocol" : 0xFF,
+    "interface" : 0,
+    "endpoints" : [bulkIn, bulkOut]
+}
+
+
+deviceConfig4 <- {
+    "value" : 1,
+    "configuration" : 0,
+    "attributes" : 0,
+    "maxpower" : 100,
+    "interfaces" : [correctInterface]
+}
+
+deviceDescriptor4 <- {
+    "usb" : 0x0110,
+    "class" : 0,
+    "subclass" : 0,
+    "protocol" : 0xFF,
+    "maxpacketsize0" : 8,
+    "vendorid" : 0xEE,
+    "productid" : 0xCC,
+    "device" : 0x1234,
+    "manufacturer" : 0,
+    "product" : 0,
+    "serial" : 0,
+    "numofconfigurations" : 1,
+    "configurations" : [correctConfig]
+}
+
+device4 <- {
+    "speed" : 1.5,
+    "descriptors" : correctDescriptor
+}
+
+
+class TestDriver4 extends USB.Driver {
+
+    function match(device, interfaces) {
+        if (device.getVendorId() == deviceDescriptor4.vendorid &&
+            device.getProductId() == deviceDescriptor4.productid &&
+            interfaces.len() == 1 &&
+            interfaces[0]["interfacenumber"] == 0)
+            return TestDriver4();
+        return null;
+    }
+}
+
+class TestDriver5 extends USB.Driver {
+    function match(device, interfaces) {
+        if (device.getVendorId() == deviceDescriptor4.vendorid &&
+            device.getProductId() == deviceDescriptor4.productid &&
+            interfaces.len() == 1 &&
+            interfaces[0]["interfacenumber"] == 1)
+            return TestDriver5();
+        return null;
+    }
+}

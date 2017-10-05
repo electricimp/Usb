@@ -94,4 +94,19 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
             }.bindenv(this));
         }.bindenv(this));
     }
+
+    function testMultipleDriverForOneDevice() {
+        local host = USB.Host(_usb, [TestDriver4, TestDriver5], true);
+
+        _usb.triggerEvent(USB_DEVICE_CONNECTED, device4);
+
+        return Promise(function(resolve, reject) {
+            imp.wakeup(0, function() {
+                local devices = host.getAttachedDevices();
+                assertTrue(devices.len() == 1, "Expected one device items");
+                assertTrue(devices[1]._drivers.len() == 1, "Expected one driver instance");
+                resolve();
+            }.bindenv(this));
+        }.bindenv(this));
+    }
 }
