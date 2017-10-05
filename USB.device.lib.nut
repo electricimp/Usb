@@ -234,7 +234,7 @@ class USB.Host {
             // address for next device
             _address++;
 
-            if (null != _listener) _listener("connected", descr);
+            if (null != _listener) _listener("connected", device);
 
         } catch (e) {
             _error("Error driver instantiation: " + e);
@@ -375,6 +375,7 @@ class USB.Device {
         _deviceDescriptor = deviceDescriptor;
         _address = deviceAddress;
         _usb = usb;
+        _drivers = [];
 
         local ep0 = USB.ControlEndpoint(this, _address, 0, _deviceDescriptor["maxpacketsize0"]);
         _endpoints[0] <- ep0;
