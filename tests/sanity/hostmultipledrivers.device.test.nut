@@ -41,16 +41,16 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
     function testGetAttachedOneDevice() {
         local host = USB.Host(_usb, _drivers, true);
         local counter = {
-           "connected": 0,
-           "disconnected": 0,
-           "started": 0,
-           "stopped": 0
+            "connected": 0,
+            "disconnected": 0,
+            "started": 0,
+            "stopped": 0
         };
         // count all events
         host.setEventListener(function(type, payload) {
             counter[type]++;
             if (type == "connected")
-              assertTrue(payload._address == counter[type], "Unexpected device address: " + payload._address)
+                assertTrue(payload._address == counter[type], "Unexpected device address: " + payload._address)
         }.bindenv(this));
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, TestDriver1.device());
@@ -61,19 +61,35 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
             imp.wakeup(0, function() {
                 local devices = host.getAttachedDevices();
                 assertTrue(devices.len() == 3, "Expected three device items");
-                assertDeepEqual({"connected":3,"started":3,"disconnected":0,"stopped":0},
+                assertDeepEqual({
+                        "connected": 3,
+                        "started": 3,
+                        "disconnected": 0,
+                        "stopped": 0
+                    },
                     counter, "Wrong number of events on connect");
 
-                _usb.triggerEvent(USB_DEVICE_DISCONNECTED, {"device":1});
-                _usb.triggerEvent(USB_DEVICE_DISCONNECTED, {"device":2});
-                _usb.triggerEvent(USB_DEVICE_DISCONNECTED, {"device":3});
+                _usb.triggerEvent(USB_DEVICE_DISCONNECTED, {
+                    "device": 1
+                });
+                _usb.triggerEvent(USB_DEVICE_DISCONNECTED, {
+                    "device": 2
+                });
+                _usb.triggerEvent(USB_DEVICE_DISCONNECTED, {
+                    "device": 3
+                });
 
                 imp.wakeup(0, function() {
-                  local devices = host.getAttachedDevices();
-                  assertTrue(devices.len() == 0, "Expected three device items");
-                  assertDeepEqual({"connected":3,"started":3,"disconnected":3,"stopped":3},
-                      counter, "Wrong number of events on disconnect");
-                  resolve();
+                    local devices = host.getAttachedDevices();
+                    assertTrue(devices.len() == 0, "Expected three device items");
+                    assertDeepEqual({
+                            "connected": 3,
+                            "started": 3,
+                            "disconnected": 3,
+                            "stopped": 3
+                        },
+                        counter, "Wrong number of events on disconnect");
+                    resolve();
                 }.bindenv(this));
             }.bindenv(this));
         }.bindenv(this));

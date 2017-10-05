@@ -24,111 +24,110 @@
 
 // Mock driver with correct functionality
 
-@include __PATH__+"/./DescriptorMock.nut"
+@include __PATH__ + "/./DescriptorMock.nut"
 
 deviceDescriptor1 <- {
-    "usb" : 0x0110,
-    "class" : 0xFF,
-    "subclass" : 0xFF,
-    "protocol" : 0xFF,
-    "maxpacketsize0" : 8,
-    "vendorid" : 0xE1,
-    "productid" : 0xC1,
-    "device" : 0x1231,
-    "manufacturer" : 0,
-    "product" : 0,
-    "serial" : 0,
-    "numofconfigurations" : 1,
-    "configurations" : [correctConfig]
+    "usb": 0x0110,
+    "class": 0xFF,
+    "subclass": 0xFF,
+    "protocol": 0xFF,
+    "maxpacketsize0": 8,
+    "vendorid": 0xE1,
+    "productid": 0xC1,
+    "device": 0x1231,
+    "manufacturer": 0,
+    "product": 0,
+    "serial": 0,
+    "numofconfigurations": 1,
+    "configurations": [correctConfig]
 };
-
 
 class TestDriver1 extends USB.Driver {
 
-  deviceInfo = {
-      "speed" : 1.5,
-      "descriptors" : deviceDescriptor1
-  };
+    deviceInfo = {
+        "speed": 1.5,
+        "descriptors": deviceDescriptor1
+    };
 
     function device() {
-      return deviceInfo;
+        return deviceInfo;
     }
 
     function match(device, interfaces) {
-      if (device.getVendorId() == deviceInfo.descriptors.vendorid
-          && device.getProductId() == deviceInfo.descriptors.productid)
-          return TestDriver1();
-      return null;
+        if (device.getVendorId() == deviceInfo.descriptors.vendorid &&
+            device.getProductId() == deviceInfo.descriptors.productid)
+            return TestDriver1();
+        return null;
     }
 
 }
 
 deviceDescriptor2 <- {
-    "usb" : 0x0110,
-    "class" : 0xFF,
-    "subclass" : 0xFF,
-    "protocol" : 0xFF,
-    "maxpacketsize0" : 8,
-    "vendorid" : 0xE9,
-    "productid" : 0xC2,
-    "device" : 0x1232,
-    "manufacturer" : 0,
-    "product" : 0,
-    "serial" : 0,
-    "numofconfigurations" : 1,
-    "configurations" : [correctConfig]
+    "usb": 0x0110,
+    "class": 0xFF,
+    "subclass": 0xFF,
+    "protocol": 0xFF,
+    "maxpacketsize0": 8,
+    "vendorid": 0xE9,
+    "productid": 0xC2,
+    "device": 0x1232,
+    "manufacturer": 0,
+    "product": 0,
+    "serial": 0,
+    "numofconfigurations": 1,
+    "configurations": [correctConfig]
 };
 
 class TestDriver2 extends USB.Driver {
 
-  deviceInfo = {
-      "speed" : 1.5,
-      "descriptors" : deviceDescriptor2
-  }
+    deviceInfo = {
+        "speed": 1.5,
+        "descriptors": deviceDescriptor2
+    }
+
     function device() {
-      return deviceInfo;
+        return deviceInfo;
     }
 
     function match(device, interfaces) {
-      if (device.getVendorId() == deviceInfo.descriptors.vendorid
-          && device.getProductId() == deviceInfo.descriptors.productid)
-          return TestDriver2();
-      return null;
+        if (device.getVendorId() == deviceInfo.descriptors.vendorid &&
+            device.getProductId() == deviceInfo.descriptors.productid)
+            return TestDriver2();
+        return null;
     }
 
 }
 
 deviceDescriptor3 <- {
-    "usb" : 0x0110,
-    "class" : 0xFF,
-    "subclass" : 0xFF,
-    "protocol" : 0xFF,
-    "maxpacketsize0" : 8,
-    "vendorid" : 0xEE,
-    "productid" : 0xC3,
-    "device" : 0x1233,
-    "manufacturer" : 0,
-    "product" : 0,
-    "serial" : 0,
-    "numofconfigurations" : 1,
-    "configurations" : [correctConfig]
+    "usb": 0x0110,
+    "class": 0xFF,
+    "subclass": 0xFF,
+    "protocol": 0xFF,
+    "maxpacketsize0": 8,
+    "vendorid": 0xEE,
+    "productid": 0xC3,
+    "device": 0x1233,
+    "manufacturer": 0,
+    "product": 0,
+    "serial": 0,
+    "numofconfigurations": 1,
+    "configurations": [correctConfig]
 };
 
-
 class TestDriver3 extends USB.Driver {
-  deviceInfo = {
-      "speed" : 2,
-      "descriptors" : deviceDescriptor3
-  }
+    deviceInfo = {
+        "speed": 2,
+        "descriptors": deviceDescriptor3
+    }
+
     function device() {
-      return deviceInfo;
+        return deviceInfo;
     }
 
     function match(device, interfaces) {
-        if (device.getVendorId() == deviceInfo.descriptors.vendorid
-            && device.getProductId() == deviceInfo.descriptors.productid)
+        if (device.getVendorId() == deviceInfo.descriptors.vendorid &&
+            device.getProductId() == deviceInfo.descriptors.productid)
             return TestDriver3();
         return null;
     }
-
 }
