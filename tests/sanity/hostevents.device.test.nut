@@ -37,7 +37,7 @@ class UsbHostEventsSanity extends ImpTestCase {
         _usb = UsbMock();
     }
 
-    function test01GetAttachedDevices() {
+    function testGetAttachedOneDevice() {
         local host = USB.Host(_usb, _drivers, true);
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
@@ -52,7 +52,25 @@ class UsbHostEventsSanity extends ImpTestCase {
         }.bindenv(this));
     }
 
-    function test02SetListenerOnConnect() {
+    function testGetAttachedTwoDevices() {
+        local host = USB.Host(_usb, _drivers, true);
+
+        _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
+        _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
+
+        return Promise(function(resolve, reject) {
+            imp.wakeup(0, function() {
+                local devices = host.getAttachedDevices();
+                assertTrue(devices.len() == 2, "Expected one device item");
+                assertEqual("instance", typeof(devices[1]), "Unexpected driver");
+                assertEqual("instance", typeof(devices[2]), "Unexpected driver");
+                resolve();
+            }.bindenv(this));
+        }.bindenv(this));
+    }
+
+
+    function testSetListenerOnConnect() {
         return Promise(function(resolve, reject) {
             local host = USB.Host(_usb, _drivers, true);
             local counter = 0;
@@ -86,7 +104,7 @@ class UsbHostEventsSanity extends ImpTestCase {
         }.bindenv(this));
     }
 
-    function test03SetListenerDisconnect() {
+    function testSetListenerDisconnect() {
         return Promise(function(resolve, reject) {
             local host = USB.Host(_usb, _drivers, true);
 
