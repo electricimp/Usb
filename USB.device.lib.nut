@@ -307,7 +307,7 @@ class USB.Host {
 
     // USB critical error processing function.
     // Stops all registered USB.Devices and schedules bus reset
-    function _onError(eventDetails) {
+    function _onError(eventDetails = null) {
         foreach(device in _devices) {
             try {
                 device.stop();
@@ -382,34 +382,14 @@ class USB.Device {
 
         // When a device is first connected you can communicate with it at address 0x00.
         // This should be set to a unique value for the device, using a set address control transfer.
-        setAddress(_address);
+        _setAddress(_address);
+
+        // Select default configuration
+        _setConfiguration(deviceDescriptor["configurations"][0].value);
 
         imp.wakeup(0, (function() {_selectDrivers(drivers);}).bindenv(this));
     }
 
-
-    // Helper function for device address assignment.
-    //
-    // Parameters:
-    //      address - new device address to assign
-    //
-    // Throws exception if the device was detached
-    //
-    // Note: the function uses 0 as device address therefore can be used only once
-    function setAddress(address) {
-        _checkStopped();
-
-        _usb.controltransfer(
-            _speed,
-            0,
-            0,
-            USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
-            USB_REQUEST_SET_ADDRESS,
-            address,
-            0,
-            _deviceDescriptor["maxpacketsize0"]
-        );
-    }
 
     // Request endpoint of required type and direction.
     // The function creates new endpoint if it was not cached.
@@ -550,6 +530,44 @@ class USB.Device {
     }
 
     // -------------------- Private functions --------------------
+
+
+    // Selects current device configuration by sending USB_REQUEST_SET_CONFIGURATION request through Endpoint Zero
+    //
+    // Parameter:
+    //      config  - configuration number
+    //
+    // Returns Nothing
+    //
+    function _setConfiguration(config) {
+        _endpoints[0]._transfer(
+            USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
+            USB_REQUEST_SET_CONFIGURATION,
+            config,
+            0
+        );
+    }
+
+    // Helper function for device address assignment.
+    //
+    // Parameters:
+    //      address - new device address to assign
+    //
+    // Throws exception if the device was detached
+    //
+    // Note: the function uses 0 as device address therefore can be used only once
+    function _setAddress(address) {
+        _usb.controltransfer(
+            _speed,
+            0,
+            0,
+            USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
+            USB_REQUEST_SET_ADDRESS,
+            address,
+            0,
+            _deviceDescriptor["maxpacketsize0"]
+        );
+    }
 
     // Device run status check
     function _checkStopped() {
@@ -779,10 +797,12 @@ class USB.FunctionalEndpoint {
             return;
         }
 
-        _transferCb(error, length);
-
+        local cb = _transferCb;
         // ready for next request
         _transferCb = null;
+
+        cb(error, length);
+
     }
 
     // Auxillary function to handle transfer timeout state
@@ -888,7 +908,7 @@ class USB.ControlEndpoint {
     //      index       - An index value determined by the specific USB request
     //      data        - [optional] Optional storage for incoming or outgoing data
     //
-    function _transfer(reqType, req, value, index, data = null) {
+    function _transfer(reqType, req, value, index, data = blob()) {
         if (_closed) throw "Closed";
 
         _device._usb.controltransfer(
