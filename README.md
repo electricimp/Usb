@@ -33,7 +33,7 @@ class MyUsbDriver extends USB.Driver {
     // Returns driver instance if matched
     function match(device, interfaces) {
         if (device.getVendorId() == VID && device.getProductId() == PID)
-          return new MyUsbDriver(device, interfaces);
+          return MyUsbDriver(device, interfaces);
         return null;
     }
 }
@@ -389,14 +389,14 @@ class MyUsbDriver extends USB.Driver {
 
     constructor(device, interfaces) {
       _device = device;
-      _bulkIn = device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
-      _bulkOut = device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+      _bulkIn = device.getEndpoint(interfaces[0], USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+      _bulkOut = device.getEndpoint(interfaces[0], USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
       this.start();
     }
 
     function match(device, interfaces) {
       if (_checkMatch(device, interfaces))
-        return new MyUsbDriver(device,interfaces);
+        return MyUsbDriver(device, interfaces);
       return null;
     }
 
@@ -408,7 +408,7 @@ class MyUsbDriver extends USB.Driver {
     function start() {
       imp.wakeup(0, (function(action, error, payload, length) {
           if (_bulkIn != null) {
-            _bulkIn.read(blob(64), function() {
+            _bulkIn.read(blob(64), function(endp, error, data, len) {
 
             });
           }
@@ -447,7 +447,7 @@ class MyUsbDriver extends USB.Driver {
     // Returns an array of VID PID combinations
     function match(device, interface) {
         if (device._vid == VID && device._pid == PID)
-          return new MyUsbDriver(device);
+          return MyUsbDriver(device);
         return null;
     }
 }
