@@ -79,6 +79,7 @@ class USB {
         const USB_DIRECTION_MASK = 0x80;
 
         const USB_TYPE_STALL_ERROR = 4;
+        const USB_TYPE_TIMEOUT = 19;
 
     }
 }
@@ -777,7 +778,9 @@ class USB.FunctionalEndpoint {
             }
         };
 
-        _timer = imp.wakeup(5, _onTimeout.bindenv(this));
+        // Disable 5 seconds time limit for an interrupt endpoint
+        if (_type != USB_ENDPOINT_INTERRUPT)
+            _timer = imp.wakeup(5, _onTimeout.bindenv(this));
 
     }
 
