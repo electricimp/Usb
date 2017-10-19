@@ -59,7 +59,7 @@ Instantiates the USB.Host class. It takes `hardware.usb` as a required parameter
 | -------------- | --------- | ------- | ----------- |
 | *usb* 		 | Object 	 | n/a 	   | The imp API hardware usb object `hardware.usb` |
 | *drivers* 		 | USB.Driver[] 	 | n/a 	   | An array of the pre-defined drivers |
-| *autoConfPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps docs](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb). These pins must be configured for the usb to work on an **imp005**. |
+| *autoConfPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps documentation](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb). These pins must be configured for the usb to work on an **imp005**. |
 
 ##### Example
 
@@ -288,7 +288,9 @@ try {
 
 #### read(data, onComplete)
 Read data through this endpoint.
-Throw an exception if EP is closed, has incompatible type or already busy
+Throw an exception if EP is closed, has incompatible type or already busy.
+
+Sets an upper limit of five seconds for any command to be processed for the bulk endpoint according to the [electric imps documentation](https://electricimp.com/docs/resources/usberrors/#stq=&stp=0).
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
