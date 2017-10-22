@@ -1,6 +1,6 @@
 # Usb Drivers Framework
 
-Usb Drivers Framework was intended to simplify and standardize USB driver creation and handling.
+Usb Drivers Framework was intended to simplify and standardize USB driver creation and adoption by application developer.
 
 **To use this library add the following statement to the top of your device code:**
 
@@ -10,35 +10,27 @@ Usb Drivers Framework was intended to simplify and standardize USB driver creati
 USB stack consists of five simple abstractions:
 - **[USB.Host](#usbhost-class)** - the main entrance point for an application. Responsible for drivers registration and events handling
 - **[USB.Device](#usbdevice-сlass)** - wrapper for USB device description, instantiated for each connected device
-- **[USB.Driver](#usbdriver)** - base api which should re-implement each USB driver
+- **[USB.Driver](#usbdriver)** - base api which should re-implemented by each USB driver
 - **[USB.ControlEndpoint](#usbcontrolendpoint-class)** - provides api for control endpoint
 - **[USB.FunctionalEndpoint](#usbfunctionalendpoint)** - provides api for bulk or interrupt endpoints
 
-```squirrel
-class MyUsbDriver extends USB.Driver {
+Typical use case for this framework is to help application developer to reuse existed driver like in the following example (NOTE: the code is for demo only)
+```
+#require "FT232rl.nut:1.0.0"
+#require "USB.device.lib.nut:0.2.0"
 
-    static VID = 0x01f9;
-    static PID = 0x1044;
 
-    _device = null;  /* USB.Device */
-    _bulk = null;    /* USB.FunctionalEndpoint */
-    _control = null; /* USB.ControlEndpoint */
-
-    constructor(device, interfaces) {
-      _device = device;
-      _bulk = _device.getEndpoint(interfaces[0], USB_ENDPOINT_BULK, USB_DIRECTION_IN);
-      _control = _device.getEndpointByAddress(0);
-    }
-
-    // Returns driver instance if matched
-    function match(device, interfaces) {
-        if (device.getVendorId() == VID && device.getProductId() == PID)
-          return MyUsbDriver(device, interfaces);
-        return null;
+function driverStatusListener(evetType, eventObject) {
+    if (eventType == "started") {
+        // start work with FT232rl device
+    } else if (eventType == "stopped") {
+        // immediately stop all interaction with FT232rl device
     }
 }
 
-usbHost <- USB.Host(hardware.usb, [MyUsbDriver]);
+host <- USB.Host(hardware.usb, [FT232rl]);
+host.setEventListener(driverStatusListener);
+
 ```
 
 ----
