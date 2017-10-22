@@ -397,6 +397,7 @@ class USB.Device {
     //      ifs     - array of interface descriptors
     //      type    - the type of endpoint
     //      dir     - endpoint direction
+    //      pollTime  - interval for polling endpoint for data transfers. For Interrupt/Isochronous only.
     //
     //  Returns:
     //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint, depending on type parameter,
@@ -404,7 +405,7 @@ class USB.Device {
     //
     // Throws exception if the device was detached
     //
-    function getEndpoint(ifs, type, dir) {
+    function getEndpoint(ifs, type, dir, pollTime = 255) {
         _checkStopped();
 
         foreach ( epAddress, ep  in _endpoints) {
@@ -425,7 +426,7 @@ class USB.Device {
                         local address = ep.address;
 
                         _usb.openendpoint(_speed, this._address, dif.interfacenumber,
-                                          type, maxSize, address, 255);
+                                          type, maxSize, address, pollTime);
 
                         local newEp = (type == USB_ENDPOINT_CONTROL) ?
                                         USB.ControlEndpoint(this, dif, address, maxSize) :
@@ -445,6 +446,7 @@ class USB.Device {
     // The function creates new a endpoint if it was not cached.
     // Parameters:
     //      epAddress - required endpoint address
+    //      pollTime  - interval for polling endpoint for data transfers. For Interrupt/Isochronous only.
     //
     //  Returns:
     //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint,
@@ -452,7 +454,7 @@ class USB.Device {
     //
     // Throws exception if the device was detached
     //
-    function getEndpointByAddress(epAddress) {
+    function getEndpointByAddress(epAddress, pollTime = 255) {
         _checkStopped();
 
         if (epAddress in _endpoints) return _endpoints[epAddress];
@@ -465,7 +467,7 @@ class USB.Device {
                     local type = ep.attributes;
 
                     _usb.openendpoint(_speed, _address, dif,
-                                        type, maxSize, epAddress, 1);
+                                        type, maxSize, epAddress, pollTime);
 
                     local newEp = (type == USB_ENDPOINT_CONTROL) ?
                                         USB.ControlEndpoint(this, dif, epAddress, maxSize) :
@@ -530,7 +532,6 @@ class USB.Device {
     }
 
     // -------------------- Private functions --------------------
-
 
     // Selects current device configuration by sending USB_REQUEST_SET_CONFIGURATION request through Endpoint Zero
     //

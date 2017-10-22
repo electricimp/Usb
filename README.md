@@ -142,29 +142,31 @@ Assigns new logical device address. Throws an exception if device was disconnect
 | -------------- | --------- | ----------- |
 | *address* | Number | a new usb device address |
 
-#### getEndpoint(*ifs, type, direction*)
+#### getEndpoint(*ifs, type, direction, pollTime*)
 
 Request endpoint of required type and direction, and that are described at given interface.
 The function returns cached object or instantiates a new one object (`USB.ControlEndpoint` or `USB.FunctionalEndpoint`) which is corresponding to the requested argument and return null otherwise.
 
-| Parameter 	 | Data Type | Description |
-| -------------- | --------- | ----------- |
-| *ifs*      | Any | interface ID  |
-| *type*      | Number | the type of endpoint |
-| *direction*  | Number | the type of endpoint's direction |
+| Parameter 	 | Data Type | Default | Description |
+| -------------- | --------- | ----------- | ----------- |
+| *ifs*      | Any | n/a |interface ID  |
+| *type*      | Number | n/a | the type of endpoint |
+| *direction*  | Number | n/a | the type of endpoint's direction |
+| *pollTime* | Number | 255 | Interval for polling endpoint for data transfers |
 
-**NOTE** Interface ID is delivered to an driver through `USB.Driver.match` function at drivers lookup stage. So far it is just interface descriptor table, but can be changed with future framework updates.
+**NOTE** Interface ID is delivered to a driver through `USB.Driver.match` function at drivers lookup stage. So far it is just interface descriptor table, but can be changed with future framework updates.
 
 
-#### getEndpointByAddress(*epAddress*)
+#### getEndpointByAddress(*epAddress, pollTime*)
 
 Request endpoint with given address.
 The function searches for the address across all available interface and returns null if there is no endpoint with such address. New endpoint is stored at cache.
 
 
-| Parameter 	 | Data Type | Description |
-| -------------- | --------- | ----------- |
-| *epAddress* | Number | address of the usb endpoint |
+| Parameter 	 | Data Type | Default | Description |
+| -------------- | --------- | --------- | ----------- |
+| *epAddress* | Number | n/a | address of the usb endpoint |
+| *pollTime* | Number | 255 | Interval for polling endpoint for data transfers |
 
 
 #### stop()
