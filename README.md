@@ -73,6 +73,8 @@ There are four events could be generated: `"connected"`/`"disconnected"` for dev
 
 Setting of **NULL** clears previously assigned listener.
 
+NOTE: setting event listener may result in immediate series of assigned function call with information about attached devices and instantiated drivers at the time of this function call. The framework doesn't trace events happen between listener assignment therefore every function call results in USB.Host status reporting.
+
 ##### Callback function
 
 | Parameter   | Data Type | Description |

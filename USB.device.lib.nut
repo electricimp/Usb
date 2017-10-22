@@ -170,11 +170,32 @@ class USB.Host {
 
         _listener = listener;
 
-        foreach(device in _devices) device._listener = listener;
-    }
+        if (null != listener) {
+            imp.wakeup(0, _notifyStatus.bindenv(this));
+        } else {
+            foreach(device in _devices) device._setListener(null);
+        }
+   }
 
     // ------------------------ private API -------------------
 
+    // Notifies current state of the Host through the function assigned by setEventListener
+    function _notifyStatus() {
+        if (null == _listener) return;
+
+        // keep a copy
+        local l = _listener;
+
+        foreach (device in _devices) {
+            try {
+                l("connected", device);
+            } catch (e) {
+                // ignore
+            }
+
+            device._setListener(l);
+        }
+    }
 
     // Checks if given parameter implement USB.Driver API
     function _checkDriver(driverClass) {
@@ -532,6 +553,26 @@ class USB.Device {
     }
 
     // -------------------- Private functions --------------------
+
+    // Notifies new listener about device current state
+    //
+    // Parameter:
+    //      listener  - null or the function that receives two parameters:
+    //                      eventType -   "started", "stopped"
+    //                      eventObject - USB.Driver instance
+    function _setListener(listener) {
+        _listener = listener;
+
+        if (listener != null) {
+            foreach(driver in _drivers) {
+                try {
+                    listener("started", driver);
+                } catch (e) {
+                    // ignore
+                }
+            }
+        }
+    }
 
     // Selects current device configuration by sending USB_REQUEST_SET_CONFIGURATION request through Endpoint Zero
     //
