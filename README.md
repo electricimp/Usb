@@ -1,6 +1,6 @@
-# Usb Drivers Framework
+# USB Drivers Framework
 
-Usb Drivers Framework was intended to simplify and standardize USB driver creation and adoption by application developer.
+Usb Drivers Framework is intended to simplify and standardize USB driver creation and adoption by application developer.
 
 **To use this library add the following statement to the top of your device code:**
 
@@ -10,9 +10,9 @@ Usb Drivers Framework was intended to simplify and standardize USB driver creati
 USB stack consists of five simple abstractions:
 - **[USB.Host](#usbhost-class)** - the main entrance point for an application. Responsible for drivers registration and events handling
 - **[USB.Device](#usbdevice-сlass)** - wrapper for USB device description, instantiated for each connected device
-- **[USB.Driver](#usbdriver)** - base api which should re-implemented by each USB driver
+- **[USB.Driver](#usbdriver-class)** - base api which should be re-implemented by each USB driver
 - **[USB.ControlEndpoint](#usbcontrolendpoint-class)** - provides api for control endpoint
-- **[USB.FunctionalEndpoint](#usbfunctionalendpoint)** - provides api for bulk or interrupt endpoints
+- **[USB.FunctionalEndpoint](#usbfunctionalendpoint-class)** - provides api for bulk or interrupt endpoints
 
 Typical use case for this framework is to help application developer to reuse existed driver like in the following example (NOTE: the code is for demo only)
 ```
@@ -20,7 +20,7 @@ Typical use case for this framework is to help application developer to reuse ex
 #require "USB.device.lib.nut:0.2.0"
 
 
-function driverStatusListener(evetType, eventObject) {
+function driverStatusListener(eventType, eventObject) {
     if (eventType == "started") {
         // start work with FT232rl device
     } else if (eventType == "stopped") {
@@ -38,20 +38,19 @@ host.setEventListener(driverStatusListener);
 ## USB.Host class
 
 The main interface to start working with USB devices.
-Provides public API for an application to registers drivers and assigns listeners
-for important events like device connect/disconnect.
+Provides public API for an application to register drivers and assign listeners for important events like device connect/disconnect.
 
-If you have more then on USB port on development board then you should create USB.Host for each of them.
+If you have more then one USB port on development board then you should create USB.Host for each of them.
 
 #### USB.Host(*usb, drivers, [, autoConfigPins]*)
 
-Instantiates the USB.Host class. It takes `hardware.usb` as a required parameter and an optional boolean flag.
+Instantiates the USB.Host class.
 
-| Parameter 	 | Data Type | Default | Description |
+| Parameter 	 | Data Type | Required/Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *usb* 		 | Object 	 | n/a 	   | The imp API hardware usb object `hardware.usb` |
-| *drivers* 		 | USB.Driver[] 	 | n/a 	   | An array of the pre-defined drivers |
-| *autoConfPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps documentation](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb). These pins must be configured for the usb to work on an **imp005**. |
+| *usb* 		 | Object 	 | required  | The imp API hardware usb object `hardware.usb` |
+| *drivers*      | USB.Driver[] | required  | An array of the pre-defined driver classes |
+| *autoConfigPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps documentation](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb). These pins must be configured for the usb to work on **imp005**. |
 
 ##### Example
 
@@ -64,18 +63,22 @@ usbHost <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2]);
 
 #### setEventListener(*callback*)
 
-Assign listener about device and  driver status changes.
-There are four events could be generated: `"connected"`/`"disconnected"` for device status and `"started"`/`"stopped"` for driver status.
+Assigns listener for device and driver status changes.
+The following events are supported:
+- device `"connected"`
+- device `"disconnected"`
+- driver `"started"`
+- driver `"stopped"`
 
 | Parameter   | Data Type | Required | Description |
 | ----------- | --------- | -------- | ----------- |
-| *callback*  | Function  | Yes      | Function to be called on event |
+| *callback*  | Function  | Yes      | Function to be called on event. See below. |
 
-Setting of **NULL** clears previously assigned listener.
+Setting of *null* clears the previously assigned listener.
 
-NOTE: setting event listener may result in immediate series of assigned function call with information about attached devices and instantiated drivers at the time of this function call. The framework doesn't trace events happen between listener assignment therefore every function call results in USB.Host status reporting.
+NOTE: setting event listener may result in immediate series of the *callback* function call with information about attached devices and instantiated drivers at the time of *setEventListener()* call. The framework doesn't trace events happened between listener assignment therefore every function call results in USB.Host status reporting.
 
-##### Callback function
+##### callback(*eventType,
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
@@ -237,7 +240,7 @@ Uses for a device safe disconnect.
 
 ------------
 
-## USB.FunctionalEndpoint
+## USB.FunctionalEndpoint class
 
 The class that represent all non-control endpoints, e.g. bulk, interrupt and isochronous
 This class is managed by USB.Device and should be acquired through USB.Device instance api.
@@ -362,7 +365,7 @@ catch (e) {
 -------
 
 
-## USB.Driver
+## USB.Driver class
 
 The USB.Driver class is used as the base for all drivers that use this library. It contains a set of functions that are expected by [USB.Host](#USBhost) as well as some set up functions. There are a few required functions that must be overwritten.
 
