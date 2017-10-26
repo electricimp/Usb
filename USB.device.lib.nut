@@ -171,11 +171,32 @@ class USB.Host {
 
         _listener = listener;
 
-        foreach(device in _devices) device._listener = listener;
-    }
+        if (null != listener) {
+            imp.wakeup(0, _notifyStatus.bindenv(this));
+        } else {
+            foreach(device in _devices) device._setListener(null);
+        }
+   }
 
     // ------------------------ private API -------------------
 
+    // Notifies current state of the Host through the function assigned by setEventListener
+    function _notifyStatus() {
+        if (null == _listener) return;
+
+        // keep a copy
+        local l = _listener;
+
+        foreach (device in _devices) {
+            try {
+                l("connected", device);
+            } catch (e) {
+                // ignore
+            }
+
+            device._setListener(l);
+        }
+    }
 
     // Checks if given parameter implement USB.Driver API
     function _checkDriver(driverClass) {
@@ -398,6 +419,7 @@ class USB.Device {
     //      ifs     - array of interface descriptors
     //      type    - the type of endpoint
     //      dir     - endpoint direction
+    //      pollTime  - interval for polling endpoint for data transfers. For Interrupt/Isochronous only.
     //
     //  Returns:
     //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint, depending on type parameter,
@@ -405,7 +427,7 @@ class USB.Device {
     //
     // Throws exception if the device was detached
     //
-    function getEndpoint(ifs, type, dir) {
+    function getEndpoint(ifs, type, dir, pollTime = 255) {
         _checkStopped();
 
         foreach ( epAddress, ep  in _endpoints) {
@@ -426,7 +448,7 @@ class USB.Device {
                         local address = ep.address;
 
                         _usb.openendpoint(_speed, this._address, dif.interfacenumber,
-                                          type, maxSize, address, 255);
+                                          type, maxSize, address, pollTime);
 
                         local newEp = (type == USB_ENDPOINT_CONTROL) ?
                                         USB.ControlEndpoint(this, dif, address, maxSize) :
@@ -446,6 +468,7 @@ class USB.Device {
     // The function creates new a endpoint if it was not cached.
     // Parameters:
     //      epAddress - required endpoint address
+    //      pollTime  - interval for polling endpoint for data transfers. For Interrupt/Isochronous only.
     //
     //  Returns:
     //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint,
@@ -453,7 +476,7 @@ class USB.Device {
     //
     // Throws exception if the device was detached
     //
-    function getEndpointByAddress(epAddress) {
+    function getEndpointByAddress(epAddress, pollTime = 255) {
         _checkStopped();
 
         if (epAddress in _endpoints) return _endpoints[epAddress];
@@ -466,7 +489,7 @@ class USB.Device {
                     local type = ep.attributes;
 
                     _usb.openendpoint(_speed, _address, dif,
-                                        type, maxSize, epAddress, 1);
+                                        type, maxSize, epAddress, pollTime);
 
                     local newEp = (type == USB_ENDPOINT_CONTROL) ?
                                         USB.ControlEndpoint(this, dif, epAddress, maxSize) :
@@ -532,6 +555,25 @@ class USB.Device {
 
     // -------------------- Private functions --------------------
 
+    // Notifies new listener about device current state
+    //
+    // Parameter:
+    //      listener  - null or the function that receives two parameters:
+    //                      eventType -   "started", "stopped"
+    //                      eventObject - USB.Driver instance
+    function _setListener(listener) {
+        _listener = listener;
+
+        if (listener != null) {
+            foreach(driver in _drivers) {
+                try {
+                    listener("started", driver);
+                } catch (e) {
+                    // ignore
+                }
+            }
+        }
+    }
 
     // Selects current device configuration by sending USB_REQUEST_SET_CONFIGURATION request through Endpoint Zero
     //
