@@ -1,131 +1,116 @@
 # FT232RL FTDI USB Driver Example
 
-This example shows how to extend the USB.DriverBase class to create a driver for a FT232RL USB to serial breakout.  The example includes the FT232RLFtdiUsbDriver class with methods descibed below, some example code that makes use of the driver, and a folder with tests for the driver class.
+This example shows how to create a driver class for a FT232RL USB for a serial breakout.  The example includes the FT232RLFtdiUsbDriver class with methods described below, some example code that makes use of the driver, and a folder with tests for the driver class.
 
 ## FT232RL FTDI USB Driver
 
-The [USB.Host](../USB/) will handle the connection/disconnection events and instantiation of this class. This class and its identifiers will be registered with the [USB.Host](../USB/) and when a device with matching identifiers is connected the device driver will be instantiated and passed to the `"connection"` event callback registered with the [USB.Host](../USB/). As this can be confusing an example of receiving an instantiated driver object is shown in the example file - FT232RLFtdiUsbDriver.device.nut.
+This class should be provided in a list of drivers-argument of the [USB.Host constructor](../USB/) and if a driver is matching to the connected device then driver will be instantiated.
 
-## Class Usage
+The [USB.Host](../USB/) will notify the "started"/"stopped" events on instantiation of this driver class
+in case if application developer is subscribed on USB events via [USB.Host.setEventListener](../USB/).
 
-### Constructor: FT232RLFtdiUsbDriver(*usb*)
 
-Class instantiation is handled by the [USB.Host](../USB/) class. This class should not be manually instantiated.
-
-### getIdentifiers()
-
-Returns an array of tables with VID-PID key value pairs respectively. Identifiers are used by the [USB.Host](../USB/) to instantiate the corresponding devices driver.
-
-#### Example
+#### Driver instantiation and usage example
 
 ```squirrel
-local identifiers = FT232RLFtdiUsbDriver.getIdentifiers();
+#require "USB.device.lib.nut:0.3.0"
+#require "FT232RLFtdiUsbDriver.device.lib.nut:0.3.0"
 
-foreach (i, identifier in identifiers) {
-    foreach (VID, PID in identifier){
-        server.log("VID =" + VID + " PID = " + PID);
-    }
-}
+// Provide the list of available drivers to the USB.Host
+local host = USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
 
-```
+host.setEventListener(function(eventName, eventDetails) {
+  if (eventName == "stated") {
+    local driver = eventDetails;
+    server.log("FT232RLFtdiUsbDriver instantiated");
 
-### on(*eventName, callback*)
-
-Subscribe a callback function to a specific event.
-
-
-| Key | Data Type | Required | Description |
-| --- | --------- | -------- | ----------- |
-| *eventName* | String | Yes | The string name of the event to subscribe to. |
-| *callback* | Function | Yes | Function to be called on event |
-
-Events emitted by this class:
-| eventName | Data Type Returned |  Description |
-| --- | ---------  | ----------- |
-| *data* | [blob](https://electricimp.com/docs/squirrel/blob/) |Called when data is received over usb. A blob containing the data is called as the only arguement to the callback function.|
-#### Example
-Replace the `onDeviceConnected` function in the example shown in the setup section with the one below.
-```squirrel
-
-// Callback to handle device connection
-function onDeviceConnected(device) {
-    server.log(typeof device + " was connected!");
-    switch (typeof device) {
-        case ("FT232RLFtdiUsbDriver"):
-            device.on("data", function (data){
-                server.log("Recieved " + data + " via usb");
-            });
-            server.log("listening for data events");
-            break;
-    }
-}
-
-```
-
-### off(*eventName*)
-
-Clears a subscribed callback function from a specific event.
-
-| Key | Data Type | Required | Description |
-| --- | --------- | -------- | ----------- |
-| *eventName* | String | Yes | The string name of the event to unsubscribe from.|
-
-
-#### Example
-Replace the `onDeviceConnected` function in the example shown in the setup section with the one below.
-```squirrel
-
-// Callback to handle device connection
-function onDeviceConnected(device) {
-    server.log(typeof device + " was connected!");
-    switch (typeof device) {
-        case ("FT232RLFtdiUsbDriver"):
-
-            // Listen for data events
-            device.on("data", function(data) {
-                server.log("Recieved " + data + " via usb");
-            });
-            server.log("listening for data events");
-
-            // Cancel data events listener after 5 seconds
-            imp.wakeup(5, function() {
-                device.off("data");
-                server.log("stopped listening for data events");
-            }.bindenv(this))
-
-            break;
-    }
-}
-
-
-```
-
-### write(data)
-
-Writes String or Blob data out to ftdi.
-
-
-| Key | Data Type | Required | Description |
-| --- | --------- | -------- | ----------- |
-| *data* | String/Blob | Yes | The String or Blob to be written to ftdi.|
-
-
-#### Example
-
-```squirrel
-usbHost <- USB.Host(hardware.usb);
-
-// Register the Ftdi usb driver driver with usb host
-usbHost.registerDriver(FT232RLFtdiUsbDriver, FT232RLFtdiUsbDriver.getIdentifiers());
-
-usbHost.on("connected",function (device) {
-    switch (typeof device) {
-        case ("FT232RLFtdiUsbDriver"):
-            device.write("Testing ftdi over usb");
-            break;
-    }
+    // now you can save driver instance or call
+    // a custom driver API
+    // For example: driver.write("Test message", callback);
+  }
 });
 
 // Log instructions for user
-server.log("USB listeners opened.  Plug FTDI board in to see logs.");
+server.log("USB host initialized. Please, plug FTDI board in to see logs.");
 ```
+
+## Driver class base methods
+
+There are two methods which driver must to implement: match and release.
+
+### match(device, interfaces)
+
+Returns an instance of the FT232RLFtdiUsbDriver or null if device does not match. Implementation of this method for the FT232 is based on VID and PID identifiers.
+
+| Parameter   | Data Type | Required | Description |
+| ----------- | --------- | -------- | ----------- |
+| *device*  | USB.Device  | Yes      | attached device |
+| *interfaces* | List | Yes | the list of interface descriptions |
+
+
+#### Example
+
+```squirrel
+class FT232RLFtdiUsbDriver : implements USB.Driver {
+  static VID = 0xE1;
+  static PID = 0x02;
+
+  constructor(device, interfaces) {
+    // Empty for a while
+  }
+
+  function match(device, interfaces) {
+    if (device &&
+        device.getVendorId() == VID &&
+        device.getProductId() == PID)
+        return new FT232RLFtdiUsbDriver(device, interfaces);
+    return null;
+  }
+}
+
+```
+
+### release()
+
+This method should implement resource freeing before driver release.
+
+```squirrel
+
+class FT232RLFtdiUsbDriver implement USB.Driver {
+  // ...
+  function release() {
+    // For example, driver developer could release write queue
+    // and free all allocated endpoints
+    this._bulkIn = null;
+    this._bulkOut = null;
+  }
+}
+
+## Driver class custom API
+
+Each driver could provide custom API for application developers.
+
+There is an example of such API:
+
+### write(*payload*, *callback*)
+
+write method allows to write some text data via drvier and get a callback on write completion
+
+| Parameter   | Data Type | Required | Description |
+| ----------- | --------- | -------- | ----------- |
+| *payload*  | string or blob  | Yes      | data to be sent via usb |
+| *callback*  | Function  | Yes      | Function to be called on write completion or error. |
+
+
+### read(*payload*, *callback*)
+
+Read data from usb device to the blob and provide callback on completion or error
+
+| Parameter   | Data Type | Required | Description |
+| ----------- | --------- | -------- | ----------- |
+| *payload*  | blob  | Yes      | data to be get from usb device |
+| *callback*  | Function  | Yes      | Function to be called on read completion or error. |
+
+### _typeof()
+
+Meta-function to return class name when typeof <instance> is run.
