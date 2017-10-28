@@ -76,8 +76,6 @@ The following events are supported:
 
 Setting of *null* clears the previously assigned listener.
 
-NOTE: setting event listener may result in immediate series of the *callback* function call with information about attached devices and instantiated drivers at the time of *setEventListener()* call. The framework doesn't trace events happened between listener assignment therefore every function call results in USB.Host status reporting.
-
 ##### callback(*eventType,
 
 | Parameter   | Data Type | Description |
@@ -119,25 +117,6 @@ It is parsing device description, lookup for a drivers and control drivers lifec
 An application does not need to use device object normally.
 It is usually used by drivers to acquire required endpoints.
 
-#### constructor(*usb, speed, deviceDescriptor, deviceAddress, drivers*)
-Constructs device peer
-
-| Parameter 	 | Data Type | Default | Description |
-| -------------- | --------- | ------- | ----------- |
-| *usb* 		     | Object 	 | n/a 	   | The imp API hardware usb object `hardware.usb` |
-| *speed* | Number   | n/a  | Usb device speed (Mb/s). |
-| *deviceDescriptor* | deviceDescriptor   | n/a  | Usb device descriptor. |
-| *deviceAddress* | Number   | n/a  | Usb device logical address assigned by [USB.Host](#usbhost-class). |
-| *drivers* | USB.Driver[] | n/a  | An array of known drivers |
-
-
-#### setAddress(*address*)
-
-Assigns new logical device address. Throws an exception if device was disconnected or the address was assigned already.
-
-| Parameter Data | Type | Description |
-| -------------- | --------- | ----------- |
-| *address* | Number | a new usb device address |
 
 #### getEndpoint(*ifs, type, direction, pollTime*)
 
@@ -165,11 +144,6 @@ The function searches for the address across all available interface and returns
 | *epAddress* | Number | n/a | address of the usb endpoint |
 | *pollTime* | Number | 255 | Interval for polling endpoint for data transfers |
 
-
-#### stop()
-
-Called by USB.Host when the devices is detached
-Closes all open endpoint and releases all drivers
 
 #### getVendorId()
 
@@ -202,18 +176,6 @@ device
         endpointAddress);
 ```
 
-#### constructor (device, ifs, epAddress, maxPacketSize)
-
-Constructor is public API but it is not recommended to use it for end point creation.
-Please, use `USB.Device.getEndpoint` for endpoint allocation
-
-| Parameter 	 | Data Type | Default | Description |
-| -------------- | --------- | ------- | ----------- |
-| *device* 		   | USB.Device| n/a 	   | device object see `USB.Device` |
-| *ifs* 		     | Interface 	 | n/a 	   | usb device interface descriptor |
-| *epAddress* 		     | Number 	 | n/a 	   | address of the usb endpoint |
-| *maxPacketSize* 		     | Number 	 | n/a 	   | max packet size which could be send via transfer |
-
 
 #### transfer(reqType, type, value, index, data = null)
 
@@ -232,12 +194,6 @@ Generic function for transferring data over control endpoint.
 
 Reset given endpoint
 
-#### close()
-
-Close current endpoint for all operations.
-All further operation causes exception.
-Uses for a device safe disconnect.
-
 ------------
 
 ## USB.FunctionalEndpoint class
@@ -245,16 +201,6 @@ Uses for a device safe disconnect.
 The class that represent all non-control endpoints, e.g. bulk, interrupt and isochronous
 This class is managed by USB.Device and should be acquired through USB.Device instance api.
 
-
-#### constructor (device, ifs, epAddress, epType, maxPacketSize)
-
-| Parameter 	 | Data Type | Default | Description |
-| -------------- | --------- | ------- | ----------- |
-| *device* 		   | USB.Device| n/a 	   | device object see `USB.Device` |
-| *ifs* 		     | Interface 	 | n/a 	   | usb device interface descriptor |
-| *epAddress* 		     | Number 	 | n/a 	   | address of the usb endpoint |
-| *epType* 		     | Number 	 | n/a 	   | type of the endpoint: USB_ENDPOINT_ISCHRONOUS, USB_ENDPOINT_BULK or USB_ENDPOINT_INTERRUPT |
-| *maxPacketSize* 		     | Number 	 | n/a 	   | max packet size which could be send via transfer |
 
 #### write(data, onComplete)
 
@@ -330,30 +276,13 @@ try {
     endpoint.read(payload, function(error, len) {
         if (error == USB_TYPE_STALL_ERROR) {
             server.log("Reset endpoint on stall");
-            endpoint.reset();
+            try {
+                endpoint.reset();
+            } catch (e) {
+                // device is not responding.
+                // need to reset the host
+            }
         }
-    }.bindenv(this));
-}
-catch (e) {
-  server.log("Endpoint is closed");
-}
-
-```
-
-#### close()
-
-Mark this endpoint as closed. All further operation causes exception.
-
-
-```squirrel
-try {
-    local payload = blob(16);
-    local endpoint = device.getEndpointByAddress(epAddress);
-    // Close endpoint
-    endpoint.close();
-    // This method should throw an exception now:
-    endpoint.read(payload, function(error, len) {
-        // empty
     }.bindenv(this));
 }
 catch (e) {
@@ -371,66 +300,16 @@ The USB.Driver class is used as the base for all drivers that use this library. 
 
 ### Required Functions
 
-These are three functions must be implemented for usb drive.
-
-#### constructor(*device, interfaces*)
-
-By default the constructor should be private and takes an instance of the USB.Device class and list of Interfaces as parameters. Instantiation of the driver object should happen in the `match` method only.
-It is possible to get an access to the working `usb` object via `device._usb` but it is not recommended.
-All initialization of endpoints should happen in constructor. There is no extra methods for a lazy initialization of the driver.
-
-##### Example
-
-```squirrel
-class MyUsbDriver extends USB.Driver {
-
-    _device = null;
-    _bulkIn = null;
-    _bulkOut = null;
-
-    constructor(device, interfaces) {
-      _device = device;
-      _bulkIn = device.getEndpoint(interfaces[0], USB_ENDPOINT_BULK, USB_DIRECTION_IN);
-      _bulkOut = device.getEndpoint(interfaces[0], USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
-      this.start();
-    }
-
-    function match(device, interfaces) {
-      if (_checkMatch(device, interfaces))
-        return MyUsbDriver(device, interfaces);
-      return null;
-    }
-
-    function _checkMatch(device, interfaces) {
-      // Implement device match here
-      return true;
-    }
-
-    function start() {
-      imp.wakeup(0, (function(action, error, payload, length) {
-          if (_bulkIn != null) {
-            _bulkIn.read(blob(64), function(endp, error, data, len) {
-
-            });
-          }
-      }).bindenv(this));
-    }
-
-    function release() {
-        _bulkIn = null;
-        _bulkOut = null;
-    }
-}
-```
+These are only two functions must be implemented by usb driver and required for correct operation inside USB framework.
 
 
 #### match(*deviceObject, interfaces*)
 
-Method that returns a driver object or null. These method checks if current driver could support all the provided interface for the current device or not. Match method could be based on VID, PID, device class, subclass and interfaces. This method is mandatory and it is not possible to register driver without this method. Once the driver is registered with USB.Host, then `match()` method will be called on each device "connected" event.
+These method checks if current driver could support all the provided interface for the current device or not. Match method could be based on VID, PID, device class, subclass and interfaces. This method is mandatory and it is not possible to register driver without this method. Once the driver is registered with USB.Host, then `match()` method will be called on each device "connected" event. Method returns a driver object or null.
 
 #### release()
 
-Release all instantiate resource before driver close. Uses for a driver disconnection.
+Release all instantiate resource before driver close. It is used when device is detached and all resources are going to be released. It is important to note all device resources are released prior to this function call.
 
 ##### Example
 
@@ -440,42 +319,21 @@ class MyUsbDriver extends USB.Driver {
     static VID = 0x01f9;
     static PID = 0x1044;
 
-    _device = null;
+    _interface = null;
 
-    constructor(device) {
-      _device = device;
+    constructor(interface) {
+      _interface = interface;
     }
     // Returns an array of VID PID combinations
-    function match(device, interface) {
+    function match(device, interfaces) {
         if (device._vid == VID && device._pid == PID)
-          return MyUsbDriver(device);
+          return MyUsbDriver(interfaces[0]);
         return null;
     }
 }
 
-usbHost <- USB.Host(hardware.usb);
+usbHost <- USB.Host(hardware.usb, [MyUsbDriver]);
 
-// Register the Usb driver with usb host
-usbHost.registerDriver(MyUsbDriver);
-```
-
-#### ``_typeof() [optional]``
-
-The *_typeof()* method is a squirrel metamethod that returns the class name. See [metamethods documentation](https://electricimp.com/docs/resources/metamethods/)
-
-##### Example
-```squirrel
-class MyUsbDriver extends USB.Driver {
-    // Metamethod returns class name when - typeof <instance> - is called
-    function _typeof() {
-        return "MyUsbDriver";
-    }
-}
-
-myDriver <- MyUsbDriver();
-
-// This will log "MyUsbDriver"
-server.log(typeof myDriver);
 ```
 
 

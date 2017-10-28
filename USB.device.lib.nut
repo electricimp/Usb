@@ -171,32 +171,10 @@ class USB.Host {
 
         _listener = listener;
 
-        if (null != listener) {
-            imp.wakeup(0, _notifyStatus.bindenv(this));
-        } else {
-            foreach(device in _devices) device._setListener(null);
-        }
+        foreach(device in _devices)   device._setListener(_listener);
    }
 
     // ------------------------ private API -------------------
-
-    // Notifies current state of the Host through the function assigned by setEventListener
-    function _notifyStatus() {
-        if (null == _listener) return;
-
-        // keep a copy
-        local l = _listener;
-
-        foreach (device in _devices) {
-            try {
-                l("connected", device);
-            } catch (e) {
-                // ignore
-            }
-
-            device._setListener(l);
-        }
-    }
 
     // Checks if given parameter implement USB.Driver API
     function _checkDriver(driverClass) {
@@ -273,7 +251,7 @@ class USB.Host {
             delete _devices[address];
 
             try {
-                device.stop();
+                device._stop();
                 _log("Device " + device + " is removed");
 
                 if (null != _listener) _listener("disconnected", device);
@@ -386,32 +364,6 @@ class USB.Device {
     // Listener callback of USB events
     _listener = null;
 
-    // Constructs device peer.
-    // Parameters:
-    //      speed            - supported device speed
-    //      deviceDescriptor - new device descriptor as specified by ElectricImpl USB API
-    //      deviceAddress    - device address reserved (but assigned) for new device
-    //      drivers          - an array of available USB drives
-    constructor(usb, speed, deviceDescriptor, deviceAddress, drivers) {
-        _speed = speed;
-        _deviceDescriptor = deviceDescriptor;
-        _address = deviceAddress;
-        _usb = usb;
-        _drivers = [];
-
-        local ep0 = USB.ControlEndpoint(this, _address, 0, _deviceDescriptor["maxpacketsize0"]);
-        _endpoints[0] <- ep0;
-
-        // When a device is first connected you can communicate with it at address 0x00.
-        // This should be set to a unique value for the device, using a set address control transfer.
-        _setAddress(_address);
-
-        // Select default configuration
-        _setConfiguration(deviceDescriptor["configurations"][0].value);
-
-        imp.wakeup(0, (function() {_selectDrivers(drivers);}).bindenv(this));
-    }
-
 
     // Request endpoint of required type and direction.
     // The function creates new endpoint if it was not cached.
@@ -504,35 +456,6 @@ class USB.Device {
         return null;
     }
 
-    // Called by USB.Host when the devices is detached
-    // Closes all open endpoint and releases all drivers
-    //
-    // Throws exception if the device was detached
-    //
-    function stop() {
-        _checkStopped();
-
-        // Close all endpoints at first
-        foreach (epAddress, ep in _endpoints) ep.close();
-
-        foreach ( driver in _drivers ) {
-            try {
-                driver.release();
-
-                if (_listener) _listener("stopped", driver);
-
-            } catch (e) {
-                _error("Driver.release exception: " + e);
-            }
-        }
-
-        _drivers = null;
-        _endpoints = null;
-        _deviceDescriptor = null;
-        _listener = null;
-        _usb = null;
-    }
-
     // Returns device vendor ID
     //
     // Throws exception if the device was detached
@@ -553,7 +476,69 @@ class USB.Device {
         return _deviceDescriptor["productid"];
     }
 
+    // Returns an array of drivers operating with interfaces this device.
+    function getAssignedDrivers() {
+        return _drivers;
+    }
+
     // -------------------- Private functions --------------------
+
+    // Constructs device peer.
+    // Parameters:
+    //      speed            - supported device speed
+    //      deviceDescriptor - new device descriptor as specified by ElectricImpl USB API
+    //      deviceAddress    - device address reserved (but assigned) for new device
+    //      drivers          - an array of available USB drives
+    constructor(usb, speed, deviceDescriptor, deviceAddress, drivers) {
+        _speed = speed;
+        _deviceDescriptor = deviceDescriptor;
+        _address = deviceAddress;
+        _usb = usb;
+        _drivers = [];
+
+        local ep0 = USB.ControlEndpoint(this, _address, 0, _deviceDescriptor["maxpacketsize0"]);
+        _endpoints[0] <- ep0;
+
+        // When a device is first connected you can communicate with it at address 0x00.
+        // This should be set to a unique value for the device, using a set address control transfer.
+        _setAddress(_address);
+
+        // Select default configuration
+        _setConfiguration(deviceDescriptor["configurations"][0].value);
+
+        imp.wakeup(0, (function() {_selectDrivers(drivers);}).bindenv(this));
+    }
+
+
+    // Called by USB.Host when the devices is detached
+    // Closes all open endpoint and releases all drivers
+    //
+    // Throws exception if the device was detached
+    //
+    function _stop() {
+        _checkStopped();
+
+        // Close all endpoints at first
+        foreach (epAddress, ep in _endpoints) ep._close();
+
+        foreach ( driver in _drivers ) {
+            try {
+                driver.release();
+
+                if (_listener) _listener("stopped", driver);
+
+            } catch (e) {
+                _error("Driver.release exception: " + e);
+            }
+        }
+
+        _drivers = null;
+        _endpoints = null;
+        _deviceDescriptor = null;
+        _listener = null;
+        _usb = null;
+    }
+
 
     // Notifies new listener about device current state
     //
@@ -563,16 +548,6 @@ class USB.Device {
     //                      eventObject - USB.Driver instance
     function _setListener(listener) {
         _listener = listener;
-
-        if (listener != null) {
-            foreach(driver in _drivers) {
-                try {
-                    listener("started", driver);
-                } catch (e) {
-                    // ignore
-                }
-            }
-        }
     }
 
     // Selects current device configuration by sending USB_REQUEST_SET_CONFIGURATION request through Endpoint Zero
@@ -731,21 +706,6 @@ class USB.FunctionalEndpoint {
     // Watchdog timer
     _timer = null;
 
-    // Constructor
-    // Parameters:
-    //      device          - USB.Device instance, owner of this endpoint
-    //      ifs             - interface descriptor this endpoint servers for
-    //      epAddress       - unique endpoint address
-    //      epType          - endpoint type
-    //      maxPacketSize   - maximum packet size for this endpoint
-    constructor (device, ifs, epAddress, epType, maxPacketSize) {
-        _device = device;
-        _address = epAddress;
-        _maxPacketSize = maxPacketSize;
-        _type = epType;
-        _if = ifs;
-    }
-
     // Write data through this endpoint.
     // Throws if EP is closed, has incompatible type or already busy
     // Parameter:
@@ -785,13 +745,30 @@ class USB.FunctionalEndpoint {
         return _device.getEndpointByAddress(0).clearStall(_address);
     }
 
+    // --------------------- Private functions -----------------
+
+
+    // Constructor
+    // Parameters:
+    //      device          - USB.Device instance, owner of this endpoint
+    //      ifs             - interface descriptor this endpoint servers for
+    //      epAddress       - unique endpoint address
+    //      epType          - endpoint type
+    //      maxPacketSize   - maximum packet size for this endpoint
+    constructor (device, ifs, epAddress, epType, maxPacketSize) {
+        _device = device;
+        _address = epAddress;
+        _maxPacketSize = maxPacketSize;
+        _type = epType;
+        _if = ifs;
+    }
+
     // Mark this endpoint as closed. All further operation causes exception.
-    function close() {
+    function _close() {
         _closed = true;
         _transferCb = null;
     }
 
-    // --------------------- Private functions -----------------
 
     // Transfer initiator
     // Throws if EP is closed or already busy
@@ -882,19 +859,6 @@ class USB.ControlEndpoint {
     // Endpoints interface
     _if = null;
 
-    // Constructor
-    // Parameters:
-    //      device          - USB.Device instance, owner of this endpoint
-    //      ifs             - interface descriptor this enpoint servers for
-    //      epAddress       - unique endpoint address
-    //      maxPacketSize   - maximum packet size for this endpoint
-    constructor (device, ifs, epAddress, maxPacketSize) {
-        _device = device;
-        _address = epAddress;
-        _maxPacketSize = maxPacketSize;
-        _if = ifs;
-    }
-
     // Generic function for transferring data over control endpoint.
     // Note! Only vendor specific requires are allowed.
     // For other control operation use USB.Device, USB.ControlEndpoint public API
@@ -937,12 +901,25 @@ class USB.ControlEndpoint {
         return true;
     }
 
-    // Mark as closed. All further operation causes exception.
-    function close() {
-        _closed = true;
+    // --------------------- private API -------------------
+
+    // Constructor
+    // Parameters:
+    //      device          - USB.Device instance, owner of this endpoint
+    //      ifs             - interface descriptor this enpoint servers for
+    //      epAddress       - unique endpoint address
+    //      maxPacketSize   - maximum packet size for this endpoint
+    constructor (device, ifs, epAddress, maxPacketSize) {
+        _device = device;
+        _address = epAddress;
+        _maxPacketSize = maxPacketSize;
+        _if = ifs;
     }
 
-    // --------------------- private API -------------------
+    // Mark as closed. All further operation causes exception.
+    function _close() {
+        _closed = true;
+    }
 
     // Generic function for transferring data over control endpoint.
     //
