@@ -46,7 +46,7 @@ class UsbHostEventsSanity extends ImpTestCase {
             imp.wakeup(0, function() {
                 local devices = host.getAttachedDevices();
                 assertTrue(devices.len() == 1, "Expected one device item");
-                assertEqual("instance", typeof(devices[1]), "Unexpected driver");
+                assertEqual("instance", typeof(devices[0]), "Unexpected driver");
                 resolve();
             }.bindenv(this));
         }.bindenv(this));
@@ -62,8 +62,8 @@ class UsbHostEventsSanity extends ImpTestCase {
             imp.wakeup(0, function() {
                 local devices = host.getAttachedDevices();
                 assertTrue(devices.len() == 2, "Expected one device item");
+                assertEqual("instance", typeof(devices[0]), "Unexpected driver");
                 assertEqual("instance", typeof(devices[1]), "Unexpected driver");
-                assertEqual("instance", typeof(devices[2]), "Unexpected driver");
                 resolve();
             }.bindenv(this));
         }.bindenv(this));
@@ -114,16 +114,16 @@ class UsbHostEventsSanity extends ImpTestCase {
                 local counter = 0;
                 host.setEventListener(function(type, payload) {
                     if (counter == 1) {
-                        assertEqual("disconnected", type, "Unexpected type of event.");
+                        assertEqual("disconnected", type, "Unexpected type of event:" + type + ". Need disconnected");
                         // payload is description
-                        assertEqual("instance", typeof payload, "Unextepced device type")
+                        assertEqual("instance", typeof payload, "Unexpected device type")
                     } else if (counter == 0) {
-                        assertEqual("stopped", type, "Unexpected type of event.");
+                        assertEqual("stopped", type, "Unexpected type of event: " + type + ". Need stopped");
                         // payload is driver instance
-                        assertEqual("instance", typeof payload, "Unextepced driver type")
+                        assertEqual("instance", typeof payload, "Unexpected driver type")
                     } else {
                         // no more events expected
-                        assertTrue(false, "Unextepced event.");
+                        assertTrue(false, "Unexpected event.");
                     }
                     counter++;
                 }.bindenv(this));

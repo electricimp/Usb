@@ -343,8 +343,6 @@ class QL720NWUartUsbDriver extends USB.Driver {
       static VID = 0x04f9;
       static PID = 0x2044;
 
-      _device = null;
-
       _bulkIn = null;
       _bulkOut = null;
 
@@ -362,13 +360,12 @@ class QL720NWUartUsbDriver extends USB.Driver {
           if (device.getVendorId() != this.VID
               || device.getProductId() != this.PID)
               return null;
-          return QL720NWUartUsbDriver(device, interfaces);
+          return QL720NWUartUsbDriver(device, interfaces[0]);
       }
 
-      constructor(device, interfaces) {
-          _device = device;
-          _bulkIn = device.getEndpoint(interfaces[0], USB_ENDPOINT_BULK, USB_DIRECTION_IN);
-          _bulkOut = device.getEndpoint(interfaces[0], USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+      constructor(interface) {
+          _bulkIn = USB.Device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+          _bulkOut = USB.Device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
 
           if (null == _bulkIn || null == _bulkOut)
               throw "Can't get required endpoints";

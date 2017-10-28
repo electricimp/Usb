@@ -61,6 +61,16 @@ Instantiates the USB.Host class.
 usbHost <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2]);
 ```
 
+#### reset()
+
+Resets the USB. Can be used by driver or application in response to unrecoverable error like unending bulk transfer or halt condition during control transfers.
+
+
+#### getAttachedDevices()
+
+Auxillary function to get list of attached devices. Returns and array of **[USB.Device](#usbdevice-сlass)** objects
+
+
 #### setEventListener(*callback*)
 
 Assigns listener for device and driver status changes.
@@ -76,13 +86,12 @@ The following events are supported:
 
 Setting of *null* clears the previously assigned listener.
 
-##### callback(*eventType,
+##### callback(*eventType, eventObject*)
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
 | *eventType*  | String  |  Name of the event "connected", "disconnected", "started", "stopped" |
-| *object* | USB.Device |  The device peer for "connected"/"disconnected" event |
-| *object* | USB.Driver |  Driver instance for "started"/"stopped" event |
+| *object* | USB.Device |  The device peer for "connected"/"disconnected" event or Driver instance for "started"/"stopped" event |
 
 ##### Example (subscribe)
 
@@ -118,43 +127,68 @@ An application does not need to use device object normally.
 It is usually used by drivers to acquire required endpoints.
 
 
-#### getEndpoint(*ifs, type, direction, pollTime*)
-
-Request endpoint of required type and direction, and that are described at given interface.
-The function returns cached object or instantiates a new one object (`USB.ControlEndpoint` or `USB.FunctionalEndpoint`) which is corresponding to the requested argument and return null otherwise.
-
-| Parameter 	 | Data Type | Default | Description |
-| -------------- | --------- | ----------- | ----------- |
-| *ifs*      | Any | n/a |interface ID  |
-| *type*      | Number | n/a | the type of endpoint |
-| *direction*  | Number | n/a | the type of endpoint's direction |
-| *pollTime* | Number | 255 | Interval for polling endpoint for data transfers |
-
-**NOTE** Interface ID is delivered to a driver through `USB.Driver.match` function at drivers lookup stage. So far it is just interface descriptor table, but can be changed with future framework updates.
-
-
-#### getEndpointByAddress(*epAddress, pollTime*)
-
-Request endpoint with given address.
-The function searches for the address across all available interface and returns null if there is no endpoint with such address. New endpoint is stored at cache.
-
-
-| Parameter 	 | Data Type | Default | Description |
-| -------------- | --------- | --------- | ----------- |
-| *epAddress* | Number | n/a | address of the usb endpoint |
-| *pollTime* | Number | 255 | Interval for polling endpoint for data transfers |
-
-
 #### getVendorId()
 
-Return the device vendor ID
-Throws exception if the device was detached
+Return the device vendor ID.
+Throws exception if the device was detached.
 
 #### getProductId()
 
-Return the device product ID
+Return the device product ID.
+Throws exception if the device was detached.
 
-Throws exception if the device was detached
+
+#### getAssignedDrivers()
+
+Returns an array of drivers operating with interfaces this device.
+Throws exception if the device was detached.
+
+
+#### getEndpointZero()
+
+Return Control Endpoint 0 proxy. EP0 is special type of endpoints that is implicitly present at device interfaces
+Throws exception if the device was detached.
+
+#### getEndpoint(*interface, type, dir [, pollTime]*)
+
+Static auxillary function that does search endpoint with given parameter at given interface and returns new instance if found.
+
+| Parameter   | Data Type | Description |
+| ----------- | --------- | ----------- |
+| *interface*  | Any  |  interface descriptor, received by drivers match function |
+| *type* | Number |  required endpoint attribute |
+| *dir* | Number |   required endpoint direction |
+| *pollTime* | Number |   [optional] required polling time (where applicable) |
+
+The function doesn't depend on any internal object structures and just do following code
+
+``` squirrel
+foreach (ep in interface.endpoints) {
+    if ( ep.attributes == type &&
+         (ep.address & USB_DIRECTION_MASK) == dir) {
+             return ep.get(pollTime);
+    }
+}
+```
+
+**NOTE!** This function executes without any exception only if received __interface__ was provided by framework through drivers *match* function.
+
+``` squirrel
+
+class MyCustomDriver extends USB.Driver {
+
+    _bulkIn = null;
+
+    constructor(interface) {
+        _bulkIn = USB.Device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+    }
+
+    function match(device, interfaces) {
+        return MyCustomDriver(interface);
+    }
+}
+
+```
 
 --------
 
@@ -168,7 +202,7 @@ This class is managed by USB.Device and should be acquired through USB.Device in
 // Reset functional endpoint via control endpoint
 
 device
-    .getEndpointByAddress(0)
+    .getEndpointZero()
     .transfer(
         USB_SETUP_RECIPIENT_ENDPOINT | USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_STANDARD,
         USB_REQUEST_CLEAR_FEATURE,
@@ -190,7 +224,7 @@ Generic function for transferring data over control endpoint.
 | *index* 		     | Number 	 | n/a 	   | An index value determined by the specific USB request |
 | *data* 		     | Blob 	 | null 	   | [optional] Optional storage for incoming or outgoing payload|
 
-#### clearStall()
+#### clearStall(epAddress)
 
 Reset given endpoint
 
@@ -319,10 +353,10 @@ class MyUsbDriver extends USB.Driver {
     static VID = 0x01f9;
     static PID = 0x1044;
 
-    _interface = null;
+    _ep = null;
 
     constructor(interface) {
-      _interface = interface;
+      _ep = interface.endpoints[0].get();
     }
     // Returns an array of VID PID combinations
     function match(device, interfaces) {

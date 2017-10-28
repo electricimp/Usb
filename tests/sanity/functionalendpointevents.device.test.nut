@@ -46,32 +46,30 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
             imp.wakeup(0, function() {
                 local devices = _host.getAttachedDevices();
                 assertTrue(devices.len() == 1, "Expected one device item");
-                assertEqual("instance", typeof(devices[1]), "Unexpected driver");
+                assertEqual("instance", typeof(devices[0]), "Unexpected driver");
                 // cache current device
-                _device = devices[1];
+                _device = devices[0];
                 resolve();
             }.bindenv(this));
         }.bindenv(this));
     }
 
     function getInterfaces() {
-      return _device._deviceDescriptor.configurations[0].interfaces[0];
+      return _device.interfaces[0];
     }
 
     function test01GetEndpoint() {
-        // create a new endpoint
-        local ep = _device.getEndpoint(getInterfaces(), USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+        // create a new endpoint proxy.
+        local ep = bulkIn.get();
         assertTrue(ep != null, "Failed to get correct endpoint");
-        local ep_copy = _device.getEndpoint(getInterfaces(), USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+        local ep_copy = bulkIn.get();
         assertEqual(ep, ep_copy, "Incorrect endpoint return. Expected the same instance of endpoint.");
-        local ep_out = _device.getEndpoint(getInterfaces(), USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+        local ep_out = bulkOut.get();
         assertTrue(ep_out != null, "Failed to get bulk out endpoint");
-        local ep_int = _device.getEndpoint(getInterfaces(), USB_ENDPOINT_INTERRUPT, USB_DIRECTION_OUT);
-        assertTrue(ep_int == null, "Unexpected interrupt endpoint");
     }
 
     function test02ReadPositive() {
-      local ep = _device.getEndpoint(getInterfaces(), USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+      local ep = bulkIn.get();
       return Promise(function(resolve, reject) {
           ep.read(blob(5), function(epr, error, data, len) {
               assertEqual(ep, epr, "Unexpected endpoint value");
@@ -88,7 +86,7 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
     }
 
     function test02ReadTimeout() {
-      local ep = _device.getEndpoint(getInterfaces(), USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+      local ep = bulkIn.get();
       return Promise(function(resolve, reject) {
           ep.read(blob(5), function(epr, error, data, len) {
               assertEqual(ep, epr, "Unexpected endpoint value");
@@ -100,7 +98,7 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
     }
 
     function test02ReadError() {
-      local ep = _device.getEndpoint(getInterfaces(), USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+      local ep = bulkIn.get();
       return Promise(function(resolve, reject) {
           ep.read(blob(5), function(epr, error, data, len) {
               assertEqual(ep, epr, "Unexpected endpoint value");

@@ -44,47 +44,17 @@ class UsbDeviceSanity extends ImpTestCase {
         local dev = getValidDevice();
         assertEqual(dev.getVendorId(), correctDescriptor.vendorid);
         assertEqual(dev.getProductId(), correctDescriptor.productid);
-        dev.setAddress(1);
-        dev.getEndpoint(correctInterface, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
-        dev.getEndpointByAddress(correctInterface.endpoints[0].address);
-        dev.stop();
+        dev.getAssignedDrivers();
+        dev.getEndpointZero();
+        assertEqual(dev.getEndpointZero(), dev.getEndpointZero());
     }
 
     // any state modification functions must throw an exception after stop
     function testNegative1() {
         local dev = getValidDevice();
 
-        dev.stop();
-        try {
-            dev.setAddress(1);
-            assertTrue(false, "setAddress must throw an exception in detached state" );
-        } catch (e) {
-            // OK
-        }
-        try {
-            dev.setAddress(1);
-            assertTrue(false, "setAddress must throw an exception in detached state" );
-        } catch (e) {
-            // OK
-        }
-        try {
-            dev.getEndpoint(correctInterface, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
-            assertTrue(false, "getEndpoint must throw an exception in detached state" );
-        } catch (e) {
-            // OK
-        }
-        try {
-            dev.getEndpointByAddress(1);
-            assertTrue(false, "getEndpointByAddress must throw an exception in detached state" );
-        } catch (e) {
-            // OK
-        }
-        try {
-            dev.stop();
-            assertTrue(false, "stop must throw an exception when called twice" );
-        } catch (e) {
-            // OK
-        }
+        dev._stop();
+
         try {
             dev.getVendorId();
             assertTrue(false, "getVendorIds must throw an exception in detached state" );
@@ -93,6 +63,19 @@ class UsbDeviceSanity extends ImpTestCase {
         }
         try {
             dev.getProductId();
+            assertTrue(false, "getProductId must throw an exception in detached state" );
+        } catch (e) {
+            // OK
+        }
+
+        try {
+            dev.getAssignedDrivers();
+            assertTrue(false, "getVendorIds must throw an exception in detached state" );
+        } catch (e) {
+            // OK
+        }
+        try {
+            dev.getEndpointZero();
             assertTrue(false, "getProductId must throw an exception in detached state" );
         } catch (e) {
             // OK

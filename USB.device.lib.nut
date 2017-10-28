@@ -92,10 +92,10 @@ class USB {
 class USB.Host {
 
     // The list of registered drivers
-    _drivers = [];
+    _drivers = null;
 
     // The list of connected devices
-    _devices = {};
+    _devices = null;
 
     // The address available to assign to next device
     _address = 1;
@@ -121,9 +121,13 @@ class USB.Host {
     //
     constructor(usb, driverList, autoConfPins = true) {
 
-        if (null == driverList) driverList = [];
+        if (null == driverList || 0 == driverList.len()) throw "Driver list must not be empty";
 
-        foreach (driver in driverList) _checkDriver(driver);
+        _drivers = [];
+        _devices = {};
+
+        // checks validity, filters duplicate, append to the list
+        foreach (driver in driverList) _checkAndAppend(driver);
 
         if (autoConfPins) {
             if ("pinW" in hardware &&
@@ -138,8 +142,6 @@ class USB.Host {
 
         _usb = usb;
         _usb.configure(_onUsbEvent.bindenv(this));
-
-        _drivers = driverList;
     }
 
     // Reset the USB BUS.
@@ -156,7 +158,11 @@ class USB.Host {
     // Returns:
     //      an array of USB.Device instances
     function getAttachedDevices() {
-        return _devices;
+        local devs = [];
+
+        foreach(device in _devices)  devs.append(device);
+
+        return devs;
     }
 
     // Assign listener about device and  driver status changes.
@@ -176,8 +182,9 @@ class USB.Host {
 
     // ------------------------ private API -------------------
 
-    // Checks if given parameter implement USB.Driver API
-    function _checkDriver(driverClass) {
+    // Checks if given parameter implement USB.Driver API,
+    // filters duplicate and append to the driver list
+    function _checkAndAppend(driverClass) {
         if (typeof driverClass == "class" &&
             "match" in driverClass &&
             typeof driverClass.match == "function" &&
@@ -253,12 +260,14 @@ class USB.Host {
             try {
                 device._stop();
                 _log("Device " + device + " is removed");
-
-                if (null != _listener) _listener("disconnected", device);
-
             } catch (e) {
                 _error("Error on device " + device + " release: " + e);
             }
+
+            try {
+                if (null != _listener) _listener("disconnected", device);
+            } catch (e) {} // ignore
+
         } else {
             _log("Detach event for unregistered device: " + address);
         }
@@ -342,14 +351,20 @@ class USB.Device {
     // Assigned device address
     _address = 0;
 
-    // Device descriptor (without configuration descriptor)
-    _deviceDescriptor = null;
+    // Device descriptor
+    _device = null;
+
+    // Current configuration descriptor
+    _configuration = null;
+
+    // Interfaces descriptor array for current configuration
+    _interfaces = null;
 
     // A list of drivers assigned to this device
     // There can be more than one driver for composite device
     _drivers = [];
 
-    // Endpoints for this device
+    // Endpoints instances for this device. Required for quick search from transfer event processor
     _endpoints = {};
 
     // Device speed
@@ -364,96 +379,17 @@ class USB.Device {
     // Listener callback of USB events
     _listener = null;
 
+    // Delegate for endpoint descriptor
+    _epDelegate = {
+        // The function to acquire the framework proxy
+        get = function(pollTime = 255) {
 
-    // Request endpoint of required type and direction.
-    // The function creates new endpoint if it was not cached.
-    // Parameters:
-    //      ifs     - array of interface descriptors
-    //      type    - the type of endpoint
-    //      dir     - endpoint direction
-    //      pollTime  - interval for polling endpoint for data transfers. For Interrupt/Isochronous only.
-    //
-    //  Returns:
-    //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint, depending on type parameter,
-    //      or `null` if there is no required endpoint found in provided interface
-    //
-    // Throws exception if the device was detached
-    //
-    function getEndpoint(ifs, type, dir, pollTime = 255) {
-        _checkStopped();
-
-        foreach ( epAddress, ep  in _endpoints) {
-            if (ep._type == type &&
-                ep._if == ifs &&
-                (ep._address & USB_DIRECTION_MASK) == dir) {
-                    return ep;
+            if (! ("_proxy" in this) ) {
+                _proxy <- _device._getEndpoint(this, pollTime);
             }
+
+            return _proxy;
         }
-
-        // TODO: track active interfaces and theirs alternate settings
-        foreach (dif in _deviceDescriptor.configurations[0].interfaces) {
-            if (dif == ifs) {
-                foreach (ep in dif.endpoints) {
-                    if ( ep.attributes == type &&
-                         (ep.address & USB_DIRECTION_MASK) == dir) {
-                        local maxSize = ep.maxpacketsize;
-                        local address = ep.address;
-
-                        _usb.openendpoint(_speed, this._address, dif.interfacenumber,
-                                          type, maxSize, address, pollTime);
-
-                        local newEp = (type == USB_ENDPOINT_CONTROL) ?
-                                        USB.ControlEndpoint(this, dif, address, maxSize) :
-                                        USB.FunctionalEndpoint(this, dif, address, type, maxSize);
-                        _endpoints[address] <- newEp;
-                        return newEp;
-                    }
-                }
-            }
-        }
-
-        // No endpoint found
-        return null;
-    }
-
-    // Request endpoint with given address. Creates if not cached.
-    // The function creates new a endpoint if it was not cached.
-    // Parameters:
-    //      epAddress - required endpoint address
-    //      pollTime  - interval for polling endpoint for data transfers. For Interrupt/Isochronous only.
-    //
-    //  Returns:
-    //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint,
-    //      or NULL if no required endpoint found in the device configuration
-    //
-    // Throws exception if the device was detached
-    //
-    function getEndpointByAddress(epAddress, pollTime = 255) {
-        _checkStopped();
-
-        if (epAddress in _endpoints) return _endpoints[epAddress];
-
-        // TODO: track active interfaces and theirs alternate settings
-        foreach (dif in _deviceDescriptor.configurations[0].interfaces) {
-            foreach (ep in dif.endpoints) {
-                if (ep.address == epAddress) {
-                    local maxSize = ep.maxpacketsize;
-                    local type = ep.attributes;
-
-                    _usb.openendpoint(_speed, _address, dif,
-                                        type, maxSize, epAddress, pollTime);
-
-                    local newEp = (type == USB_ENDPOINT_CONTROL) ?
-                                        USB.ControlEndpoint(this, dif, epAddress, maxSize) :
-                                        USB.FunctionalEndpoint(this, dif, epAddress, type, maxSize);
-                    _endpoints[epAddress] <- newEp;
-                    return newEp;
-                }
-            }
-        }
-
-        // No EP found
-        return null;
     }
 
     // Returns device vendor ID
@@ -463,7 +399,7 @@ class USB.Device {
     function getVendorId() {
         _checkStopped();
 
-        return _deviceDescriptor["vendorid"];
+        return _device["vendorid"];
     }
 
     // Returns device product ID
@@ -473,15 +409,90 @@ class USB.Device {
     function getProductId() {
         _checkStopped();
 
-        return _deviceDescriptor["productid"];
+        return _device["productid"];
     }
 
     // Returns an array of drivers operating with interfaces this device.
     function getAssignedDrivers() {
+        _checkStopped();
+
         return _drivers;
     }
 
+    // Return Control Endpoint 0 proxy
+    // EP0 is special type of endpoints that is implicitly present at device interfaces
+    function getEndpointZero() {
+        _checkStopped();
+
+        return _endpoints[0];
+    }
+
+    // Static auxillary function that does search endpoint with given parameter at given interface
+    // and returns new instance if found.
+    //
+    // Parameters:
+    //      interface   - interface descriptor, received by drivers match function
+    //      type        - required endpoint attribute
+    //      dir         - required endpoint direction
+    //      pollTime    - [optional] required polling time (where applicable)
+    //
+    //  Returns:
+    //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint, depending on type parameter,
+    //      or `null` if there is no required endpoint found in provided interface
+    //
+    //
+    function getEndpoint(interface, type, dir, pollTime = 255) {
+        foreach (ep in interface.endpoints) {
+            if ( ep.attributes == type &&
+                    (ep.address & USB_DIRECTION_MASK) == dir) {
+                        return ep.get(pollTime);
+            }
+        }
+    }
+
+
     // -------------------- Private functions --------------------
+
+    // Request endpoint of required type and direction.
+    // The function creates new endpoint if it was not cached.
+    // Parameters:
+    //      reqEp     - required endpoint descriptor
+    //      pollTime  - interval for polling endpoint for data transfers. For Interrupt/Isochronous only.
+    //
+    //  Returns:
+    //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint, depending on type parameter,
+    //      or `null` if there is no required endpoint found in provided interface
+    //
+    // Throws exception if the device was detached
+    //
+    function _getEndpoint(reqEp, pollTime = 255) {
+        _checkStopped();
+
+        foreach (ifs in _interfaces) {
+            foreach (ep in ifs.endpoints) {
+                if (ep == reqEp) {
+                    local maxSize = ep.maxpacketsize;
+                    local address = ep.address;
+                    local type = ep.attributes;
+
+                    _usb.openendpoint(_speed, _address, ifs.interfacenumber,
+                                      type, maxSize, address, pollTime);
+
+                    local newEp = (type == USB_ENDPOINT_CONTROL) ?
+                                    USB.ControlEndpoint(this, address, maxSize) :
+                                    USB.FunctionalEndpoint(this, address, type, maxSize);
+
+                    _endpoints[address] <- newEp;
+
+                    return newEp;
+                }
+            }
+        }
+
+        // No endpoint found
+        return null;
+    }
+
 
     // Constructs device peer.
     // Parameters:
@@ -491,12 +502,16 @@ class USB.Device {
     //      drivers          - an array of available USB drives
     constructor(usb, speed, deviceDescriptor, deviceAddress, drivers) {
         _speed = speed;
-        _deviceDescriptor = deviceDescriptor;
+
+        _device = deviceDescriptor;
+        _configuration = deviceDescriptor.configurations[0];
+        _interfaces = _configuration.interfaces;
+
         _address = deviceAddress;
         _usb = usb;
         _drivers = [];
 
-        local ep0 = USB.ControlEndpoint(this, _address, 0, _deviceDescriptor["maxpacketsize0"]);
+        local ep0 = USB.ControlEndpoint(this, 0, _device["maxpacketsize0"]);
         _endpoints[0] <- ep0;
 
         // When a device is first connected you can communicate with it at address 0x00.
@@ -504,7 +519,15 @@ class USB.Device {
         _setAddress(_address);
 
         // Select default configuration
-        _setConfiguration(deviceDescriptor["configurations"][0].value);
+        _setConfiguration(_configuration.value);
+
+        // Delegate to bind native endpoint descriptor and the framework
+        foreach(ifs in _interfaces) {
+            foreach (ep in ifs.endpoints) {
+                ep._device <- this;
+                ep.setdelegate(_epDelegate);
+            }
+        }
 
         imp.wakeup(0, (function() {_selectDrivers(drivers);}).bindenv(this));
     }
@@ -519,22 +542,26 @@ class USB.Device {
         _checkStopped();
 
         // Close all endpoints at first
-        foreach (epAddress, ep in _endpoints) ep._close();
+        foreach (ep in _endpoints) ep._close();
 
         foreach ( driver in _drivers ) {
             try {
                 driver.release();
-
-                if (_listener) _listener("stopped", driver);
-
             } catch (e) {
                 _error("Driver.release exception: " + e);
             }
+
+            try {
+                if (_listener) _listener("stopped", driver);
+            } catch (e) {}//ignore
+
         }
 
+        _configuration = null;
+        _interfaces = null;
         _drivers = null;
         _endpoints = null;
-        _deviceDescriptor = null;
+        _device = null;
         _listener = null;
         _usb = null;
     }
@@ -583,7 +610,7 @@ class USB.Device {
             USB_REQUEST_SET_ADDRESS,
             address,
             0,
-            _deviceDescriptor["maxpacketsize0"]
+            _device["maxpacketsize0"]
         );
     }
 
@@ -594,8 +621,7 @@ class USB.Device {
 
     // Selects and starts matched drivers from provided list.
     function _selectDrivers(drivers) {
-        local devClass      = _deviceDescriptor["class"];
-        local ifs = _deviceDescriptor.configurations[0].interfaces;
+        local devClass      = _device["class"];
 
         // if this is not composite device
         if ( 0 !=  devClass) {
@@ -603,7 +629,7 @@ class USB.Device {
             foreach (driver in  drivers) {
                 try {
                     local instance;
-                    if (null != (instance = driver.match(this, ifs))) {
+                    if (null != (instance = driver.match(this, interfaces))) {
                         _drivers.append(instance);
 
                         if (_listener) _listener("started", instance);
@@ -619,9 +645,9 @@ class USB.Device {
 
             // Class information should be determined from the Interface Descriptors
             // TODO: find and parse IAD (Interface Association Descriptor), then group interfaces
-            foreach (dif in ifs) {
+            foreach (ifs in interfaces) {
                 foreach (driver in  drivers) {
-                    local ifArr = [dif];
+                    local ifArr = [ifs];
                     try {
                         local instance;
                         if (null != (instance = driver.match(this, ifArr))) {
@@ -644,8 +670,7 @@ class USB.Device {
     // Looking up for corresponding endpoint and passes the event if found
     function _transferEvent(eventDetails) {
         // Do nothing for a closed device
-        if (null == _usb)
-          return;
+        if (null == _usb) return;
 
         local epAddress = eventDetails.endpoint;
         if (epAddress in _endpoints) {
@@ -695,9 +720,6 @@ class USB.FunctionalEndpoint {
     // Typically EP is closed when device is detached or configuration is changed
     _closed = false;
 
-    // Endpoint's interface
-    _if = null;
-
     // Callback to be called when transfer request is complete.
     // Since the class supports only single request per time,
     // this flags also indicates that EP is busy
@@ -742,7 +764,7 @@ class USB.FunctionalEndpoint {
     //      FALSE if device rejects reset request
     function reset() {
         _transferCb = null;
-        return _device.getEndpointByAddress(0).clearStall(_address);
+        return _device.getEndpointZero().clearStall(_address);
     }
 
     // --------------------- Private functions -----------------
@@ -751,16 +773,14 @@ class USB.FunctionalEndpoint {
     // Constructor
     // Parameters:
     //      device          - USB.Device instance, owner of this endpoint
-    //      ifs             - interface descriptor this endpoint servers for
     //      epAddress       - unique endpoint address
     //      epType          - endpoint type
     //      maxPacketSize   - maximum packet size for this endpoint
-    constructor (device, ifs, epAddress, epType, maxPacketSize) {
+    constructor (device, epAddress, epType, maxPacketSize) {
         _device = device;
         _address = epAddress;
         _maxPacketSize = maxPacketSize;
         _type = epType;
-        _if = ifs;
     }
 
     // Mark this endpoint as closed. All further operation causes exception.
@@ -856,8 +876,6 @@ class USB.ControlEndpoint {
     // Typically EP is closed when device is detached or configuration is changed
     _closed = false;
 
-    // Endpoints interface
-    _if = null;
 
     // Generic function for transferring data over control endpoint.
     // Note! Only vendor specific requires are allowed.
@@ -906,14 +924,12 @@ class USB.ControlEndpoint {
     // Constructor
     // Parameters:
     //      device          - USB.Device instance, owner of this endpoint
-    //      ifs             - interface descriptor this enpoint servers for
     //      epAddress       - unique endpoint address
     //      maxPacketSize   - maximum packet size for this endpoint
-    constructor (device, ifs, epAddress, maxPacketSize) {
+    constructor (device, epAddress, maxPacketSize) {
         _device = device;
         _address = epAddress;
         _maxPacketSize = maxPacketSize;
-        _if = ifs;
     }
 
     // Mark as closed. All further operation causes exception.

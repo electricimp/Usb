@@ -55,10 +55,6 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
         getInEp().reset();
     }
 
-    function testPositive4() {
-        getInEp().close();
-    }
-
     function testNegative1() {
         try {
             local ep = getInEp();
@@ -84,7 +80,7 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
     function testNegative3() {
         try {
             local ep = getOutEp();
-            ep.close();
+            ep._close();
             ep.write(blob(5), writeCallback);
             assertTrue(false);
         } catch(e) {
@@ -95,7 +91,7 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
     function testNegative4() {
         try {
             local ep = getIntEp();
-            ep.close();
+            ep._close();
             ep.read(blob(5), readCallback);
             assertTrue(false);
         } catch(e) {
@@ -135,11 +131,11 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
     }
 
     function getInEp() {
-        return USB.FunctionalEndpoint(_device, correctInterface, bulkIn.address, USB_ENDPOINT_BULK, 32);
+        return USB.FunctionalEndpoint(_device, bulkIn.address, USB_ENDPOINT_BULK, 32);
     }
 
     function getOutEp() {
-        return USB.FunctionalEndpoint(_device, correctInterface, bulkOut.address, USB_ENDPOINT_BULK, 32);
+        return USB.FunctionalEndpoint(_device, bulkOut.address, USB_ENDPOINT_BULK, 32);
     }
 
 }

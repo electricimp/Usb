@@ -46,17 +46,18 @@ class FT232RLFtdiUsbDriver extends USB.DriverBase {
     _bulkIn = null;
     _bulkOut = null;
 
-    constructor(device, interface) {
-        _bulkIn  = device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
-        _bulkOut = device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+    constructor(interface) {
+
+        _bulkIn  = USB.Device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+        _bulkOut = USB.Device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
 
         if (null == _bulkIn || null == _bulkOut) throw "Can't get required endpoints";
     }
 
     function match(device, interfaces) {
-        if (device.vendorid  == VID &&
-            device.productid == PID) {
-                return FT232RLFtdiUsbDriver(device, interfaces[0]);
+        if (device.getVendorId()  == VID &&
+            device.getProductId() == PID) {
+                return FT232RLFtdiUsbDriver(interfaces[0]);
         }
         return null;
     }

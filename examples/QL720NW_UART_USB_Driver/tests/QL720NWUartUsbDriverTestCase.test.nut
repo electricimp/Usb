@@ -365,22 +365,25 @@ class QL720NWUartUsbDriverTestCase extends ImpTestCase {
         this.info("Connect any Uart over Usb device to imp");
 
         return Promise(function(resolve, reject) {
-            usbHost = USB.Host(hardware.usb);
-            usbHost.registerDriver(QL720NWUartUsbDriver, QL720NWUartUsbDriver.getIdentifiers());
+            usbHost = USB.Host(hardware.usb, [QL720NWUartUsbDriver]);
+
             // Register cb for connection event
-            usbHost.on("connected", function(device) {
+            usbHost.setListener(function(event, obj) {
 
-                // Check the device is an instance of QL720NWUartUsbDriver
-                if (typeof device == "QL720NWUartUsbDriver") {
+                if (event == "started") {
+                    // Check the device is an instance of QL720NWUartUsbDriver
+                    if (typeof device == "QL720NWUartUsbDriver") {
 
-                    // Store the driver for the next test
-                    _device = device;
+                        // Store the driver for the next test
+                        _device = device;
 
-                    return resolve("Device was a Uart over Usb device");
+                        return resolve("Device was a Uart over Usb device");
+                    }
+                    // Wrong device was connected
+                    reject("Device connected is not a Uart over Usb device");
+
                 }
 
-                // Wrong device was connected
-                reject("Device connected is not a Uart over Usb device");
             }.bindenv(this));
         }.bindenv(this))
     }
