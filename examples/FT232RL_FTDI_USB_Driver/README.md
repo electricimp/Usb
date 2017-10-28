@@ -14,7 +14,7 @@ in case if application developer is subscribed on USB events via [USB.Host.setEv
 
 ```squirrel
 #require "USB.device.lib.nut:0.3.0"
-#require "FT232RLFtdiUsbDriver.device.lib.nut:0.3.0"
+#require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0"
 
 // Provide the list of available drivers to the USB.Host
 local host = USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
@@ -45,15 +45,15 @@ Returns an instance of the FT232RLFtdiUsbDriver or null if device does not match
 | Parameter   | Data Type | Required | Description |
 | ----------- | --------- | -------- | ----------- |
 | *device*  | USB.Device  | Yes      | attached device |
-| *interfaces* | List | Yes | the list of interface descriptions |
+| *interfaces* | Array | Yes | the list of interface descriptions |
 
 
 #### Example
 
 ```squirrel
-class FT232RLFtdiUsbDriver : implements USB.Driver {
-  static VID = 0xE1;
-  static PID = 0x02;
+class FT232RLFtdiUsbDriver extends USB.Driver {
+  static VID = 0x0403;
+  static PID = 0x6001;
 
   constructor(device, interfaces) {
     // Empty for a while
@@ -76,7 +76,7 @@ This method should implement resource freeing before driver release.
 
 ```squirrel
 
-class FT232RLFtdiUsbDriver implement USB.Driver {
+class FT232RLFtdiUsbDriver extends USB.Driver {
   // ...
   function release() {
     // For example, driver developer could release write queue

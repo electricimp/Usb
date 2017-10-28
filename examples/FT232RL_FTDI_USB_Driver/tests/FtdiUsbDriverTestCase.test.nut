@@ -38,10 +38,8 @@
 
 class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
     // UART on imp005
-    uart = null;
-    dataString = "";
-    usbHost = null;
-    loadPin = null;
+    _uart = null;
+    _usbHost = null;
     _driver = null;
 
     function setUp() {
@@ -59,10 +57,10 @@ class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
         return Promise(function(resolve, reject) {
 
             // Initialize USB Host & register driver to be tested
-            usbHost = USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
+            _usbHost = USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
 
             // Listen for a connection event
-            usbHost.setEventListener(function(eventName, eventDetails) {
+            _usbHost.setEventListener(function(eventName, eventDetails) {
 
                 // Check the device is an instance of FT232RLFtdiUsbDriver
                 if (typeof eventDetails == "FT232RLFtdiUsbDriver") {
@@ -91,8 +89,8 @@ class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
                 local dataString = "";
 
                 // Configure with timing
-                uart.configure(115200, 8, PARITY_NONE, 1, 0, function() {
-                    dataString += uart.readstring();
+                _uart.configure(115200, 8, PARITY_NONE, 1, 0, function() {
+                    dataString += _uart.readstring();
 
                     // New line char means we got a full line
                     if (dataString.find("\n")) {
@@ -126,13 +124,12 @@ class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
             if (_driver != null) {
 
                 local testString = "I'm a Blob";
-                local dataString = "";
 
                 // Configure with timing
-                uart.configure(115200, 8, PARITY_NONE, 1, 0);
+                _uart.configure(115200, 8, PARITY_NONE, 1, 0);
 
                 // Write the test string from UART to USB
-                uart.write(testString);
+                _uart.write(testString);
 
                 // Set up a listener for data events
                 _driver.read(function(error, data, length) {

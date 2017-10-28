@@ -1,58 +1,69 @@
 # QL720NW UART USB Driver Example
 
-This example shows how to extend the USB.DriverBase class to create a USB over UART driver for a QL720NW label printer.  The example includes the QL720NWUartUsbDriver class with methods descibed below, some example code that makes use of the driver, and a folder with tests for the driver class.
+This example shows how to implement the USB.Driver interface to create a USB over UART driver for a QL720NW label printer.  The example includes the QL720NWUartUsbDriver class with methods described below, some example code that makes use of the driver, and a folder with tests for the driver class.
 
 ## QL720NW UART USB Driver
 
-The [USB.Host](../USB/) will handle the connection/disconnection events and instantiation of this class. This class and its identifiers will be registered with the [USB.Host](../USB/) and when a device with matching identifiers is connected the device driver will be instantiated and passed to the `"connection"` event callback registered with the [USB.Host](../USB/). As this can be confusing an example of receiving an instantiated driver object is shown in the example file - QL720NWUartUsbDriver.device.nut.
+The [USB.Host](../USB/) will handle the USD device connection/disconnection events and instantiation of this class. This class should be registered with the [USB.Host](../USB/) and when a device with matching description is connected the device driver will be instantiated and passed to the `"started"` event callback registered with the [USB.Host.setEventListener](../USB/).
 
-## Class Usage
+## Driver class base methods
 
-### Constructor: QL720NWUartUsbDriver(*usb*)
+There are two methods which driver must to implement: match and release.
 
-Class instantiation is handled by the [USB.Host](../USB/) class. This class should not be manually instantiated.
+### match(device, interfaces)
 
-### getIdentifiers()
+Returns an instance of the QL720NWUartUsbDriver. Return null if the attached device does not match. Implementation of this method is based on VID and PID identifiers of the plugged device.
 
-Returns an array of tables with VID-PID key value pairs respectively. Identifiers are used by the [USB.Host](../USB/) to instantiate the corresponding devices driver.
+| Parameter   | Data Type | Required | Description |
+| ----------- | --------- | -------- | ----------- |
+| *device*  | USB.Device  | Yes      | attached device |
+| *interfaces* | Array | Yes | the list of interface descriptions |
 
 
 #### Example
 
 ```squirrel
-local identifiers = QL720NWUartUsbDriver.getIdentifiers();
+class QL720NWUartUsbDriver extends USB.Driver {
+  static VID = 0x04f9;
+  static PID = 0x2044;
 
-foreach (i, identifier in identifiers) {
-    foreach (VID, PID in identifier){
-        server.log("VID =" + VID + " PID = " + PID);
-    }
+  constructor(device, interfaces) {
+    // Empty for a while
+  }
+
+  function match(device, interfaces) {
+    if (device &&
+        device.getVendorId() == VID &&
+        device.getProductId() == PID)
+        return new QL720NWUartUsbDriver(device, interfaces);
+    return null;
+  }
 }
 
 ```
 
+### release()
+
+This method should implement resource freeing before driver release.
+
+```squirrel
+
+class QL720NWUartUsbDriver extends USB.Driver {
+  // ...
+  function release() {
+    // For example, driver developer could release write queue
+    // and free all allocated endpoints
+    this._bulkIn = null;
+  }
+}
+
+## Driver class custom API
+
 ### write(data)
 
-Writes String or Blob data out to uart over usb.
+Writes String or Blob data to the usb printer. Implements async queue inside.
 
 
 | Key | Data Type | Required | Description |
 | --- | --------- | -------- | ----------- |
 | *data* | String/Blob | Yes | The String or Blob to be written to uart over usb.|
-
-
-#### Example
-
-```squirrel
-// Register the Uart over Usb driver with usb host
-usbHost.registerDriver(QL720NWUartUsbDriver, QL720NWUartUsbDriver.getIdentifiers());
-
-usbHost.on("connected",function (device) {
-    switch (typeof device) {
-        case ("QL720NWUartUsbDriver"):
-            // Write a string out
-            device.write("Hello World");
-            break;
-    }
-});
-
-```

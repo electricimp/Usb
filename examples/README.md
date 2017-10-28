@@ -1,6 +1,6 @@
 # USB Driver Examples
 
-You can find examples here on how to extend the USB.DriverBase class.  
+You can find examples here on how to extend the USB.Driver class.
 
 ## FT232RL FTDI USB Driver Example
 

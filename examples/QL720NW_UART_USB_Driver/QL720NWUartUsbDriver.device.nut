@@ -28,12 +28,12 @@
 //  - Imp005
 //  - Brother QL-720NW label printer
 
-// Require USB libraries
-#require "USB.device.lib.nut:0.2.0"
+// This class is require the USB Framework library
 
 // Driver for printer
 class QL720NW {
-    static VERSION = "0.2.0";
+    // Version of the driver sub-class for printer
+    static VERSION = "0.3.0";
 
     _uart = null;   // A preconfigured UART
     _buffer = null; // buffer for building text
@@ -145,7 +145,6 @@ class QL720NW {
 
         return this;
     }
-
 
     // Formating commands
     function setOrientation(orientation) {
@@ -349,6 +348,9 @@ class QL720NWUartUsbDriver extends USB.Driver {
       _bulkIn = null;
       _bulkOut = null;
 
+      // no more methods calls
+      _released = false;
+
       //
       // Metafunction to return class name when typeof <instance> is run
       //
@@ -356,17 +358,17 @@ class QL720NWUartUsbDriver extends USB.Driver {
           return "QL720NWUartUsbDriver";
       }
 
-      function match(device) {
+      function match(device, interfaces) {
           if (device.getVendorId() != this.VID
               || device.getProductId() != this.PID)
               return null;
-          return QL720NWUartUsbDriver(device);
+          return QL720NWUartUsbDriver(device, interfaces);
       }
 
-      constructor(device) {
+      constructor(device, interfaces) {
           _device = device;
-          _bulkIn = device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
-          _bulkOut = device.getEndpoint(0, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+          _bulkIn = device.getEndpoint(interfaces[0], USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+          _bulkOut = device.getEndpoint(interfaces[0], USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
 
           if (null == _bulkIn || null == _bulkOut)
               throw "Can't get required endpoints";
@@ -375,7 +377,11 @@ class QL720NWUartUsbDriver extends USB.Driver {
       }
 
       function release() {
+          // disable more actions handling
+          _released = true;
+          // clear actions list
           _actions = [];
+          // Free usb framwork's resources
           _bulkIn = null;
           _bulkOut = null;
       }
@@ -403,16 +409,31 @@ class QL720NWUartUsbDriver extends USB.Driver {
     }
 
     function _actionHandler(start = false) {
-       action = _actions.pop();
-       if (action.type == "write") {
-         _bulkOut.write(action.data, _actionHandler.bindenv(this));
-       }
-       else if (action.type == "read") {
-         _bulkIn.read(action.data, _actionHandler.bindenv(this));
-       }
-       else {
-         throw "Unknow action";
-       }
+        // there is no actions to perform
+        if (this._actions.len() == 0)
+            return;
+
+        // Pop the next action
+        local action = this._actions.pop();
+        if (action.type == "write") {
+            _bulkOut.write(action.data, function(ep, error, data, length) {
+                if (action.callback)
+                    action.callback(error, data, length);
+                //
+                this._actionHandler();
+            }.bindenv(this));
+        }
+        else if (action.type == "read") {
+            _bulkIn.read(action.data, , function(ep, error, data, length) {
+                if (action.callback)
+                    action.callback(error, data, length);
+                //
+                this._actionHandler();
+            }.bindenv(this));
+        }
+        else {
+            throw ("Unknow action " + action.type);
+        }
     }
 
     //
@@ -448,16 +469,16 @@ class QL720NWUartUsbDriver extends USB.Driver {
 usbHost <- USB.Host(hardware.usb, [QL720NWUartUsbDriver]);
 
 // Subscribe to USB connection events
-usbHost.setEventListener(function (eventType, device) {
-    if (eventType != "connected")
+usbHost.setEventListener(function (eventType, driver) {
+    if (eventType != "started")
         return;
 
-    server.log(typeof device + " was connected!");
+    server.log(typeof driver + " was connected!");
 
-    switch (typeof device) {
+    switch (typeof driver) {
         case "QL720NWUartUsbDriver":
             // Initialize Printer Driver with USB UART device
-            printer <- QL720NW(device.getDriver());
+            printer <- QL720NW(driver);
 
             // Print a text label
             printer

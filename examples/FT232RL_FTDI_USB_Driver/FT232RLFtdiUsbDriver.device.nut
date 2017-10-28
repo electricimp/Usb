@@ -30,6 +30,8 @@
 
 // Driver for FT232RL FTDI USB to TTL Serial Adapter Module
 class FT232RLFtdiUsbDriver extends USB.DriverBase {
+    // the driver version
+    static VERSION = "1.0.0";
 
     // FTDI vid and pid
     static VID = 0x0403;
