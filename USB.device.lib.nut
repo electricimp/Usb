@@ -621,6 +621,10 @@ class USB.Device {
 
     // Selects and starts matched drivers from provided list.
     function _selectDrivers(drivers) {
+        // test specific behavior: _stop() is called before execution flow yielded
+        if (null == _usb) return;
+
+
         local devClass      = _device["class"];
 
         // if this is not composite device
@@ -629,7 +633,7 @@ class USB.Device {
             foreach (driver in  drivers) {
                 try {
                     local instance;
-                    if (null != (instance = driver.match(this, interfaces))) {
+                    if (null != (instance = driver.match(this, _interfaces))) {
                         _drivers.append(instance);
 
                         if (_listener) _listener("started", instance);
@@ -645,7 +649,7 @@ class USB.Device {
 
             // Class information should be determined from the Interface Descriptors
             // TODO: find and parse IAD (Interface Association Descriptor), then group interfaces
-            foreach (ifs in interfaces) {
+            foreach (ifs in _interfaces) {
                 foreach (driver in  drivers) {
                     local ifArr = [ifs];
                     try {

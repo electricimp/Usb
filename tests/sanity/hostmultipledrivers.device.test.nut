@@ -104,7 +104,7 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
             imp.wakeup(0, function() {
                 local devices = host.getAttachedDevices();
                 assertTrue(devices.len() == 1, "Expected one device items");
-                assertTrue(devices[1]._drivers.len() == 1, "Expected one driver instance");
+                assertTrue(devices[0]._drivers.len() == 1, "Expected one driver instance");
                 resolve();
             }.bindenv(this));
         }.bindenv(this));
