@@ -85,6 +85,7 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
     this._bulkOut = null;
   }
 }
+```
 
 ## Driver class custom API
 
