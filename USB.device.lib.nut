@@ -392,6 +392,17 @@ class USB.Device {
         }
     }
 
+
+    // Returns device descriptor
+    //
+    // Throws exception if the device was detached
+    //
+    function getDescriptor() {
+        _checkStopped();
+
+        return _device;
+    }
+
     // Returns device vendor ID
     //
     // Throws exception if the device was detached

@@ -29,7 +29,7 @@
 //  - FT232RL FTDI USB to TTL Serial Adapter Module
 
 // Driver for FT232RL FTDI USB to TTL Serial Adapter Module
-class FT232RLFtdiUsbDriver extends USB.DriverBase {
+class FT232RLFtdiUsbDriver extends USB.Driver {
     // the driver version
     static VERSION = "1.0.0";
 
