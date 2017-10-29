@@ -56,6 +56,7 @@ class QL720NWUartUsbDriver extends USB.Driver {
     this._bulkIn = null;
   }
 }
+```
 
 ## Driver class custom API
 
