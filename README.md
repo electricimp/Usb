@@ -1,28 +1,24 @@
 # USB Drivers Framework
 
-Usb Drivers Framework is intended to simplify and standardize USB driver creation and adoption by application developer.
+Usb Drivers Framework is intended to simplify and standardize USB driver creation and adoption by application developer. It consists of several abstraction that can be used by [Application](#Application-developer-guide) and [Driver](#driver-developer-guide) developers. And due to significant difference they would be described separately.
 
-**To use this library add the following statement to the top of your device code:**
+## Application developer guide
 
-```
-#require "USB.device.lib.nut:0.2.0"
-```
-USB stack consists of five simple abstractions:
-- **[USB.Host](#usbhost-class)** - the main entrance point for an application. Responsible for drivers registration and events handling
-- **[USB.Device](#usbdevice-сlass)** - wrapper for USB device description, instantiated for each connected device
-- **[USB.Driver](#usbdriver-class)** - base api which should be re-implemented by each USB driver
-- **[USB.ControlEndpoint](#usbcontrolendpoint-class)** - provides api for control endpoint
-- **[USB.FunctionalEndpoint](#usbfunctionalendpoint-class)** - provides api for bulk or interrupt endpoints
+The main entrance for an application developer is **[USB.Host](#usbhost-class)** class. It is main purpose is to maintain driver registry and to notify an application when required device is attached and ready to operate through provided driver.  Thus typical steps for application developer are to write/find necessary driver and to bind it to USB framework with **[USB.Host](#usbhost-class)** like it is described in the following example (NOTE: the code is for demo only, the driver may not actually exist):
 
-Typical use case for this framework is to help application developer to reuse existed driver like in the following example (NOTE: the code is for demo only)
 ```
 #require "FT232rl.nut:1.0.0"
 #require "USB.device.lib.nut:0.2.0"
 
+ft232Device <- null;
 
 function driverStatusListener(eventType, eventObject) {
     if (eventType == "started") {
-        // start work with FT232rl device
+
+        ft232Device = eventObject;
+
+        // start work with FT232rl device here
+
     } else if (eventType == "stopped") {
         // immediately stop all interaction with FT232rl device
     }
@@ -33,12 +29,70 @@ host.setEventListener(driverStatusListener);
 
 ```
 
-----
+In this example the application creates instance of [USB.Host](#usbhost-class) for  [hardware.usb](https://electricimp.com/docs/api/hardware/usb/) object with array of single driver. To get notification when required driver will be connected to the device and configured, it assigns [callback function](#callbackeventtype-eventobject) that receives USB event type and event object. In simple case it is enough to listen for `"started"` and `"stopped"` events where event objects are driver instances.
 
-## USB.Host class
+_Please note that API exposed to the application by the driver is not subject for USB framework._
+
+### Notes regarding hardware support
+
+The reference hardware for this framework is *[imp005](https://electricimp.com/docs/hardware/imp/imp005_hardware_guide/)* board. Its schematic requires special pin configuration in order to make USB hardware functional. And USB framework do such configuration when *[USB.Host](#usbhostusb-drivers--autoconfigpins)* is instantiated with  *autoConfigPins=true*. An application for custom board need to pay attention separately and set *autoConfigPins=false* to prevent unrelated pin be improperly configured.
+
+### How to get control of attached device
+
+The main way to operate with attached device is to use one of drivers that support that device. However it may be important to access device directly, e.g. to select alternative configuration or change its power state. To get such access USB framework creates proxy class **[USB.Device](#usbdevice-сlass)** for every device attached to the USB interface. To get correct instance the application has to either listen `connected` event at callback function assigned with [`USB.Host.setListener`](#seteventlistenercallback) or get the list of the devices with [`USB.Host.getAttachedDevices`](#getattacheddevices) and filter out required one. Than it is possible to use one of the functions, or to get access to special [control endpoint 0](#usbcontrolendpoint-class) and send custom message through this channel. The format of such  messages is out the scope of this document. Please refer [USB specification](http://www.usb.org/) for more details.
+
+```
+#require "USB.device.lib.nut:0.2.0"
+
+const VID = 1;
+const PID = 2;
+
+// endpoint 0 for required device
+ep0 <- null;
+
+function driverStatusListener(eventType, eventObject) {
+    if (eventType == "connected") {
+        local device = eventObject;
+        if (device.getVendorId() == VID &&
+            device.getProductId() == PID) {
+                ep0 = device.getEndpointZero();
+        }
+    } else if (eventType == "disconnected") {
+        ep0 = null;
+    }
+}
+
+host <- USB.Host(hardware.usb);
+host.setEventListener(driverStatusListener);
+
+```
+
+--------
+
+
+## Driver developer guide
+
+
+It consists of five simple abstractions:
+
+- **[USB.Host](#usbhost-class)**
+- **[USB.Device](#usbdevice-сlass)**
+- **[USB.Driver](#usbdriver-class)**
+- **[USB.ControlEndpoint](#usbcontrolendpoint-class)**
+- **[USB.FunctionalEndpoint](#usbfunctionalendpoint-class)**
+
+
+
+--------
+
+
+
+## USB framework complete API
+
+
+### USB.Host class
 
 The main interface to start working with USB devices.
-Provides public API for an application to register drivers and assign listeners for important events like device connect/disconnect.
 
 If you have more then one USB port on development board then you should create USB.Host for each of them.
 
@@ -60,16 +114,6 @@ Instantiates the USB.Host class.
 
 usbHost <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2]);
 ```
-
-#### reset()
-
-Resets the USB. Can be used by driver or application in response to unrecoverable error like unending bulk transfer or halt condition during control transfers.
-
-
-#### getAttachedDevices()
-
-Auxillary function to get list of attached devices. Returns and array of **[USB.Device](#usbdevice-сlass)** objects
-
 
 #### setEventListener(*callback*)
 
@@ -116,7 +160,15 @@ usbHost.setEventListener(function (eventType, eventObject) {
 
 ```
 
-------
+#### reset()
+
+Resets the USB. Can be used by driver or application in response to unrecoverable error like unending bulk transfer or halt condition during control transfers.
+
+
+#### getAttachedDevices()
+
+Auxillary function to get list of attached devices. Returns and array of **[USB.Device](#usbdevice-сlass)** objects
+
 
 ## USB.Device class
 
@@ -126,6 +178,9 @@ It is parsing device description, lookup for a drivers and control drivers lifec
 An application does not need to use device object normally.
 It is usually used by drivers to acquire required endpoints.
 
+#### getDescriptor()
+
+Returns device descriptor. Throws exception if the device was detached.
 
 #### getVendorId()
 
@@ -190,7 +245,8 @@ class MyCustomDriver extends USB.Driver {
 
 ```
 
---------
+
+------
 
 ## USB.ControlEndpoint class
 
