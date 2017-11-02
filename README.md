@@ -463,12 +463,12 @@ usbHost <- USB.Host(hardware.usb, [MyUsbDriver]);
 
 ## Driver Examples
 
-### [UartOverUsbDriver](./UartOverUsbDriver/)
+### [UartOverUsbDriver](./examples/QL720NW_UART_USB_Driver/)
 
 The UartOverUsbDriver class creates an interface object that exposes methods similar to the uart object to provide compatibility for uart drivers over usb.
 
 
-### [FtdiUsbDriver](./FtdiUsbDriver/)
+### [FtdiUsbDriver](./examples/FT232RL_FTDI_USB_Driver/)
 
 The FtdiUsbDriver class exposes methods to interact with a device connected to usb via an FTDI cable.
 
