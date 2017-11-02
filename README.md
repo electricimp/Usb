@@ -4,7 +4,18 @@ Usb Drivers Framework is intended to simplify and standardize USB driver creatio
 
 ## Application developer guide
 
-The main entrance for an application developer is **[USB.Host](#usbhost-class)** class. It is main purpose is to maintain driver registry and to notify an application when required device is attached and ready to operate through provided driver.  Thus typical steps for application developer are to write/find necessary driver and to bind it to USB framework with **[USB.Host](#usbhost-class)** like it is described in the following example (NOTE: the code is for demo only, the driver may not actually exist):
+This application developer guide is intended for those developers who is going to integrate one or more existing drivers into their application. By default the Usb Driver Framework doesn't not provide any drivers. Therefore scope of the supported device drivers should be identified and controlled by the application developer.
+
+As a first step it is necessary to include USB framework library and all necessary drivers into the application code.
+In the provided examples you could find a FT232 USB driver which was included into test file:
+
+```squirrel
+#require "USB.device.lib.nut:0.2.0"
+#require "FT232rl.nut:1.0.0" // this is not global driver library, it works in example only
+```
+
+On the next step it is necessary to initialize USB framework with a scope of drivers.
+The main entrance of the USB framework is **[USB.Host](#usbhost-class)** class. This class is responsible for driver registry and notify an application when required device is attached and ready to operate through provided driver.  Thus typical steps for application developer are to write/find necessary driver and to bind it to USB framework with **[USB.Host](#usbhost-class)** like it is described in the following example (NOTE: the code is for demo only, the driver may not actually exist):
 
 ```
 #require "FT232rl.nut:1.0.0"
@@ -31,9 +42,29 @@ host.setEventListener(driverStatusListener);
 
 In this example the application creates instance of [USB.Host](#usbhost-class) for  [hardware.usb](https://electricimp.com/docs/api/hardware/usb/) object with array of single driver. To get notification when required driver will be connected to the device and configured, it assigns [callback function](#callbackeventtype-eventobject) that receives USB event type and event object. In simple case it is enough to listen for `"started"` and `"stopped"` events where event objects are driver instances.
 
+### Driver selection priority
+
+It is possible to register several drivers for the USB framework.
+Thus user could plug/unplug devices in runtime and corresponding drivers will be instantiated.
+
+If several drivers are matching for the attached device then only the first matched driver will be instantiated according to declaration list. For example, if all three drivers below are matching for the attached device but only "MyCustomDriver1" will be instantiated:
+
+```
+#require "MyCustomDriver1.nut:1.0.0"
+#require "MyCustomDriver2.nut:1.2.0"
+#require "MyCustomDriver3.nut:0.1.0"
+#require "USB.device.lib.nut:0.2.0"
+
+host <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2, MyCustomDriver3]);
+```
+
+### Driver API access
+
 _Please note that API exposed to the application by the driver is not subject for USB framework._
 
-### Notes regarding hardware support
+Each driver provides it's own custom API therefore an application developer should read driver's guide first.
+
+### Hardware pins configuration for USB
 
 The reference hardware for this framework is *[imp005](https://electricimp.com/docs/hardware/imp/imp005_hardware_guide/)* board. Its schematic requires special pin configuration in order to make USB hardware functional. And USB framework do such configuration when *[USB.Host](#usbhostusb-drivers--autoconfigpins)* is instantiated with  *autoConfigPins=true*. An application for custom board need to pay attention separately and set *autoConfigPins=false* to prevent unrelated pin be improperly configured.
 
@@ -56,6 +87,9 @@ function driverStatusListener(eventType, eventObject) {
         if (device.getVendorId() == VID &&
             device.getProductId() == PID) {
                 ep0 = device.getEndpointZero();
+                //
+                // make device configuration
+                //
         }
     } else if (eventType == "disconnected") {
         ep0 = null;
