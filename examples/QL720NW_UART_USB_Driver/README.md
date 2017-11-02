@@ -4,7 +4,7 @@ This example shows how to implement the USB.Driver interface to create a USB ove
 
 ## QL720NW UART USB Driver
 
-The [USB.Host](../USB/) will handle the USD device connection/disconnection events and instantiation of this class. This class should be registered with the [USB.Host](../USB/) and when a device with matching description is connected the device driver will be instantiated and passed to the `"started"` event callback registered with the [USB.Host.setEventListener](../USB/).
+The [USB.Host](../USB/) will handle the USB device connection/disconnection events and instantiation of this class. This class should be registered with the [USB.Host](../USB/) and when a device with matching description is connected the device driver will be instantiated and passed to the `"started"` event callback registered with the [USB.Host.setEventListener](../USB/).
 
 ## Driver class base methods
 
