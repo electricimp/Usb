@@ -1,25 +1,39 @@
 # USB Drivers Framework
 
-Usb Drivers Framework is intended to simplify and standardize USB driver creation and adoption by application developer. It consists of several abstraction that can be used by [Application](#Application-developer-guide) and [Driver](#driver-developer-guide) developers. And due to significant difference they would be described separately.
+USB Drivers Framework is intended to simplify and standardize USB driver creation, integration and usage in your IMP device code. It consists of several abstractions and can be used by two types of developers:
+- if you want to utilize the existing USB drivers in your application, see [Application Development Guide](#application-development-guide) below;
+- if you want to create and add a new USB driver, see [Driver Development Guide](#driver-development-guide) below.
 
-## Application developer guide
+## Application Development Guide
 
-This application developer guide is intended for those developers who is going to integrate one or more existing drivers into their application. By default the Usb Driver Framework doesn't not provide any drivers. Therefore scope of the supported device drivers should be identified and controlled by the application developer.
+This guide is intended for those developers who is going to integrate one or more existing USB drivers into their applications.
 
-As a first step it is necessary to include USB framework library and all necessary drivers into the application code.
-In the provided examples you could find a FT232 USB driver which was included into test file:
+### Include the framework and drivers
+
+By default USB Driver Framework does not provide any drivers. Therefore, a scope of the required device drivers should be identified and controlled by an application developer.
+
+**To add USB Driver Framework library to your project, add** `#require "USB.device.lib.nut:0.2.0"` **to the top of your device code.**
+
+After that, include into your device code the libraries with all USB drivers needed for your application.
+
+In the example below FT232RLFtdi USB driver is included into an application:
 
 ```squirrel
 #require "USB.device.lib.nut:0.2.0"
-#require "FT232rl.nut:1.0.0" // this is not global driver library, it works in example only
+#require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0" // driver example
 ```
 
-On the next step it is necessary to initialize USB framework with a scope of drivers.
-The main entrance of the USB framework is **[USB.Host](#usbhost-class)** class. This class is responsible for driver registry and notify an application when required device is attached and ready to operate through provided driver.  Thus typical steps for application developer are to write/find necessary driver and to bind it to USB framework with **[USB.Host](#usbhost-class)** like it is described in the following example (NOTE: the code is for demo only, the driver may not actually exist):
+### Initialize the framework
+
+Next, it is necessary to initialize USB Driver Framework with a scope of drivers.
+
+The main entrance to USB Driver Framework is **[USB.Host](#usbhost-class)** class. This class is responsible for a driver registration and notification of an application when the required device is attached and ready to operate through the provided driver.
+
+The below example shows typical steps of the framework initialization. In this example the application creates instance of [USB.Host](#usbhost-class) class for [hardware.usb](https://electricimp.com/docs/api/hardware/usb/) object with an array of the pre-defined driver classes (one FT232RLFtdi USB driver in this example). To get notification when the required device is connected and the corresponding driver is started and ready to use, the application assigns a [callback function](#callbackeventtype-eventobject) that receives USB event type and event object. In simple case it is enough to listen for `"started"` and `"stopped"` events, where event object is the driver instance.
 
 ```
-#require "FT232rl.nut:1.0.0"
 #require "USB.device.lib.nut:0.2.0"
+#require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0" // driver example
 
 ft232Device <- null;
 
@@ -31,6 +45,7 @@ function driverStatusListener(eventType, eventObject) {
         // start work with FT232rl device here
 
     } else if (eventType == "stopped") {
+    
         // immediately stop all interaction with FT232rl device
     }
 }
@@ -40,37 +55,42 @@ host.setEventListener(driverStatusListener);
 
 ```
 
-In this example the application creates instance of [USB.Host](#usbhost-class) for  [hardware.usb](https://electricimp.com/docs/api/hardware/usb/) object with array of single driver. To get notification when required driver will be connected to the device and configured, it assigns [callback function](#callbackeventtype-eventobject) that receives USB event type and event object. In simple case it is enough to listen for `"started"` and `"stopped"` events where event objects are driver instances.
-
 ### Driver selection priority
 
-It is possible to register several drivers for the USB framework.
-Thus user could plug/unplug devices in runtime and corresponding drivers will be instantiated.
+It is possible to register several drivers in USB Driver Framework. Thus you can plug/unplug devices in runtime and corresponding drivers will be instantiated.
 
-If several drivers are matching for the attached device then only the first matched driver will be instantiated according to declaration list. For example, if all three drivers below are matching for the attached device but only "MyCustomDriver1" will be instantiated:
+If several drivers are matching to one attached device, only the first matched driver from the array of the pre-defined driver classes is instantiated.
+
+For example, if all three drivers below are matching to the attached device, only "MyCustomDriver1" is instantiated:
 
 ```
-#require "MyCustomDriver1.nut:1.0.0"
-#require "MyCustomDriver2.nut:1.2.0"
-#require "MyCustomDriver3.nut:0.1.0"
 #require "USB.device.lib.nut:0.2.0"
+#require "MyCustomDriver2.nut:1.2.0"
+#require "MyCustomDriver1.nut:1.0.0"
+#require "MyCustomDriver3.nut:0.1.0"
 
-host <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2, MyCustomDriver3]);
+host <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2, MyCustomDriver3]); // a place in the array defines the selection priority
 ```
 
 ### Driver API access
 
-_Please note that API exposed to the application by the driver is not subject for USB framework._
+**Please note**: *API exposed by a particular driver is not a subject of USB Driver Framework.*
 
-Each driver provides it's own custom API therefore an application developer should read driver's guide first.
+Each driver provides it's own custom API for interactions with a USB device. Therefore an application developer should read the documentation provided for the concrete driver.
 
 ### Hardware pins configuration for USB
 
-The reference hardware for this framework is *[imp005](https://electricimp.com/docs/hardware/imp/imp005_hardware_guide/)* board. Its schematic requires special pin configuration in order to make USB hardware functional. And USB framework do such configuration when *[USB.Host](#usbhostusb-drivers--autoconfigpins)* is instantiated with  *autoConfigPins=true*. An application for custom board need to pay attention separately and set *autoConfigPins=false* to prevent unrelated pin be improperly configured.
+The reference hardware for USB Driver Framework is *[imp005](https://electricimp.com/docs/hardware/imp/imp005_hardware_guide/)* board. It's schematic requires special pin configuration in order to make USB hardware functional. USB Driver Framework does such configuration when *[USB.Host](#usbhostusb-drivers--autoconfigpins)* class is instantiated with *autoConfigPins=true*.
 
-### How to get control of attached device
+If your application is intended for a custom board, you may need to set *autoConfigPins=false* to prevent unrelated pin be improperly configured.
 
-The main way to operate with attached device is to use one of drivers that support that device. However it may be important to access device directly, e.g. to select alternative configuration or change its power state. To get such access USB framework creates proxy class **[USB.Device](#usbdevice-сlass)** for every device attached to the USB interface. To get correct instance the application has to either listen `connected` event at callback function assigned with [`USB.Host.setListener`](#seteventlistenercallback) or get the list of the devices with [`USB.Host.getAttachedDevices`](#getattacheddevices) and filter out required one. Than it is possible to use one of the functions, or to get access to special [control endpoint 0](#usbcontrolendpoint-class) and send custom message through this channel. The format of such  messages is out the scope of this document. Please refer [USB specification](http://www.usb.org/) for more details.
+### How to get control of an attached device
+
+A primary way to interact with an attached device is to use one of the drivers that support that device.
+
+However it may be important to access the device directly, e.g. to select alternative configuration or change it's power state. To provide such access USB Driver Framework creates a proxy **[USB.Device](#usbdevice-class)** class for every device attached to the USB interface. To get correct instance the application needs to either listen `connected` events at the callback function assigned by [`USB.Host.setListener`](#seteventlistenercallback) method or get a list of the attached devices by [`USB.Host.getAttachedDevices`](#getattacheddevices) method and filter out the required one. Than it is possible to use one of the **[USB.Device](#usbdevice-class)** class methods or to get access to the special [control endpoint 0](#usbcontrolendpoint-class) and send custom messages through this channel. The format of such messages is out the scope of this document. Please refer to [USB specification](http://www.usb.org/) for more details.
+
+Example below shows how to get control endpoint 0 for the required device:
 
 ```
 #require "USB.device.lib.nut:0.2.0"
@@ -78,7 +98,7 @@ The main way to operate with attached device is to use one of drivers that suppo
 const VID = 1;
 const PID = 2;
 
-// endpoint 0 for required device
+// endpoint 0 for the required device
 ep0 <- null;
 
 function driverStatusListener(eventType, eventObject) {
@@ -104,8 +124,7 @@ host.setEventListener(driverStatusListener);
 --------
 
 
-## Driver developer guide
-
+## Driver Development Guide
 
 It consists of five simple abstractions:
 
