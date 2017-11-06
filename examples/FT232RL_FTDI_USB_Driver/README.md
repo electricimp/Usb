@@ -1,16 +1,10 @@
 # FT232RL FTDI USB Driver Example
 
-This example shows how to create a driver class for a FT232RL USB for a serial breakout.  The example includes the FT232RLFtdiUsbDriver class with methods described below, some example code that makes use of the driver, and a folder with tests for the driver class.
+This example shows how to create a driver class for a FT232RL USB for a serial breakout.
 
-## FT232RL FTDI USB Driver
+The example includes FT232RLFtdiUsbDriver class with public API methods described below, some example code that makes use of the driver and a folder with tests for the driver class.
 
-This class should be provided in a list of drivers-argument of the [USB.Host constructor](../USB/) and if a driver is matching to the connected device then driver will be instantiated.
-
-The [USB.Host](../USB/) will notify the "started"/"stopped" events on instantiation of this driver class
-in case if application developer is subscribed on USB events via [USB.Host.setEventListener](../USB/).
-
-
-#### Driver instantiation and usage example
+## Driver instantiation example
 
 ```squirrel
 #require "USB.device.lib.nut:0.3.0"
@@ -19,24 +13,24 @@ in case if application developer is subscribed on USB events via [USB.Host.setEv
 // Provide the list of available drivers to the USB.Host
 local host = USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
 
-host.setEventListener(function(eventName, eventDetails) {
-  if (eventName == "stated") {
-    local driver = eventDetails;
+host.setEventListener(function(eventName, eventObject) {
+  if (eventName == "started") {
+    local driver = eventObject;
     server.log("FT232RLFtdiUsbDriver instantiated");
 
-    // now you can save driver instance or call
-    // a custom driver API
+    // now you can save the driver instance 
+    // and/or call methods from the driver custom API
     // For example: driver.write("Test message", callback);
   }
 });
 
-// Log instructions for user
+// Give instructions for user
 server.log("USB host initialized. Please, plug FTDI board in to see logs.");
 ```
 
-## Driver class base methods
+## Driver mandatory API
 
-There are two methods which driver must to implement: match and release.
+The driver must implement these methods in order to be integrated into USB Drivers Framework.
 
 ### match(device, interfaces)
 
@@ -87,29 +81,26 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
 }
 ```
 
-## Driver class custom API
+## Driver custom API
 
-Each driver could provide custom API for application developers.
-
-There is an example of such API:
+Custom API for application developers. Provides a meaningful functionality of the driver.
 
 ### write(*payload*, *callback*)
 
-write method allows to write some text data via drvier and get a callback on write completion
+Sends text or blob data to the connected USB device.
 
 | Parameter   | Data Type | Required | Description |
 | ----------- | --------- | -------- | ----------- |
-| *payload*  | string or blob  | Yes      | data to be sent via usb |
+| *payload*   | string or blob  | Yes | data to be sent |
 | *callback*  | Function  | Yes      | Function to be called on write completion or error. |
-
 
 ### read(*payload*, *callback*)
 
-Read data from usb device to the blob and provide callback on completion or error
+Reads data from the connected USB device to the blob.
 
 | Parameter   | Data Type | Required | Description |
 | ----------- | --------- | -------- | ----------- |
-| *payload*  | blob  | Yes      | data to be get from usb device |
+| *payload*   | blob      | Yes      | data to be get from the USB device |
 | *callback*  | Function  | Yes      | Function to be called on read completion or error. |
 
 ### _typeof()
