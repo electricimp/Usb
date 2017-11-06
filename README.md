@@ -10,7 +10,7 @@ This guide is intended for those developers who is going to integrate one or mor
 
 ### Include the framework and drivers
 
-By default USB Driver Framework does not provide any drivers. Therefore, a scope of the required device drivers should be identified and controlled by an application developer.
+By default USB Drivers Framework does not provide any drivers. Therefore, a scope of the required device drivers should be identified and controlled by an application developer.
 
 **To add USB Driver Framework library to your project, add** `#require "USB.device.lib.nut:0.2.0"` **to the top of your device code.**
 
@@ -25,9 +25,9 @@ In the example below FT232RLFtdi USB driver is included into an application:
 
 ### Initialize the framework
 
-Next, it is necessary to initialize USB Driver Framework with a scope of drivers.
+Next, it is necessary to initialize USB Drivers Framework with a scope of drivers.
 
-The main entrance to USB Driver Framework is **[USB.Host](#usbhost-class)** class. This class is responsible for a driver registration and notification of an application when the required device is attached and ready to operate through the provided driver.
+The main entrance to USB Drivers Framework is **[USB.Host](#usbhost-class)** class. This class is responsible for a driver registration and notification of an application when the required device is attached and ready to operate through the provided driver.
 
 The below example shows typical steps of the framework initialization. In this example the application creates instance of [USB.Host](#usbhost-class) class for [hardware.usb](https://electricimp.com/docs/api/hardware/usb/) object with an array of the pre-defined driver classes (one FT232RLFtdi USB driver in this example). To get notification when the required device is connected and the corresponding driver is started and ready to use, the application assigns a [callback function](#callbackeventtype-eventobject) that receives USB event type and event object. In simple case it is enough to listen for `"started"` and `"stopped"` events, where event object is the driver instance.
 
@@ -52,12 +52,11 @@ function driverStatusListener(eventType, eventObject) {
 
 host <- USB.Host(hardware.usb, [FT232rl]);
 host.setEventListener(driverStatusListener);
-
 ```
 
 ### Driver selection priority
 
-It is possible to register several drivers in USB Driver Framework. Thus you can plug/unplug devices in runtime and corresponding drivers will be instantiated.
+It is possible to register several drivers in USB Drivers Framework. Thus you can plug/unplug devices in runtime and corresponding drivers will be instantiated.
 
 If several drivers are matching to one attached device, only the first matched driver from the array of the pre-defined driver classes is instantiated.
 
@@ -80,7 +79,7 @@ Each driver provides it's own custom API for interactions with a USB device. The
 
 ### Hardware pins configuration for USB
 
-The reference hardware for USB Driver Framework is *[imp005](https://electricimp.com/docs/hardware/imp/imp005_hardware_guide/)* board. It's schematic requires special pin configuration in order to make USB hardware functional. USB Driver Framework does such configuration when *[USB.Host](#usbhostusb-drivers--autoconfigpins)* class is instantiated with *autoConfigPins=true*.
+The reference hardware for USB Drivers Framework is *[imp005](https://electricimp.com/docs/hardware/imp/imp005_hardware_guide/)* board. It's schematic requires special pin configuration in order to make USB hardware functional. USB Driver Framework does such configuration when *[USB.Host](#usbhostusb-drivers--autoconfigpins)* class is instantiated with *autoConfigPins=true*.
 
 If your application is intended for a custom board, you may need to set *autoConfigPins=false* to prevent unrelated pin be improperly configured.
 
@@ -118,7 +117,6 @@ function driverStatusListener(eventType, eventObject) {
 
 host <- USB.Host(hardware.usb);
 host.setEventListener(driverStatusListener);
-
 ```
 
 --------
@@ -134,20 +132,15 @@ It consists of five simple abstractions:
 - **[USB.ControlEndpoint](#usbcontrolendpoint-class)**
 - **[USB.FunctionalEndpoint](#usbfunctionalendpoint-class)**
 
-
-
 --------
 
-
-
-## USB framework complete API
-
+## USB Drivers Framework API specification
 
 ### USB.Host class
 
-The main interface to start working with USB devices.
+The main interface to start working with USB devices and drivers.
 
-If you have more then one USB port on development board then you should create USB.Host for each of them.
+If you have more then one USB port on development board then you should create USB.Host instance for each of them.
 
 #### USB.Host(*usb, drivers, [, autoConfigPins]*)
 
@@ -162,6 +155,7 @@ Instantiates the USB.Host class.
 ##### Example
 
 ```squirrel
+#require "USB.device.lib.nut:0.2.0"
 #require "MyCustomDriver1.device.lib.nut:1.2.3"
 #require "MyCustomDriver2.device.lib.nut:1.0.0"
 
@@ -170,7 +164,7 @@ usbHost <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2]);
 
 #### setEventListener(*callback*)
 
-Assigns listener for device and driver status changes.
+Assigns listener for [USB.Device](#usbdevice-сlass) and [USB.Driver](#usbdriver-class) status changes.
 The following events are supported:
 - device `"connected"`
 - device `"disconnected"`
@@ -187,8 +181,8 @@ Setting of *null* clears the previously assigned listener.
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
-| *eventType*  | String  |  Name of the event "connected", "disconnected", "started", "stopped" |
-| *object* | USB.Device |  The device peer for "connected"/"disconnected" event or Driver instance for "started"/"stopped" event |
+| *eventType*  | String  |  Name of the event `"connected"`, `"disconnected"`, `"started"`, `"stopped"` |
+| *object* | USB.Device or USB.Driver |  In case of `"connected"`/`"disconnected"` event - USB.Device instance. In case of `"started"`/`"stopped"` event USB.Driver instance. |
 
 ##### Example (subscribe)
 
@@ -217,49 +211,41 @@ usbHost.setEventListener(function (eventType, eventObject) {
 
 Resets the USB. Can be used by driver or application in response to unrecoverable error like unending bulk transfer or halt condition during control transfers.
 
-
 #### getAttachedDevices()
 
-Auxillary function to get list of attached devices. Returns and array of **[USB.Device](#usbdevice-сlass)** objects
+Auxillary function to get list of attached devices. Returns an array of **[USB.Device](#usbdevice-сlass)** objects.
 
 
 ## USB.Device class
 
-The class that represents attached device.
-It is parsing device description, lookup for a drivers and control drivers lifecycle. All management of configurations, interfaces and endpoints **MUST** go through Device object.
+Represents an attached USB device. Please refer to [USB specification](http://www.usb.org/) for details of a USB device description.
 
-An application does not need to use device object normally.
-It is usually used by drivers to acquire required endpoints.
+Normally, an application does not need to use a device object. It is usually used by drivers to acquire required endpoints.
+All management of USB device configurations, interfaces and endpoints **MUST** go through the device object.
 
 #### getDescriptor()
 
-Returns device descriptor. Throws exception if the device was detached.
+Returns the device descriptor. Throws exception if the device is detached.
 
 #### getVendorId()
 
-Return the device vendor ID.
-Throws exception if the device was detached.
+Returns the device vendor ID. Throws exception if the device is detached.
 
 #### getProductId()
 
-Return the device product ID.
-Throws exception if the device was detached.
-
+Returns the device product ID. Throws exception if the device is detached.
 
 #### getAssignedDrivers()
 
-Returns an array of drivers operating with interfaces this device.
-Throws exception if the device was detached.
-
+Returns an array of drivers operating with interfaces this device. Throws exception if the device is detached.
 
 #### getEndpointZero()
 
-Return Control Endpoint 0 proxy. EP0 is special type of endpoints that is implicitly present at device interfaces
-Throws exception if the device was detached.
+Returns Control Endpoint 0 proxy for the device. EP0 is a special type of endpoints that implicitly exists for every device. Throws exception if the device is detached.
 
 #### getEndpoint(*interface, type, dir [, pollTime]*)
 
-Static auxillary function that does search endpoint with given parameter at given interface and returns new instance if found.
+Static auxillary function that searches an endpoint with the given parameter at the given interface and returns new instance if found.
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
@@ -295,17 +281,13 @@ class MyCustomDriver extends USB.Driver {
         return MyCustomDriver(interface);
     }
 }
-
 ```
-
-
-------
 
 ## USB.ControlEndpoint class
 
-Represent control endpoints.
+Represents USB control endpoints.
 This class is required due to specific EI usb API
-This class is managed by USB.Device and should be acquired through USB.Device instance
+This class is managed by USB.Device and should be acquired through USB.Device instance.
 
 ``` squirrel
 // Reset functional endpoint via control endpoint
@@ -319,49 +301,44 @@ device
         endpointAddress);
 ```
 
-
 #### transfer(reqType, type, value, index, data = null)
 
-Generic function for transferring data over control endpoint.
+Generic method for transferring data over control endpoint.
 **Note:** Only vendor specific requires are allowed. For other control operation use USB.Device, USB.ControlEndpoint public API
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *reqType* 		   | Number | n/a 	   |  USB request type |
-| *req* 		     | Number 	 | n/a 	   |  The specific USB request |
-| *value* 		     | Number 	 | n/a 	   |  A value determined by the specific USB request|
-| *index* 		     | Number 	 | n/a 	   | An index value determined by the specific USB request |
-| *data* 		     | Blob 	 | null 	   | [optional] Optional storage for incoming or outgoing payload|
+| *reqType*      | Number    | n/a 	   | USB request type |
+| *req* 		 | Number 	 | n/a 	   | The specific USB request |
+| *value* 		 | Number 	 | n/a 	   | A value determined by the specific USB request|
+| *index* 		 | Number 	 | n/a 	   | An index value determined by the specific USB request |
+| *data* 		 | Blob 	 | null    | [optional] Optional storage for incoming or outgoing payload|
 
 #### clearStall(epAddress)
 
-Reset given endpoint
+Resets the given endpoint.
 
-------------
 
 ## USB.FunctionalEndpoint class
 
-The class that represent all non-control endpoints, e.g. bulk, interrupt and isochronous
-This class is managed by USB.Device and should be acquired through USB.Device instance api.
-
+Represents all non-control endpoints, e.g. bulk, interrupt and isochronous.
+This class is managed by USB.Device and should be acquired through USB.Device instance.
 
 #### write(data, onComplete)
 
-Asynchronous write date through the endpoint. Throw and exception if endpoint close or it doesn't support USB_DIRECTION_OUT.
+Asynchronously writes data through the endpoint. Throws exception if the endpoint is closed or it doesn't support USB_DIRECTION_OUT.
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *data* 		   | Blob | n/a 	   | payload data blob to be sent through this endpoint |
-| *onComplete* 		     | Function 	 | n/a 	   | callback for transfer status notification |
+| *data* 		 | Blob      | n/a 	   | payload data blob to be sent through this endpoint |
+| *onComplete* 	 | Function  | n/a 	   | callback for transfer status notification |
 
-
-**Callback Function**
+Callback **onComplete(error, len)**:
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
-| *error*  | Number  | the usb error type |
-| *len*  | Number  | written payload length |
-
+| *error*     | Number    | the usb error type |
+| *len*       | Number    | length of the written payload data |
 
 ```squirrel
 try {
@@ -371,27 +348,25 @@ try {
         server.log("Payload: " + len);
       }
     }.bindenv(this));
-
 ```
 
 #### read(data, onComplete)
-Read data through this endpoint.
-Throw an exception if EP is closed, has incompatible type or already busy.
 
-Sets an upper limit of five seconds for any command to be processed for the bulk endpoint according to the [electric imps documentation](https://electricimp.com/docs/resources/usberrors/#stq=&stp=0).
+Asynchronously reads data through the endpoint. Throws exception if the endpoint is closed, or has incompatible type, or already busy.
+
+The method set an upper limit of five seconds for any command to be processed for the bulk endpoint according to the [Electric Imp documentation](https://electricimp.com/docs/resources/usberrors/#stq=&stp=0).
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *data* 		   | Blob | n/a 	   | blob to read data into |
-| *onComplete* 		     | Function 	 | n/a 	   | callback method to get read details |
+| *data* 		 | Blob      | n/a 	   | blob to read data into |
+| *onComplete* 	 | Function  | n/a 	   | callback method to get the details of the completed operation |
 
-
-**Callback Function**
+Callback **onComplete(error, len)**:
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
-| *error*  | Number  | the usb error number |
-| *len*  | Number  | read payload length |
+| *error*     | Number    | the usb error number |
+| *len*       | Number    | length of the read data  |
 
 ```squirrel
 try {
@@ -404,13 +379,11 @@ try {
 }
 catch (e) {
 }
-
 ```
-
 
 #### reset()
 
-Make a reset of the current endpoint on stall or any other non-critical issue,
+Resets the endpoint on stall or any other non-critical issue.
 
 ```squirrel
 try {
@@ -431,30 +404,28 @@ try {
 catch (e) {
   server.log("Endpoint is closed");
 }
-
 ```
-
--------
 
 
 ## USB.Driver class
 
-The USB.Driver class is used as the base for all drivers that use this library. It contains a set of functions that are expected by [USB.Host](#USBhost) as well as some set up functions. There are a few required functions that must be overwritten.
+This class is the base for all drivers that are developed for USB Drivers Framework. It contains two mandatory methods which must be implemented by every USB driver.
 
-### Required Functions
+### match(*deviceObject, interfaces*)
 
-These are only two functions must be implemented by usb driver and required for correct operation inside USB framework.
+Checks if the driver can support all the specified interfaces for the specified device. Returns the driver object (if it can support) or *null* (if it can not support).
 
+The method may be called many times by USB Drivers Framework. The method's implementation can be based on VID, PID, device class, subclass and interfaces.
 
-#### match(*deviceObject, interfaces*)
+### release()
 
-These method checks if current driver could support all the provided interface for the current device or not. Match method could be based on VID, PID, device class, subclass and interfaces. This method is mandatory and it is not possible to register driver without this method. Once the driver is registered with USB.Host, then `match()` method will be called on each device "connected" event. Method returns a driver object or null.
+Releases all resources instantiated by the driver.
 
-#### release()
+It is called by USB Drivers Framework when USB device is detached and all resources should be released.
 
-Release all instantiate resource before driver close. It is used when device is detached and all resources are going to be released. It is important to note all device resources are released prior to this function call.
+It is important to note all device resources are released prior to this function call.
 
-##### Example
+### Example
 
 ```squirrel
 class MyUsbDriver extends USB.Driver {
@@ -476,20 +447,13 @@ class MyUsbDriver extends USB.Driver {
 }
 
 usbHost <- USB.Host(hardware.usb, [MyUsbDriver]);
-
 ```
+-------------------
 
+# USB Driver Examples
 
-## Driver Examples
-
-### [UartOverUsbDriver](./examples/QL720NW_UART_USB_Driver/)
-
-The UartOverUsbDriver class creates an interface object that exposes methods similar to the uart object to provide compatibility for uart drivers over usb.
-
-
-### [FtdiUsbDriver](./examples/FT232RL_FTDI_USB_Driver/)
-
-The FtdiUsbDriver class exposes methods to interact with a device connected to usb via an FTDI cable.
+- [UartOverUsbDriver](./examples/QL720NW_UART_USB_Driver/)
+- [FtdiUsbDriver](./examples/FT232RL_FTDI_USB_Driver/)
 
 
 # License
