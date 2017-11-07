@@ -149,6 +149,12 @@ class USB.Host {
     // like unending bulk transfer or halt condition during control transfers
     function reset() {
         _usb.disable();
+
+        // force disconnect for all attached devices
+        foreach (address, device in _devices)
+            _onDeviceDetached({"device" : address});
+
+        // re-connect all devices
         _usb.configure(_onUsbEvent.bindenv(this));
 
         _log("USB reset complete");
