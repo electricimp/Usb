@@ -1,10 +1,12 @@
-# FT232RL FTDI USB Driver Example
+# FT232RL FTDI USB Device Driver Example
 
 This example shows how to create a driver class for a FT232RL USB for a serial breakout.
 
 The example includes FT232RLFtdiUsbDriver class with public API methods described below, some example code that makes use of the driver and a folder with tests for the driver class.
 
 ## Driver instantiation example
+
+For the correct example work you need to plug the USB FT232RL FTDI device.
 
 ```squirrel
 #require "USB.device.lib.nut:0.3.0"
@@ -28,58 +30,17 @@ host.setEventListener(function(eventName, eventObject) {
 server.log("USB host initialized. Please, plug FTDI board in to see logs.");
 ```
 
-## Driver mandatory API
+## USB.Driver interface API
 
-The driver must implement these methods in order to be integrated into USB Drivers Framework.
+The driver must implement these methods in order to be integrated into the [USB Drivers Framework](https://github.com/nobitlost/Usb/blob/CSE-433/README.md).
 
 ### match(device, interfaces)
 
-Returns an instance of the FT232RLFtdiUsbDriver or null if device does not match. Implementation of this method for the FT232 is based on VID and PID identifiers.
-
-| Parameter   | Data Type | Required | Description |
-| ----------- | --------- | -------- | ----------- |
-| *device*  | USB.Device  | Yes      | attached device |
-| *interfaces* | Array | Yes | the list of interface descriptions |
-
-
-#### Example
-
-```squirrel
-class FT232RLFtdiUsbDriver extends USB.Driver {
-  static VID = 0x0403;
-  static PID = 0x6001;
-
-  constructor(device, interfaces) {
-    // Empty for a while
-  }
-
-  function match(device, interfaces) {
-    if (device &&
-        device.getVendorId() == VID &&
-        device.getProductId() == PID)
-        return new FT232RLFtdiUsbDriver(device, interfaces);
-    return null;
-  }
-}
-
-```
+Implementation of the [USB.Driver](https://github.com/nobitlost/Usb/blob/CSE-433/README.md#matchdeviceobject-interfaces) interface
 
 ### release()
 
-This method should implement resource freeing before driver release.
-
-```squirrel
-
-class FT232RLFtdiUsbDriver extends USB.Driver {
-  // ...
-  function release() {
-    // For example, driver developer could release write queue
-    // and free all allocated endpoints
-    this._bulkIn = null;
-    this._bulkOut = null;
-  }
-}
-```
+Implementation of the [USB.Driver](https://github.com/nobitlost/Usb/blob/CSE-433/README.md#matchdeviceobject-interfaces) interface
 
 ## Driver custom API
 
@@ -94,6 +55,15 @@ Sends text or blob data to the connected USB device.
 | *payload*   | string or blob  | Yes | data to be sent |
 | *callback*  | Function  | Yes      | Function to be called on write completion or error. |
 
+#### write callback
+
+| Parameter   | Data Type | Description |
+| ----------- | --------- | ----------- |
+| *error*   | Number  | the error number |
+| *data*  | string or blob  | string or blob payload. Use typeof for details. |
+| *length*  | Number  | the data length |
+
+
 ### read(*payload*, *callback*)
 
 Reads data from the connected USB device to the blob.
@@ -103,6 +73,29 @@ Reads data from the connected USB device to the blob.
 | *payload*   | blob      | Yes      | data to be get from the USB device |
 | *callback*  | Function  | Yes      | Function to be called on read completion or error. |
 
+
+#### read callback
+
+| Parameter   | Data Type | Description |
+| ----------- | --------- | ----------- |
+| *error*   | Number  | the error number |
+| *data*  | string or blob  | string or blob payload. Use typeof for details. |
+| *length*  | Number  | the data length |
+
+
 ### _typeof()
 
-Meta-function to return class name when typeof <instance> is run.
+Meta-function to return class name when typeof <instance> is run. Uses to identify the driver instance type in runtime.
+  
+```squirrel
+
+// For example:
+
+host <- USB.Host(hardware.usb, ["MyCustomDriver1", "MyCustomDriver2", "FT232RLFtdiUsbDriver"]);
+
+host.setEventListener(function(eventName, eventDetails) {
+    if (eventName == "started" && typeof eventDetails == "FT232RLFtdiUsbDriver")
+        server.log("FT232RLFtdiUsbDriver initialized");
+});
+
+```
