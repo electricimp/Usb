@@ -35,18 +35,20 @@ The below example shows typical steps of the framework initialization. In this e
 #require "USB.device.lib.nut:1.0.0"
 #require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0" // driver example
 
-ft232Device <- null;
+ft232DriverInstance <- null;
 
 function driverStatusListener(eventType, eventObject) {
     if (eventType == "started") {
 
-        ft232Device = eventObject;
+        ft232DriverInstance = eventObject;
 
-        // start work with FT232rl device here
+        // start work with FT232rl driver API here
 
     } else if (eventType == "stopped") {
 
-        // immediately stop all interaction with FT232rl device
+        // immediately stop all interaction with FT232rl driver API
+        // and reset driver reference
+        ft232DriverInstance = null;
     }
 }
 
