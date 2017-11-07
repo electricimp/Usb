@@ -121,6 +121,35 @@ host <- USB.Host(hardware.usb);
 host.setEventListener(driverStatusListener);
 ```
 
+### USB.Host reset
+
+Resets the USB host see [USB.Host.reset](#usb-host-reset) . Can be used by application in response to unrecoverable error like driver pending or not responding.
+
+This method should clean up all drivers and devices with corresponding event listener notifications and reconfigure usb.
+
+It is not necessary to setup [setEventListener](#setEventListener) again, the same callback should get all notifications about re-attached devices and corresponding drivers allocation. Please note that newly created drivers and devices instances will be different and all devices will have a new addresses.
+
+```squirrel
+
+#include "MyCustomDriver.nut" // some custom driver
+
+host <- USB.Host(hardware.usb, [MyCustomDriver]);
+
+host.setEventListener(function(eventName, eventDetails) {
+    // print all events
+    server.log("Event: " + eventName);
+    // Check that the number of connected devices
+    // is the same after reset
+    if (eventName == "connected" && host.getAttachedDevices().len() != 1)
+        server.log("Only one device could be attached");
+});
+
+imp.wakeup(2, function() {
+    host.reset();
+}.bindenv(this));
+
+```
+
 --------
 
 
@@ -211,7 +240,26 @@ usbHost.setEventListener(function (eventType, eventObject) {
 
 #### reset()
 
-Resets the USB. Can be used by driver or application in response to unrecoverable error like unending bulk transfer or halt condition during control transfers.
+Resets the USB host. Can be used by driver or application in response to unrecoverable error like unending bulk transfer or halt condition during control transfers.
+
+This method disable usb, clean up all drivers and devices with corresponding event listener notifications and reconfigure usb from scratch. All devices will have a new device object instances and different address.
+
+```squirrel
+
+#include "MyCustomDriver.nut" // some custom driver
+
+host <- USB.Host(hardware.usb, [MyCustomDriver]);
+
+host.setEventListener(function(eventName, eventDetails) {
+    if (eventName == "connected" && host.getAttachedDevices().len() != 1)
+        server.log("Only one device could be attached");
+});
+
+imp.wakeup(2, function() {
+    host.reset();
+}.bindenv(this));
+
+```
 
 #### getAttachedDevices()
 
