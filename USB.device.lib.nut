@@ -28,7 +28,7 @@
 // Not intended to use by any developers.
 class USB {
 
-    static VERSION = "0.2.0";
+    static VERSION = "1.0.0";
 
     constructor() {
         const USB_ENDPOINT_CONTROL = 0x00;

@@ -12,14 +12,14 @@ This guide is intended for those developers who is going to integrate one or mor
 
 By default USB Drivers Framework does not provide any drivers. Therefore, a scope of the required device drivers should be identified and controlled by an application developer.
 
-**To add USB Driver Framework library to your project, add** `#require "USB.device.lib.nut:0.2.0"` **to the top of your device code.**
+**To add USB Driver Framework library to your project, add** `#require "USB.device.lib.nut:1.0.0"` **to the top of your device code.**
 
 After that, include into your device code the libraries with all USB drivers needed for your application.
 
 In the example below FT232RLFtdi USB driver is included into an application:
 
 ```squirrel
-#require "USB.device.lib.nut:0.2.0"
+#require "USB.device.lib.nut:1.0.0"
 #require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0" // driver example
 ```
 
@@ -32,7 +32,7 @@ The main entrance to USB Drivers Framework is **[USB.Host](#usbhost-class)** cla
 The below example shows typical steps of the framework initialization. In this example the application creates instance of [USB.Host](#usbhost-class) class for [hardware.usb](https://electricimp.com/docs/api/hardware/usb/) object with an array of the pre-defined driver classes (one FT232RLFtdi USB driver in this example). To get notification when the required device is connected and the corresponding driver is started and ready to use, the application assigns a [callback function](#callbackeventtype-eventobject) that receives USB event type and event object. In simple case it is enough to listen for `"started"` and `"stopped"` events, where event object is the driver instance.
 
 ```
-#require "USB.device.lib.nut:0.2.0"
+#require "USB.device.lib.nut:1.0.0"
 #require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0" // driver example
 
 ft232Device <- null;
@@ -45,7 +45,7 @@ function driverStatusListener(eventType, eventObject) {
         // start work with FT232rl device here
 
     } else if (eventType == "stopped") {
-    
+
         // immediately stop all interaction with FT232rl device
     }
 }
@@ -63,7 +63,7 @@ If several drivers are matching to one attached device, only the first matched d
 For example, if all three drivers below are matching to the attached device, only "MyCustomDriver1" is instantiated:
 
 ```
-#require "USB.device.lib.nut:0.2.0"
+#require "USB.device.lib.nut:1.0.0"
 #require "MyCustomDriver2.nut:1.2.0"
 #require "MyCustomDriver1.nut:1.0.0"
 #require "MyCustomDriver3.nut:0.1.0"
@@ -92,7 +92,7 @@ However it may be important to access the device directly, e.g. to select altern
 Example below shows how to get control endpoint 0 for the required device:
 
 ```
-#require "USB.device.lib.nut:0.2.0"
+#require "USB.device.lib.nut:1.0.0"
 
 const VID = 1;
 const PID = 2;
@@ -155,7 +155,7 @@ Instantiates the USB.Host class.
 ##### Example
 
 ```squirrel
-#require "USB.device.lib.nut:0.2.0"
+#require "USB.device.lib.nut:1.0.0"
 #require "MyCustomDriver1.device.lib.nut:1.2.3"
 #require "MyCustomDriver2.device.lib.nut:1.0.0"
 
