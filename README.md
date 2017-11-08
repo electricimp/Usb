@@ -123,9 +123,9 @@ host.setEventListener(driverStatusListener);
 
 ### USB.Host reset
 
-Resets the USB host see [USB.Host.reset](#usb-host-reset) . Can be used by application in response to unrecoverable error like driver pending or not responding.
+Resets the USB host see [USB.Host.reset API](#reset) . Can be used by application in response to unrecoverable error like driver pending or not responding.
 
-This method should clean up all drivers and devices with corresponding event listener notifications and reconfigure usb.
+This method should clean up all drivers and devices with corresponding event listener notifications and and finally make usb reconfigure.
 
 It is not necessary to setup [setEventListener](#setEventListener) again, the same callback should get all notifications about re-attached devices and corresponding drivers allocation. Please note that newly created drivers and devices instances will be different and all devices will have a new addresses.
 
@@ -358,8 +358,8 @@ Generic method for transferring data over control endpoint.
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *reqType*      | Number    | n/a 	   | USB request type |
-| *req* 		 | Number 	 | n/a 	   | The specific USB request |
+| *reqType*      | Number    | n/a 	   | USB request type [see](https://electricimp.com/docs/api/hardware/usb/controltransfer/) |
+| *req* 		 | Number 	 | n/a 	   | The specific USB request [see](https://electricimp.com/docs/api/hardware/usb/controltransfer/) |
 | *value* 		 | Number 	 | n/a 	   | A value determined by the specific USB request|
 | *index* 		 | Number 	 | n/a 	   | An index value determined by the specific USB request |
 | *data* 		 | Blob 	 | null    | [optional] Optional storage for incoming or outgoing payload|
@@ -391,13 +391,26 @@ Callback **onComplete(error, len)**:
 | *len*       | Number    | length of the written payload data |
 
 ```squirrel
-try {
-    local payload = blob(16);
-    device.getEndpointByAddress(epAddress).write(payload, function(error, len) {
-      if (len > 0) {
-        server.log("Payload: " + len);
-      }
-    }.bindenv(this));
+class MyCustomDriver imptements USB.Driver {
+  constructor(device, interfaces) {
+    try {
+        local payload = blob(16);
+        local ep = interfaces[0].endpoints[1].get();
+        ep.write(payload, function(error, len) {
+            if (len > 0) {
+                server.log("Payload: " + len);
+            }
+       }.bindenv(this));
+    }
+    catch(e) {
+      server.error(e);
+    }
+  } // constructor
+
+  function match(device, interfaces) {
+      return MyCustomDriver(device, interfaces);
+  }
+} // class
 ```
 
 #### read(data, onComplete)
@@ -419,16 +432,26 @@ Callback **onComplete(error, len)**:
 | *len*       | Number    | length of the read data  |
 
 ```squirrel
-try {
-    local payload = blob(16);
-    device.getEndpointByAddress(epAddress).read(payload, function(error, len) {
-        if (len > 0) {
-            server.log("Payload: " + payload);
-        }
-    }.bindenv(this));
-}
-catch (e) {
-}
+class MyCustomDriver imptements USB.Driver {
+  constructor(device, interfaces) {
+    try {
+        local payload = blob(16);
+        local ep = interfaces[0].endpoints[1].get();
+        ep.read(payload, function(error, len) {
+            if (len > 0) {
+                server.log("Payload: " + payload);
+            }
+        }.bindenv(this));
+    }
+    catch(e) {
+      server.error(e);
+    }
+  } // constructor
+
+  function match(device, interfaces) {
+      return MyCustomDriver(device, interfaces);
+  }
+} // class
 ```
 
 #### reset()
@@ -436,24 +459,32 @@ catch (e) {
 Resets the endpoint on stall or any other non-critical issue.
 
 ```squirrel
-try {
-    local payload = blob(16);
-    local endpoint = device.getEndpointByAddress(epAddress);
-    endpoint.read(payload, function(error, len) {
-        if (error == USB_TYPE_STALL_ERROR) {
-            server.log("Reset endpoint on stall");
-            try {
-                endpoint.reset();
-            } catch (e) {
-                // device is not responding.
-                // need to reset the host
+class MyCustomDriver imptements USB.Driver {
+  constructor(device, interfaces) {
+    try {
+        local payload = blob(16);
+        local endpoint = interfaces[0].endpoints[1].get();
+        endpoint.read(payload, function(error, len) {
+            if (error == USB_TYPE_STALL_ERROR) {
+                server.log("Reset endpoint on stall");
+                try {
+                    endpoint.reset();
+                } catch (e) {
+                    // device is not responding.
+                    // need to reset the host
+                }
             }
-        }
-    }.bindenv(this));
-}
-catch (e) {
-  server.log("Endpoint is closed");
-}
+        }.bindenv(this));
+    }
+    catch(e) {
+      server.error(e);
+    }
+  } // constructor
+
+  function match(device, interfaces) {
+      return MyCustomDriver(device, interfaces);
+  }
+} // class
 ```
 
 
@@ -466,6 +497,11 @@ This class is the base for all drivers that are developed for USB Drivers Framew
 Checks if the driver can support all the specified interfaces for the specified device. Returns the driver object (if it can support) or *null* (if it can not support).
 
 The method may be called many times by USB Drivers Framework. The method's implementation can be based on VID, PID, device class, subclass and interfaces.
+
+| Parameter 	 | Data Type | Required/Default | Description |
+| -------------- | --------- | ------- | ----------- |
+| *deviceObject* 		 | USB.Device 	 | required  | an instance of the USB.Device for the attached device |
+| *interfaces*      | Array of tables | required  | An array of tables which describe interfaces for the attached device [see](https://electricimp.com/docs/api/hardware/usb/configure/) |
 
 ### release()
 
@@ -483,14 +519,28 @@ class MyUsbDriver extends USB.Driver {
     static VID = 0x01f9;
     static PID = 0x1044;
 
-    _ep = null;
+    _epControl = null;
+    _epBulk = null;
 
     constructor(interface) {
-      _ep = interface.endpoints[0].get();
+        _epControl = interface.endpoints[0].get();
+
+        // Check that endpoint is BULK and direction is IN
+        if (interface.endpoints[1].attributes == USB_ENDPOINT_BULK &&
+            interface.endpoints[1].address & USB_DIRECTION_MASK == USB_DIRECTION_IN) {
+
+            // get USB.FunctionalEndpoint object for this endpoint
+            _epBulkIn = interface.endpoints[1].get();
+        }
     }
-    // Returns an array of VID PID combinations
+
+    //
+    // Returns an instance of driver
+    // if device is match to the driver
+    //
     function match(device, interfaces) {
-        if (device._vid == VID && device._pid == PID)
+        if (device.getVendorId() == VID
+            && device.getProductId() == PID)
           return MyUsbDriver(interfaces[0]);
         return null;
     }
