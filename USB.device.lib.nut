@@ -444,30 +444,6 @@ class USB.Device {
         return _endpoints[0];
     }
 
-    // Static auxillary function that does search endpoint with given parameter at given interface
-    // and returns new instance if found.
-    //
-    // Parameters:
-    //      interface   - interface descriptor, received by drivers match function
-    //      type        - required endpoint attribute
-    //      dir         - required endpoint direction
-    //      pollTime    - [optional] required polling time (where applicable)
-    //
-    //  Returns:
-    //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint, depending on type parameter,
-    //      or `null` if there is no required endpoint found in provided interface
-    //
-    //
-    function getEndpoint(interface, type, dir, pollTime = 255) {
-        foreach (ep in interface.endpoints) {
-            if ( ep.attributes == type &&
-                    (ep.address & USB_DIRECTION_MASK) == dir) {
-                        return ep.get(pollTime);
-            }
-        }
-    }
-
-
     // -------------------- Private functions --------------------
 
     // Request endpoint of required type and direction.

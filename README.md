@@ -175,11 +175,15 @@ If you have more then one USB port on development board then you should create U
 
 #### USB.Host(*usb, drivers, [, autoConfigPins]*)
 
-Instantiates the USB.Host class.
+Instantiates the USB.Host class. USB.Host is an abstraction for USB port. It should be instantiated only once for any application.
+
+There are some imp boards which does not have usb port, therefore `hardware.usb`  should be provided on instantiation.
+
+USB framework suppose that developer will not use `hardware.usb` in parallel.
 
 | Parameter 	 | Data Type | Required/Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *usb* 		 | Object 	 | required  | The imp API hardware usb object `hardware.usb` |
+| *usb* 		 | Object 	 | required  | The imp API hardware usb object [`hardware.usb`](https://electricimp.com/docs/api/hardware/usb/) |
 | *drivers*      | USB.Driver[] | required  | An array of the pre-defined driver classes |
 | *autoConfigPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps documentation](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb). These pins must be configured for the usb to work on **imp005**. |
 
@@ -195,12 +199,11 @@ usbHost <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2]);
 
 #### setEventListener(*callback*)
 
-Assigns listener for [USB.Device](#usbdevice-сlass) and [USB.Driver](#usbdriver-class) status changes.
-The following events are supported:
-- device `"connected"`
-- device `"disconnected"`
-- driver `"started"`
-- driver `"stopped"`
+Assign listener for runtime device and driver events. User could plug an unplug device in runtime and application should get the corresponding events.
+
+For the device which was attached before the `USB.Host` instantiation all events will be triggered on this listener registration call.
+
+Callback could provide driver related events if some driver match to the device only otherwise an application will get device related events only [see](https://github.com/nobitlost/Usb/tree/CSE-433/#callbackeventtype-eventobject)
 
 | Parameter   | Data Type | Required | Description |
 | ----------- | --------- | -------- | ----------- |
@@ -209,6 +212,14 @@ The following events are supported:
 Setting of *null* clears the previously assigned listener.
 
 ##### callback(*eventType, eventObject*)
+
+This callback is happen on the device or driver status change therefore the second argument is variable and could be instance of the [USB.Device](#usbdevice-сlass) or [USB.Driver](#usbdriver-class) .
+
+The following event types are supported:
+- device `"connected"`
+- device `"disconnected"`
+- driver `"started"`
+- driver `"stopped"`
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
@@ -263,7 +274,7 @@ imp.wakeup(2, function() {
 
 #### getAttachedDevices()
 
-Auxillary function to get list of attached devices. Returns an array of **[USB.Device](#usbdevice-сlass)** objects.
+Auxiliary function to get list of attached devices. Returns an array of **[USB.Device](#usbdevice-сlass)** objects.
 
 
 ## USB.Device class
@@ -293,15 +304,15 @@ Returns an array of drivers operating with interfaces this device. Throws except
 
 Returns Control Endpoint 0 proxy for the device. EP0 is a special type of endpoints that implicitly exists for every device. Throws exception if the device is detached.
 
-#### getEndpoint(*interface, type, dir [, pollTime]*)
+#### getEndpoint(*interface, type, direction [, pollTime]*)
 
-Static auxillary function that searches an endpoint with the given parameter at the given interface and returns new instance if found.
+Static auxiliary function that searches an endpoint with the given parameter at the given interface and returns new instance if found.
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
 | *interface*  | Any  |  interface descriptor, received by drivers match function |
 | *type* | Number |  required endpoint attribute |
-| *dir* | Number |   required endpoint direction |
+| *direction* | Number |   required endpoint direction |
 | *pollTime* | Number |   [optional] required polling time (where applicable) |
 
 The function doesn't depend on any internal object structures and just do following code
