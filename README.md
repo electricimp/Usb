@@ -298,51 +298,12 @@ Returns the device product ID. Throws exception if the device is detached.
 
 #### getAssignedDrivers()
 
-Returns an array of drivers operating with interfaces this device. Throws exception if the device is detached.
+Returns an array of drivers for the attached device. Throws exception if the device is detached.
+Each device provide the number of interfaces which could be supported by the different drives (For example keyboard with touchpad could have keyboard driver and a separate touchpad driver).
 
 #### getEndpointZero()
 
 Returns Control Endpoint 0 proxy for the device. EP0 is a special type of endpoints that implicitly exists for every device. Throws exception if the device is detached.
-
-#### getEndpoint(*interface, type, direction [, pollTime]*)
-
-Static auxiliary function that searches an endpoint with the given parameter at the given interface and returns new instance if found.
-
-| Parameter   | Data Type | Description |
-| ----------- | --------- | ----------- |
-| *interface*  | Any  |  interface descriptor, received by drivers match function |
-| *type* | Number |  required endpoint attribute |
-| *direction* | Number |   required endpoint direction |
-| *pollTime* | Number |   [optional] required polling time (where applicable) |
-
-The function doesn't depend on any internal object structures and just do following code
-
-``` squirrel
-foreach (ep in interface.endpoints) {
-    if ( ep.attributes == type &&
-         (ep.address & USB_DIRECTION_MASK) == dir) {
-             return ep.get(pollTime);
-    }
-}
-```
-
-**NOTE!** This function executes without any exception only if received __interface__ was provided by framework through drivers *match* function.
-
-``` squirrel
-
-class MyCustomDriver extends USB.Driver {
-
-    _bulkIn = null;
-
-    constructor(interface) {
-        _bulkIn = USB.Device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
-    }
-
-    function match(device, interfaces) {
-        return MyCustomDriver(interface);
-    }
-}
-```
 
 ## USB.ControlEndpoint class
 
@@ -520,7 +481,7 @@ Releases all resources instantiated by the driver.
 
 It is called by USB Drivers Framework when USB device is detached and all resources should be released.
 
-It is important to note all device resources are released prior to this function call.
+It is important to note all device resources are released prior to this function call and all methods should throw an exception. It means that it is not possible to perform read, write or transfer for the detached device and this method uses to release all driver related resources and free an external resource if necessary.
 
 ### Example
 
@@ -531,7 +492,7 @@ class MyUsbDriver extends USB.Driver {
     static PID = 0x1044;
 
     _epControl = null;
-    _epBulk = null;
+    _epBulkIn = null;
 
     constructor(interface) {
         _epControl = interface.endpoints[0].get();
@@ -555,8 +516,21 @@ class MyUsbDriver extends USB.Driver {
           return MyUsbDriver(interfaces[0]);
         return null;
     }
+
+    function release() {
+        try {
+            local pl = blob(16);
+            _epBulkIn.read(pl, function(error, len) {
+                // this method should never call
+            });
+        }
+        catch (e) {
+           server.error("No way to use disconnected device");
+        }
+    }
 }
 
+// instantiate host with a single driver
 usbHost <- USB.Host(hardware.usb, [MyUsbDriver]);
 ```
 -------------------
