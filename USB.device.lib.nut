@@ -32,7 +32,7 @@ class USB {
 
     constructor() {
         const USB_ENDPOINT_CONTROL = 0x00;
-        const USB_ENDPOINT_ISCHRONOUS = 0x01;
+        const USB_ENDPOINT_ISOCHRONOUS = 0x01;
         const USB_ENDPOINT_BULK = 0x02;
         const USB_ENDPOINT_INTERRUPT = 0x03;
         const USB_ENDPOINT_TYPE_MASK = 0x03;
@@ -429,7 +429,9 @@ class USB.Device {
         return _device["productid"];
     }
 
-    // Returns an array of drivers operating with interfaces this device.
+    // Returns an array of drivers for the attached device. Throws exception if the device is detached.
+    // Each device provide the number of interfaces which could be supported by the different drives
+    // (For example keyboard with touchpad could have keyboard driver and a separate touchpad driver).
     function getAssignedDrivers() {
         _checkStopped();
 
@@ -755,14 +757,13 @@ class USB.FunctionalEndpoint {
         }
     }
 
-    // Clear stall status of this pipe
-    // Return
-    //      TRUE if pipe was reset
-    //      FALSE if device rejects reset request
-    function reset() {
-        _transferCb = null;
-        return _device.getEndpointZero().clearStall(_address);
+    // Returns this endpoint address
+    // Typical use case for this function is to get endpoint ID for some of device control operation,
+    // performed over Endpoint 0
+    function getAddress() {
+        return _address;
     }
+
 
     // --------------------- Private functions -----------------
 
@@ -898,23 +899,13 @@ class USB.ControlEndpoint {
         );
     }
 
-    // Reset given endpoint
-    function clearStall(address) {
-        // Attempt to clear the stall
-        try {
-            _transfer(
-                USB_SETUP_RECIPIENT_ENDPOINT | USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_STANDARD,
-                USB_REQUEST_CLEAR_FEATURE,
-                0,
-                address);
-        } catch(error) {
-            // Attempt failed
-            return false;
-        }
-
-        // Attempt successful
-        return true;
+    // Returns this endpoint address
+    // Typical use case for this function is to get endpoint ID for some of device control operation,
+    // performed over Endpoint 0
+    function getAddress() {
+        return _address;
     }
+
 
     // --------------------- private API -------------------
 
