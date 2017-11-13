@@ -78,8 +78,9 @@ class USB {
         const USB_DIRECTION_IN = 0x80;
         const USB_DIRECTION_MASK = 0x80;
 
-        const USB_TYPE_STALL_ERROR = 4;
-        const USB_TYPE_TIMEOUT = 19;
+        const USB_ERROR_FREE = 15;
+        const USB_ERROR_IDLE = 16;
+        const USB_ERROR_TIMEOUT = 19;
 
     }
 }
@@ -398,6 +399,18 @@ class USB.Device {
         }
     }
 
+    // Delegate for interface descriptor
+    _ifsDelegate = {
+        // Auxiliary function to search required endpoint
+        find = function() {
+            foreach(ep in endpoints) {
+                if (ep.attributes == USB_ENDPOINT_BULK &&
+                    (ep.address & USB_DIRECTION_MASK) == USB_DIRECTION_IN)
+                    return ep.get();
+            }
+        }
+    }
+
 
     // Returns device descriptor
     //
@@ -518,6 +531,9 @@ class USB.Device {
 
         // Delegate to bind native endpoint descriptor and the framework
         foreach(ifs in _interfaces) {
+
+            ifs.setdelegate(_ifsDelegate);
+
             foreach (ep in ifs.endpoints) {
                 ep._device <- this;
                 ep.setdelegate(_epDelegate);

@@ -633,6 +633,7 @@ As it is described at driver selection section [match function](#matchdeviceobje
 | protocol | Integer | The interface class protocol |
 | interface | Integer | The index of the string descriptor describing this interface |
 | endpoints | Array of table |The endpoint [descriptors](#endpoint-descriptor) |
+| find | function | Auxiliary function to search endpoint with required attributes |
 
 #### Endpoint descriptor
 
