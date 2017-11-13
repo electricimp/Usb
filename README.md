@@ -4,6 +4,21 @@ USB Drivers Framework is intended to simplify and standardize USB driver creatio
 - if you want to utilize the existing USB drivers in your application, see [Application Development Guide](#application-development-guide) below;
 - if you want to create and add a new USB driver, see [Driver Development Guide](#driver-development-guide) below.
 
+## Common introduction
+
+ElectricImp platform provides base abstraction for a usb API see [hardware.usb](TDB). By default imp005 has USB port only but probably your are working on some custom board which also has USB port (or several USB ports).
+The `hardware.usb` api gives the direct access to the usb configurations, interfaces and endpoints and allow to perform
+usb operations like control or bulk transfer. Based on that api developer could create device library which could interact with concrete device and we will call such library as *DRIVER* in the documentation below.
+The `hardware.usb` API does not provide any restrictions for a driver developers which could lead to vendor incompatible drivers and inability to use several drivers simultaneously in a single application, therefore it is not recommended to use `hardware.usb` directly for a driver creation.
+
+For this purpose USB Drivers Framework was intended, it is intended for standardization of the driver process creation and unify the application development. And of course the main features of the framework are multiple drivers support and runtime plug an unplug feasibility. USB Framework wraps all methods of the `hardware.usb`, which allow driver developer handle USB reset in common way and do not care about hardware.usb methods call for an unpluged device.
+The framework impose a constraints on driver development but they are minimal: first of all it is prohibited to access to the hardware.usb directly and the second limitation is that each driver should implement `match()` and `release()` methods [see developer guide](TBD).
+There is no more limitations for the driver API therefore each driver could provide it's own custom API.
+It is important for an application developer to read driver API first (for each included driver) and for a driver developers it is important to provide detailed documentation on driver API.
+
+USB Driver Framework make it possible to cooperate multiple drivers in a single application it means that application developer could simply include custom driver library without investigation of it's internals therefore driver developer should implement `match()` method very carefully to avoid matching to a wrong device see [Device selection priority](TBD) Application Developer Guide and [match() method](TBD) Driver Developer Guide.
+
+
 ## Application Development Guide
 
 This guide is intended for those developers who is going to integrate one or more existing USB drivers into their applications.
@@ -58,8 +73,10 @@ host.setEventListener(driverStatusListener);
 
 ### Driver selection priority
 
-It is possible to register several drivers in USB Drivers Framework. Thus you can plug/unplug devices in runtime and corresponding drivers will be instantiated.
+It is possible to register several drivers in USB Drivers Framework. Thus you can plug/unplug devices in runtime and corresponding drivers will be instantiated. There are some devices which provide several interfaces but that interfaces are implemented in a different drivers. In that case the Framework split device interfaces and try to match drivers for each interface separately. It means that selection process could have up to two steps:
 
+#### Step 1
+On a first step the Framework it trying to find driver which match to all interfaces.
 If several drivers are matching to one attached device, only the first matched driver from the array of the pre-defined driver classes is instantiated.
 
 For example, if all three drivers below are matching to the attached device, only "MyCustomDriver1" is instantiated:
@@ -72,6 +89,21 @@ For example, if all three drivers below are matching to the attached device, onl
 
 host <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2, MyCustomDriver3]); // a place in the array defines the selection priority
 ```
+
+#### Step 2
+The second step could happen if we did not match any driver on a first step. It means that there is no driver which cover all device interfaces there Framework should split all interfaces and try to find driver for each interface separately.
+
+For example, if all three drivers below are do not matching to the attached device, but "MyCustomDriverForInterface1" and "MyCustomDriverForInterface2" are matching to the concrete interfaces of the device, then both this drivers will be instantiated:
+
+```
+#require "USB.device.lib.nut:1.0.0"
+#require "MyCustomDriverForInterface1.nut:1.2.0"
+#require "MyCustomDriverForInterface2:1.0.0"
+#require "MyCustomDriver3.nut:0.1.0"
+
+host <- USB.Host(hardware.usb, [MyCustomDriverForInterface1, MyCustomDriverForInterface2, MyCustomDriver3]); // a place in the array defines the selection priority
+```
+But if "MyCustomDriverForInterface1" and "MyCustomDriverForInterface2" are matching to the same interface of the device then only "MyCustomDriverForInterface1" should be is instantiated.
 
 ### Driver API access
 
