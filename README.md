@@ -425,20 +425,22 @@ Returns the device product ID. Throws exception if the device is detached.
 #### getAssignedDrivers()
 
 Returns an array of drivers for the attached device. Throws exception if the device is detached.
-Each device provide the number of interfaces which could be supported by the different drives (For example keyboard with touchpad could have keyboard driver and a separate touchpad driver).
+Each device USB device could provide the number of interfaces which could be supported by a single driver or by the number of different drives (For example keyboard with touch pad could have keyboard driver and a separate touch pad driver).
 
 #### getEndpointZero()
 
 Returns Control Endpoint 0 proxy for the device. EP0 is a special type of endpoints that implicitly exists for every device. Throws exception if the device is detached.
+
+Return type is [USB.ControlEndpoint](#usbcontrolendpoint-class)
 
 ## USB.ControlEndpoint class
 
 Represents USB control endpoints.
 This class is managed by USB.Device and should be acquired through USB.Device instance.
 
-``` squirrel
-// Reset functional endpoint via control endpoint
+For exmaple: The following code is making reset of the functional endpoint via control endpoint
 
+``` squirrel
 device
     .getEndpointZero()
     .transfer(
