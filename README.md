@@ -221,17 +221,28 @@ Every driver receives [interfaces](#Interface-descritptor) it may work with at [
 ```
     function findEndpont(interfaces) {
         foreach(interface in interfaces) {
-            local endpoints = interface.endpoints;
 
-            foreach(ep in endpoints) {
-                if (ep.attributes == USB_ENDPOINT_BULK &&
-                    (ep.address & USB_DIRECTION_MASK) == USB_DIRECTION_IN)
+            if (interface["class"] == REQUIRED_CLASS) {
 
-                    return ep.get();
+                local endpoints = interface.endpoints;
+
+                foreach(ep in endpoints) {
+                    if (ep.attributes == USB_ENDPOINT_BULK &&
+                        (ep.address & USB_DIRECTION_MASK) == USB_DIRECTION_IN)
+
+                        return ep.get();
+                }
             }
         }
 
         return null;
+    }
+```
+
+To simplify new driver code every interface descriptor comes with `find` function that searches for endpoint with given attributes and return found first.
+```
+    function initializeDriver(interface) {
+        _bulkIn = interface.find(USB_ENDPOINT_BULK, USB_DIRECTION_IN);
     }
 ```
 
