@@ -47,10 +47,6 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
         getEp().transfer(USB_SETUP_TYPE_VENDOR, 1, 2, 3);
     }
 
-    function testPositive3() {
-        getEp().clearStall(1);
-    }
-
     function testPositive4() {
         local ep = getEp();
         ep.transfer(USB_SETUP_TYPE_VENDOR, 1, 2, 3);
@@ -62,28 +58,6 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
             local ep = getEp();
             ep._close()
             ep.transfer(USB_SETUP_TYPE_VENDOR, 1, 2, 3);
-            assertTrue(false);
-        } catch(e) {
-            // OK
-        }
-    }
-
-    function testNegative2() {
-        try {
-            local ep = getEp();
-            ep._close()
-            ep.clearStall(1);
-            assertTrue(false);
-        } catch(e) {
-            // OK
-        }
-    }
-
-    function testNegative3() {
-        try {
-            local ep = getEp();
-            // must be with parameter
-            ep.clearStall();
             assertTrue(false);
         } catch(e) {
             // OK
