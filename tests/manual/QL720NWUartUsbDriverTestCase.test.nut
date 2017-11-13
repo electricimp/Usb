@@ -96,8 +96,20 @@ class QL720NWUartUsbDriverTestCase extends ImpTestCase {
                     .write("San Diego 48 ")
                     .print();
 
+                // Configure Barcode
+                local barcodeConfig = {
+                    "type": QL720NW.BARCODE_CODE39,
+                    "charsBelowBarcode": true,
+                    "width": QL720NW.BARCODE_WIDTH_M,
+                    "height": 1,
+                    "ratio": QL720NW.BARCODE_RATIO_3_1
+                };
+
+                // Print bacode of the imp's mac address
+                printer.writeBarcode(imp.getmacaddress(), barcodeConfig).print();
+
                 // Requires manual validation
-                resolve("Printed data")
+                resolve("Printed data");
 
 
             } else {
