@@ -42,22 +42,42 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
     static FTDI_SIO_SET_BAUD_RATE = 3;
     static FTDI_SIO_SET_FLOW_CTRL = 2;
     static FTDI_SIO_DISABLE_FLOW_CTRL = 0;
+    static FTDI_SIO_SET_DATA_REQUEST = 4;
+
+    // FTDI UART configuration types
+    static FTDI_PARITY_NONE = 0;
+    static FTDI_PARITY_ODD = 1;
+    static FTDI_PARITY_EVEN = 2;
+    static FTDI_PARITY_MARK = 3;
+    static FTDI_PARITY_SPACE = 4;
+    static FTDI_STOP_BIT_1 = 0;
+    static FTDI_STOP_BIT_15 = 1;
+    static FTDI_STOP_BIT_2 = 2;
 
     _bulkIn = null;
     _bulkOut = null;
+    _ep0 = null;
+    _devType = null;
 
-    constructor(interface) {
+    constructor(ep0, interface, deviceVersion = 0x0200) {
 
-        _bulkIn  = USB.Device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
-        _bulkOut = USB.Device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+        _bulkIn  = interface.find(USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+        _bulkOut = interface.find(USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+        _ep0 = ep0;
+        _devType = deviceVersion;
 
         if (null == _bulkIn || null == _bulkOut) throw "Can't get required endpoints";
+
+        configure();
     }
 
+    // Driver probe function
+    // Return Class instance if the driver can handle given device/interfaces
     function match(device, interfaces) {
         if (device.getVendorId()  == VID &&
             device.getProductId() == PID) {
-                return FT232RLFtdiUsbDriver(interfaces[0]);
+                local devType = device.getDescriptor()[device];
+                return FT232RLFtdiUsbDriver(device.getEndpointZero(), interfaces[0], devType);
         }
         return null;
     }
@@ -97,11 +117,14 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
 
         // Write data via bulk transfer
         _bulkOut.write(_data, function(ep, error, data, length) {
-            if (onComplete)
-              onComplete(error, data, lenght);
+            if (onComplete) {
+                if (error == USB_ERROR_FREE || error == USB_ERROR_IDLE) error = null;
+                onComplete(error, data, length);
+            }
         }.bindenv(this));
     }
 
+    // Fill provided buffer with a data read from device
     function read(data, onComplete) {
 
         if (typeof data != "blob") {
@@ -110,8 +133,97 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
 
         // Write data via bulk transfer
         _bulkIn.read(data,  function(ep, error, data, length) {
-            if (onComplete)
-              onComplete(error, data, lenght);
+            if (onComplete) {
+                if (error == USB_ERROR_FREE || error == USB_ERROR_IDLE) error = null;
+                onComplete(error, data, length);
+            }
         }.bindenv(this));
     }
+
+    // Device UART configuration
+    function configure(baud = 115200, databits = 8, parity = FTDI_PARITY_NONE, stopbits = FTDI_STOP_BIT_1) {
+
+            // Set Baud Rate
+            local baudValue;
+            local baudIndex = 0;
+            local divisor3 = 48000000 / 2 / baud; // divisor shifted 3 bits to the left
+
+            if (device == 0x0200) { // FT232AM
+                if ((divisor3 & 0x07) == 0x07) {
+                    divisor3++; // round x.7/8 up to x+1
+                }
+
+                baudValue = divisor3 >> 3;
+                divisor3 = divisor3 & 0x7;
+
+                if (divisor3 == 1) {
+                    baudValue = baudValue | 0xc000; // 0.125
+                } else if (divisor3 >= 4) {
+                    baudValue = baudValue | 0x4000; // 0.5
+                } else if (divisor3 != 0) {
+                    baudValue = baudValue | 0x8000; // 0.25
+                }
+
+                if (baudValue == 1) {
+                    baudValue = 0; // special case for maximum baud rate
+                }
+
+            } else {
+                local divfrac = [0, 3, 2, 0, 1, 1, 2, 3];
+                local divindex = [0, 0, 0, 1, 0, 1, 1, 1];
+
+                baudValue = divisor3 >> 3;
+                baudValue = baudValue | (divfrac[divisor3 & 0x7] << 14);
+
+                baudIndex = divindex[divisor3 & 0x7];
+
+                // Deal with special cases for highest baud rates.
+                if (baudValue == 1) {
+                    baudValue = 0; // 1.0
+                } else if (baudValue == 0x4001) {
+                    baudValue = 1; // 1.5
+                }
+            }
+
+           _ep0.transfer(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_BAUD_RATE, baudValue, baudIndex);
+
+           local value = databits;
+           switch (parity)
+           {
+               case FTDI_PARITY_NONE:
+                   value |= (0x00 << 8);
+                   break;
+               case FTDI_PARITY_ODD:
+                   value |= (0x01 << 8);
+                   break;
+               case FTDI_PARITY_EVEN:
+                   value |= (0x02 << 8);
+                   break;
+               case FTDI_PARITY_MARK:
+                   value |= (0x03 << 8);
+                   break;
+               case FTDI_PARITY_SPACE:
+                   value |= (0x04 << 8);
+                   break;
+           }
+
+           switch (stopbits)
+           {
+               case FTDI_STOP_BIT_1:
+                   value |= (0x00 << 11);
+                   break;
+               case FTDI_STOP_BIT_15:
+                   value |= (0x01 << 11);
+                   break;
+               case FTDI_STOP_BIT_2:
+                   value |= (0x02 << 11);
+                   break;
+           }
+
+           _ep0.transfer(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_DATA_REQUEST, value, 0);
+
+
+           // disable flow control
+           _ep0.transfer(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_FLOW_CTRL, 0, FTDI_SIO_DISABLE_FLOW_CTRL << 8);
+        }
 }

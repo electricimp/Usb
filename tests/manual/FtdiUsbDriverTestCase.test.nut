@@ -45,7 +45,6 @@ class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
     function setUp() {
         // Initialize UART
         uart = hardware.uart1;
-        return "Hi from #{__FILE__}!";
     }
 
     // Testing whether the connection event is emitted on device connection
@@ -63,15 +62,17 @@ class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
             _usbHost.setEventListener(function(eventName, eventDetails) {
 
                 // Check the device is an instance of FT232RLFtdiUsbDriver
-                if (typeof eventDetails == "FT232RLFtdiUsbDriver") {
+                if (eventName == "started") {
+                    if (typeof eventDetails == "FT232RLFtdiUsbDriver") {
 
-                    // Store the driver for the next test
-                    _driver = eventDetails;
-                    return resolve("Device was a valid ftdi device");
+                        // Store the driver for the next test
+                        _driver = eventDetails;
+                        return resolve("Device was a valid ftdi device");
+                    }
+                    // Wrong device was connected
+                    reject("Device connected is not a ftdi device");
                 }
 
-                // Wrong device was connected
-                reject("Device connected is not a ftdi device");
             }.bindenv(this));
         }.bindenv(this))
     }
@@ -107,6 +108,9 @@ class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
 
                 _driver.write(testString, function(error, payload, length) {
                     // Handle write completion
+                    if (error != USB_ERROR_IDLE && error != USB_ERROR_FREE) {
+                        reject("Data writing error");
+                    }
                 });
 
             } else {
@@ -134,7 +138,8 @@ class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
                 // Set up a listener for data events
                 _driver.read(function(error, data, length) {
                     // Check the data received matches the sent string
-                    if (data.tostring() == testString) {
+                    if ( (error == USB_ERROR_IDLE || error == USB_ERROR_FREE) &&
+                         data.tostring() == testString) {
                         resolve("Recieved data on Usb from Uart");
                     } else {
                         reject("Invalid data was received on Usb from Uart")
@@ -144,9 +149,5 @@ class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
                 reject("No device connected");
             }
         }.bindenv(this))
-    }
-
-    function tearDown() {
-        return "#{__FILE__} Test finished";
     }
 }

@@ -136,14 +136,7 @@ class QL720NW {
         _uart = uart;
         _buffer = blob();
 
-        if (init) return initialize();
-    }
-
-    function initialize() {
-        _uart.write(CMD_ESCP_ENABLE); // Select ESC/P mode
-        _uart.write(CMD_ESCP_INIT); // Initialize ESC/P mode
-
-        return this;
+        if (init) return _initialize();
     }
 
     // Formating commands
@@ -155,7 +148,7 @@ class QL720NW {
         orientationBuffer.writestring(CMD_SET_ORIENTATION);
         orientationBuffer.writestring(orientation);
 
-        _uart.write(orientationBuffer);
+        _write(orientationBuffer);
 
         return this;
     }
@@ -318,8 +311,18 @@ class QL720NW {
     // Prints the label
     function print() {
         _buffer.writestring(PAGE_FEED);
-        _uart.write(_buffer);
+        _write(_buffer);
         _buffer = blob();
+    }
+
+
+    // ------------------- private functions -------------------
+
+    function _initialize() {
+        _write(CMD_ESCP_ENABLE); // Select ESC/P mode
+        _write(CMD_ESCP_INIT); // Initialize ESC/P mode
+
+        return this;
     }
 
     function _setMargin(command, margin) {
@@ -327,7 +330,7 @@ class QL720NW {
         marginBuffer.writestring(command);
         marginBuffer.writen(margin & 0xFF, 'b');
 
-        _uart.write(marginBuffer);
+        _write(marginBuffer);
 
         return this;
     }
@@ -335,6 +338,33 @@ class QL720NW {
     function _typeof() {
         return "QL720NW";
     }
+
+    function _write(data, callback = null) {
+        _actions.push(data);
+        _actionHandler();
+    }
+
+    function _actionHandler(user = false) {
+        // there is no actions to perform
+        if (this._actions.len() == 0) return;
+
+        // Pop the next action
+        local action = this._actions.top();
+
+        try {
+            _uart.write(action.data, _actionHandler.bindenv(this));
+
+            this._actions.remove(0);
+        } catch (e) {
+            if (null == e.find("Busy")) {
+                _actions = [];
+
+                if (user) throw e;
+                else server.error(e);
+            }
+        }
+    }
+
 }
 
 // Driver for QL720NW label printer use via USB
@@ -364,81 +394,33 @@ class QL720NWUartUsbDriver extends USB.Driver {
       }
 
       constructor(interface) {
-          _bulkIn = USB.Device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_IN);
-          _bulkOut = USB.Device.getEndpoint(interface, USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+          _bulkIn = interface.find(USB_ENDPOINT_BULK, USB_DIRECTION_IN);
+          _bulkOut = interface.find(USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
 
-          if (null == _bulkIn || null == _bulkOut)
-              throw "Can't get required endpoints";
-
-          _start();
+          if (null == _bulkIn || null == _bulkOut) throw "Can't get required endpoints";
       }
 
       function release() {
           // disable more actions handling
           _released = true;
-          // clear actions list
-          _actions = [];
+
           // Free usb framwork's resources
           _bulkIn = null;
           _bulkOut = null;
       }
-    //
-    // Called when a Usb request is succesfully completed
-    //
-    // @param  {Table} eventdetails Table with the transfer event details
-    //
-    function _transferComplete(action, payload) {
-        if (action == "read") {
-            if (payload.len() >= 3) {
-                payload.seek(2);
-                _onEvent("data", payload.readblob(payload.len()));
-            } else {
-                _pushAction("read", blob(64 + 2), _transferComplete.bindenv(this));
-            }
-        }
-    }
-
-    _actions = [];
-
-    function _pushAction(type, data, callback) {
-      _actions.push({type:type, data:data, callback:callback});
-      _actionHandler(true);
-    }
-
-    function _actionHandler(start = false) {
-        // there is no actions to perform
-        if (this._actions.len() == 0)
-            return;
-
-        // Pop the next action
-        local action = this._actions.pop();
-        if (action.type == "write") {
-            _bulkOut.write(action.data, function(ep, error, data, length) {
-                if (action.callback)
-                    action.callback(error, data, length);
-                //
-                this._actionHandler();
-            }.bindenv(this));
-        }
-        else if (action.type == "read") {
-            _bulkIn.read(action.data, , function(ep, error, data, length) {
-                if (action.callback)
-                    action.callback(error, data, length);
-                //
-                this._actionHandler();
-            }.bindenv(this));
-        }
-        else {
-            throw ("Unknow action " + action.type);
-        }
-    }
 
     //
     // Write bulk transfer on Usb host
     //
-    // @param  {String/Blob} data data to be sent via usb
+    // Parameters:
+    //      data        -   data to be sent via usb (string or blob)
+    //      callback    -   a function to be notified about transfer status
     //
-    function write(data) {
+    //
+    function write(data, callback = null) {
+
+        if (_released) throw "No printer is available";
+
         local _data = null;
 
         if (typeof data == "string") {
@@ -451,51 +433,15 @@ class QL720NWUartUsbDriver extends USB.Driver {
             return;
         }
 
-        _pushAction("write", data, (_transferComplete).bindenv(this));
+        if (callback != null) {
+            local env = {callback : callback}
+            _bulkOut.write(data, _onComplete.bindenv(env));
+        }
     }
 
-    //
-    // Initialize the read buffer
-    //
-    function _start() {
-        _pushAction("read", blob(64 + 2), _transferComplete.bindenv(this));
+    function _onComplete(ep, error, data, len) {
+        if (error == USB_ERROR_FREE || error == USB_ERROR_IDLE) error = null;
+        if (callback) callback(error, data, length);
+
     }
 }
-
-// Initialize USB Host
-usbHost <- USB.Host(hardware.usb, [QL720NWUartUsbDriver]);
-
-// Subscribe to USB connection events
-usbHost.setEventListener(function (eventType, driver) {
-    if (eventType != "started")
-        return;
-
-    server.log(typeof driver + " was connected!");
-
-    switch (typeof driver) {
-        case "QL720NWUartUsbDriver":
-            // Initialize Printer Driver with USB UART device
-            printer <- QL720NW(driver);
-
-            // Print a text label
-            printer
-                .setOrientation(QL720NW.LANDSCAPE)
-                .setFont(QL720NW.FONT_SAN_DIEGO)
-                .setFontSize(QL720NW.FONT_SIZE_48)
-                .write("San Diego 48 ")
-                .print();
-
-            // Configure Barcode
-            barcodeConfig <- {
-                "type": QL720NW.BARCODE_CODE39,
-                "charsBelowBarcode": true,
-                "width": QL720NW.BARCODE_WIDTH_M,
-                "height": 1,
-                "ratio": QL720NW.BARCODE_RATIO_3_1
-            }
-
-            // Print bacode of the imp's mac address
-            printer.writeBarcode(imp.getmacaddress(), barcodeConfig).print();
-            break;
-    }
-});
