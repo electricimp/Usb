@@ -402,10 +402,10 @@ class USB.Device {
     // Delegate for interface descriptor
     _ifsDelegate = {
         // Auxiliary function to search required endpoint
-        find = function() {
+        find = function(type, dir) {
             foreach(ep in endpoints) {
-                if (ep.attributes == USB_ENDPOINT_BULK &&
-                    (ep.address & USB_DIRECTION_MASK) == USB_DIRECTION_IN)
+                if (ep.attributes == type &&
+                    (ep.address & USB_DIRECTION_MASK) == dir)
                     return ep.get();
             }
         }
