@@ -27,7 +27,7 @@
 // This is an example of HID Keyboard driver. Due to complexity of HID Report descriptor parsing
 // this driver matches only keyboards that support Boot Report Descriptor
 // (see http://www.usb.org/developers/hidpage/HID1_11.pdf for more details)
-class HID_Keyboard extends USB.Drvier {
+class HID_Keyboard extends USB.Driver {
 
     // ---------------- private variables ---------------------------
     // Interrupt In endpoint
@@ -120,7 +120,7 @@ class HID_Keyboard extends USB.Drvier {
     //
     //  Note: in case of error no other fields are present
     function getKeyStatus() {
-        const HID_DEVICE_TO_HOST  = USB_SETUP_DEVICE_TO_HOST | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE;
+        local HID_DEVICE_TO_HOST  = USB_SETUP_DEVICE_TO_HOST | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE;
         const HID_GET_REPORT = 0x01;
         local data = blob(8);
 
@@ -128,7 +128,7 @@ class HID_Keyboard extends USB.Drvier {
             _ep0.transfer(HID_DEVICE_TO_HOST, HID_GET_REPORT, 0, ifs, data);
             return _generateReport(data, 8);
         } catch (e) {
-            return {error: "USB error: " + e};
+            return {"error": "USB error: " + e};
         }
     }
 
@@ -158,7 +158,7 @@ class HID_Keyboard extends USB.Drvier {
     // Ep0 for sending Output Report (change LED state) and synchronous Input Report,
     // and change protocol
     constructor(inEp, ep0, ifs) {
-        const HID_HOST_TO_DEVICE  = USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE;
+        local HID_HOST_TO_DEVICE  = USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE;
         const HID_SET_PROTOCOL = 0xB;
 
         _inEp = inEp;
