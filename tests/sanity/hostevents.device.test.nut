@@ -25,6 +25,7 @@
 @include __PATH__ + "/../CorrectDriver.nut"
 @include __PATH__ + "/../DescriptorMock.nut"
 @include __PATH__ + "/../UsbMock.nut"
+@include __PATH__+"/../UsbHostWrapper.nut"
 
 // Sanity test for USB.Host
 class UsbHostEventsSanity extends ImpTestCase {
@@ -37,8 +38,12 @@ class UsbHostEventsSanity extends ImpTestCase {
         _usb = UsbMock();
     }
 
+    function getUsbHost(drivers, autoConf) {
+        return UsbHostWrapper(_usb, drivers, autoConf);
+    }
+
     function testGetAttachedOneDevice() {
-        local host = USB.Host(_usb, _drivers, true);
+        local host = getUsbHost(_drivers, false);
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 
@@ -53,7 +58,7 @@ class UsbHostEventsSanity extends ImpTestCase {
     }
 
     function testGetAttachedTwoDevices() {
-        local host = USB.Host(_usb, _drivers, true);
+        local host = getUsbHost(_drivers, false);
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
@@ -61,7 +66,7 @@ class UsbHostEventsSanity extends ImpTestCase {
         return Promise(function(resolve, reject) {
             imp.wakeup(0, function() {
                 local devices = host.getAttachedDevices();
-                assertTrue(devices.len() == 2, "Expected one device item");
+                assertTrue(devices.len() == 2, "Expected two device attached");
                 assertEqual("instance", typeof(devices[0]), "Unexpected driver");
                 assertEqual("instance", typeof(devices[1]), "Unexpected driver");
                 resolve();
@@ -72,7 +77,7 @@ class UsbHostEventsSanity extends ImpTestCase {
 
     function testSetListenerOnConnect() {
         return Promise(function(resolve, reject) {
-            local host = USB.Host(_usb, _drivers, true);
+            local host = getUsbHost(_drivers, true);
             local counter = 0;
             host.setEventListener(function(type, payload) {
                 counter++;
@@ -106,7 +111,7 @@ class UsbHostEventsSanity extends ImpTestCase {
 
     function testSetListenerDisconnect() {
         return Promise(function(resolve, reject) {
-            local host = USB.Host(_usb, _drivers, true);
+            local host = getUsbHost(_drivers, true);
 
             _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 

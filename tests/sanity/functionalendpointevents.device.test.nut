@@ -26,6 +26,7 @@
 @include __PATH__+"/../UsbMock.nut"
 @include __PATH__+"/../CorrectDriver.nut"
 @include __PATH__+"/../DescriptorMock.nut"
+@include __PATH__+"/../UsbHostWrapper.nut"
 
 // Sanity test for USB.FunctionalEndpoint
 class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
@@ -38,7 +39,8 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
     function setUp() {
         _usb = UsbMock();
         _usb.configure(function(evt, evd){});
-        _host = USB.Host(_usb, _drivers, true);
+        // instantiate usb host with mock _usb
+        _host = UsbHostWrapper(_usb, _drivers, true);
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 
@@ -55,7 +57,7 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
     }
 
     function getInterfaces() {
-      return _device.interfaces[0];
+        return _device.interfaces[0];
     }
 
     function test01GetEndpoint() {

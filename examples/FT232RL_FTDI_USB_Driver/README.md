@@ -13,14 +13,14 @@ For the correct example work you need to plug the USB FT232RL FTDI device.
 #require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0"
 
 // Provide the list of available drivers to the USB.Host
-local host = USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
+local host = USB.Host([FT232RLFtdiUsbDriver]);
 
 host.setEventListener(function(eventName, eventObject) {
   if (eventName == "started") {
     local driver = eventObject;
     server.log("FT232RLFtdiUsbDriver instantiated");
 
-    // now you can save the driver instance 
+    // now you can save the driver instance
     // and/or call methods from the driver custom API
     // For example: driver.write("Test message", callback);
   }
@@ -86,12 +86,12 @@ Reads data from the connected USB device to the blob.
 ### _typeof()
 
 Meta-function to return class name when typeof <instance> is run. Uses to identify the driver instance type in runtime.
-  
+
 ```squirrel
 
 // For example:
 
-host <- USB.Host(hardware.usb, ["MyCustomDriver1", "MyCustomDriver2", "FT232RLFtdiUsbDriver"]);
+host <- USB.Host(["MyCustomDriver1", "MyCustomDriver2", "FT232RLFtdiUsbDriver"]);
 
 host.setEventListener(function(eventName, eventDetails) {
     if (eventName == "started" && typeof eventDetails == "FT232RLFtdiUsbDriver")

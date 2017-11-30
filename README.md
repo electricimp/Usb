@@ -6,17 +6,16 @@ USB Drivers Framework is intended to simplify and standardize USB driver creatio
 
 ## Common introduction
 
-ElectricImp platform provides base abstraction for a usb API see [hardware.usb](TDB). By default imp005 has USB port only but probably your are working on some custom board which also has USB port (or several USB ports).
-The `hardware.usb` api gives the direct access to the usb configurations, interfaces and endpoints and allow to perform
-usb operations like control or bulk transfer. Based on that api developer could create device library which could interact with concrete device and we will call such library as *DRIVER* in the documentation below.
+ElectricImp platform provides base abstraction for a usb API over the native code see [hardware.usb](https://electricimp.com/docs/api/hardware/usb/). By default imp005 has USB port only but probably your are working on some custom board which also has USB port (or several USB ports).
+The `hardware.usb` api gives the direct access to the usb configurations, interfaces and endpoints and allow to perform usb operations like control or bulk transfer. Based on that api developer could create device library which could interact with concrete device and such library will be called as *DRIVER* in the documentation below.
 The `hardware.usb` API does not provide any restrictions for a driver developers which could lead to vendor incompatible drivers and inability to use several drivers simultaneously in a single application, therefore it is not recommended to use `hardware.usb` directly for a driver creation.
 
-For this purpose USB Drivers Framework was intended, it is intended for standardization of the driver process creation and unify the application development. And of course the main features of the framework are multiple drivers support and runtime plug an unplug feasibility. USB Framework wraps all methods of the `hardware.usb`, which allow driver developer handle USB reset in common way and do not care about hardware.usb methods call for an unpluged device.
-The framework impose a constraints on driver development but they are minimal: first of all it is prohibited to access to the hardware.usb directly and the second limitation is that each driver should implement `match()` and `release()` methods [see developer guide](TBD).
+For this purpose USB Drivers Framework is a pure squirrel library which wrap the native `hardware.usb` api, it was intended for standardization of the driver process creation and unify the application development. And of course the main features of the framework are multiple drivers support and runtime plug an unplug feasibility. USB Framework wraps all methods of the `hardware.usb`, which allow driver developer handle USB reset in common way for all drivers and do not care about `hardware.usb` methods call for an un-pluged device.
+The framework impose a constraints on driver development but they are minimal: first of all it is prohibited to access to the `hardware.usb` api directly and the second limitation is that each driver should implement `match()` and `release()` methods [see developer guide](TBD).
 There is no more limitations for the driver API therefore each driver could provide it's own custom API.
 It is important for an application developer to read driver API first (for each included driver) and for a driver developers it is important to provide detailed documentation on driver API.
 
-USB Driver Framework make it possible to cooperate multiple drivers in a single application it means that application developer could simply include custom driver library without investigation of it's internals therefore driver developer should implement `match()` method very carefully to avoid matching to a wrong device see [Device selection priority](TBD) Application Developer Guide and [match() method](TBD) Driver Developer Guide.
+USB Driver Framework make it possible to cooperate multiple drivers in a single application it means that application developer could simply include custom driver library without investigation of it's internals therefore. And driver developer should implement `match()` method very carefully to avoid matching to a wrong device see [multiple device support](TBD) Application Developer Guide and [match() method](TBD) of the Driver Developer Guide.
 
 
 ## Application Development Guide
@@ -55,7 +54,8 @@ ft232DriverInstance <- null;
 function driverStatusListener(eventType, eventObject) {
     if (eventType == "started") {
 
-        ft232DriverInstance = eventObject;
+        if (typeof eventObject == "FT232RLFtdiUsbDriver")
+            ft232DriverInstance = eventObject;
 
         // start work with FT232rl driver API here
 
@@ -67,19 +67,16 @@ function driverStatusListener(eventType, eventObject) {
     }
 }
 
-host <- USB.Host(hardware.usb, [FT232rl]);
+host <- USB.Host([FT232rl]);
 host.setEventListener(driverStatusListener);
 ```
 
-### Driver selection priority
+### Multiple drivers support
 
-It is possible to register several drivers in USB Drivers Framework. Thus you can plug/unplug devices in runtime and corresponding drivers will be instantiated. There are some devices which provide several interfaces but that interfaces are implemented in a different drivers. In that case the Framework split device interfaces and try to match drivers for each interface separately. It means that selection process could have up to two steps:
+It is possible to register several drivers in USB Drivers Framework. Thus you can plug/unplug devices in runtime and corresponding drivers will be instantiated. There are some devices which provide several interfaces and that interfaces could be implemented via one or several drivers.
+USB Framework instantiate all drivers which could match to the plugged device therefore it is up to the application developer which drivers needs to be included into the application scope.
 
-#### Step 1
-On a first step the Framework it trying to find driver which match to all interfaces.
-If several drivers are matching to one attached device, only the first matched driver from the array of the pre-defined driver classes is instantiated.
-
-For example, if all three drivers below are matching to the attached device, only "MyCustomDriver1" is instantiated:
+For example, if one of these drivers is matching to the attached device, then driver will be instantiated:
 
 ```
 #require "USB.device.lib.nut:1.0.0"
@@ -87,23 +84,9 @@ For example, if all three drivers below are matching to the attached device, onl
 #require "MyCustomDriver1.nut:1.0.0"
 #require "MyCustomDriver3.nut:0.1.0"
 
-host <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2, MyCustomDriver3]); // a place in the array defines the selection priority
+host <- USB.Host([MyCustomDriver1, MyCustomDriver2, MyCustomDriver3]);
 ```
-
-#### Step 2
-The second step could happen if we did not match any driver on a first step. It means that there is no driver which cover all device interfaces there Framework should split all interfaces and try to find driver for each interface separately.
-
-For example, if all three drivers below are do not matching to the attached device, but "MyCustomDriverForInterface1" and "MyCustomDriverForInterface2" are matching to the concrete interfaces of the device, then both this drivers will be instantiated:
-
-```
-#require "USB.device.lib.nut:1.0.0"
-#require "MyCustomDriverForInterface1.nut:1.2.0"
-#require "MyCustomDriverForInterface2:1.0.0"
-#require "MyCustomDriver3.nut:0.1.0"
-
-host <- USB.Host(hardware.usb, [MyCustomDriverForInterface1, MyCustomDriverForInterface2, MyCustomDriver3]); // a place in the array defines the selection priority
-```
-But if "MyCustomDriverForInterface1" and "MyCustomDriverForInterface2" are matching to the same interface of the device then only "MyCustomDriverForInterface1" should be is instantiated.
+But if all tree drivers are matching to the device interfaces then all three drivers will be instantiated.
 
 ### Driver API access
 
@@ -149,7 +132,7 @@ function driverStatusListener(eventType, eventObject) {
     }
 }
 
-host <- USB.Host(hardware.usb);
+host <- USB.Host([]);
 host.setEventListener(driverStatusListener);
 ```
 
@@ -157,7 +140,7 @@ host.setEventListener(driverStatusListener);
 
 Resets the USB host see [USB.Host.reset API](#reset) . Can be used by application in response to unrecoverable error like driver pending or not responding.
 
-This method should clean up all drivers and devices with corresponding event listener notifications and and finally make usb reconfigure.
+This method should clean up all drivers and devices with corresponding event listener notifications and and finally make usb reconfiguration.
 
 It is not necessary to setup [setEventListener](#setEventListener) again, the same callback should get all notifications about re-attached devices and corresponding drivers allocation. Please note that newly created drivers and devices instances will be different and all devices will have a new addresses.
 
@@ -165,7 +148,7 @@ It is not necessary to setup [setEventListener](#setEventListener) again, the sa
 
 #include "MyCustomDriver.nut" // some custom driver
 
-host <- USB.Host(hardware.usb, [MyCustomDriver]);
+host <- USB.Host([MyCustomDriver]);
 
 host.setEventListener(function(eventName, eventDetails) {
     // print all events
@@ -173,7 +156,7 @@ host.setEventListener(function(eventName, eventDetails) {
     // Check that the number of connected devices
     // is the same after reset
     if (eventName == "connected" && host.getAttachedDevices().len() != 1)
-        server.log("Only one device could be attached");
+        server.log("Expected only one attached device");
 });
 
 imp.wakeup(2, function() {
@@ -208,7 +191,7 @@ class MyUsbDriver extends USB.Driver {
 
 ### Driver probing procedure
 
-To get information whether the driver can deal with attached device, USB framework probes every registered device with [match](#matchdeviceobject-interfaces) function where  [USB.Device](#usbdevice-class) instance (attached device peer) and device exposed [interfaces](#Interface-descriptor) are provided. If the driver can work with this device and the interfaces, it should return new instance of the driver class. After that USB framework considers new instance as device operator and stops probing of other drivers if there is any in the list.
+To get information whether the driver can deal with attached device, USB framework probes every registered device with [match](#matchdeviceobject-interfaces) function where  [USB.Device](#usbdevice-class) instance (attached device peer) and device exposed [interfaces](#Interface-descriptor) are provided. If the driver can work with this device and the interfaces, it should return new instance of the driver class. After that USB framework keep on probing of other drivers if there is any in the list.
 
 #### Composite device drivers
 
@@ -310,17 +293,16 @@ The main interface to start working with USB devices and drivers.
 
 If you have more then one USB port on development board then you should create USB.Host instance for each of them.
 
-#### USB.Host(*usb, drivers, [, autoConfigPins]*)
+#### USB.Host(drivers, [, autoConfigPins]*)
 
 Instantiates the USB.Host class. USB.Host is an abstraction for USB port. It should be instantiated only once for any application.
 
-There are some imp boards which does not have usb port, therefore `hardware.usb`  should be provided on instantiation.
+There are some imp boards which does not have usb port, therefore exception will be thrown in that case.
 
-USB framework suppose that developer will not use `hardware.usb` in parallel.
+USB framework suppose that developer will not use [`hardware.usb`](https://electricimp.com/docs/api/hardware/usb/)  api in parallel.
 
 | Parameter 	 | Data Type | Required/Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *usb* 		 | Object 	 | required  | The imp API hardware usb object [`hardware.usb`](https://electricimp.com/docs/api/hardware/usb/) |
 | *drivers*      | USB.Driver[] | required  | An array of the pre-defined driver classes |
 | *autoConfigPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps documentation](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb). These pins must be configured for the usb to work on **imp005**. |
 
@@ -331,7 +313,7 @@ USB framework suppose that developer will not use `hardware.usb` in parallel.
 #require "MyCustomDriver1.device.lib.nut:1.2.3"
 #require "MyCustomDriver2.device.lib.nut:1.0.0"
 
-usbHost <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2]);
+usbHost <- USB.Host([MyCustomDriver1, MyCustomDriver2]);
 ```
 
 #### setEventListener(*callback*)
@@ -396,7 +378,7 @@ This method disable usb, clean up all drivers and devices with corresponding eve
 
 #include "MyCustomDriver.nut" // some custom driver
 
-host <- USB.Host(hardware.usb, [MyCustomDriver]);
+host <- USB.Host([MyCustomDriver]);
 
 host.setEventListener(function(eventName, eventDetails) {
     if (eventName == "connected" && host.getAttachedDevices().len() != 1)
@@ -571,7 +553,7 @@ Returns the endpoint address. Typical use case for this function is to get endpo
 
 ## USB.Driver class
 
-This class is the base for all drivers that are developed for USB Drivers Framework. It contains two mandatory methods which must be implemented by every USB driver.
+This class is the base for all drivers that are developed for USB Drivers Framework. It contains three mandatory methods which must be implemented by every USB driver.
 
 ### match(*deviceObject, interfaces*)
 
@@ -592,8 +574,25 @@ It is called by USB Drivers Framework when USB device is detached and all resour
 
 It is important to note all device resources are released prior to this function call and all Device/Endpoint methods calls result in throwing of an exception. It means that it is not possible to perform read, write or transfer for the detached device and this method uses to release all driver related resources and free an external resource if necessary.
 
+### \_typeof()
 
-### USB framework constants.
+Meta-function to return class name when typeof <instance> is run. Uses to identify the driver instance type in runtime.
+
+```squirrel
+
+// For example:
+
+host <- USB.Host(["MyCustomDriver1", "MyCustomDriver2", "FT232RLFtdiUsbDriver"]);
+
+host.setEventListener(function(eventName, eventDetails) {
+    if (eventName == "started" && typeof eventDetails == "FT232RLFtdiUsbDriver")
+        server.log("FT232RLFtdiUsbDriver initialized");
+});
+
+```
+
+
+## USB framework constants.
 
 A set of constants that may be useful for endpoint search functions.
 

@@ -26,6 +26,7 @@
 @include __PATH__ + "/../DescriptorMock.nut"
 @include __PATH__ + "/../UsbMock.nut"
 @include __PATH__ + "/../StubbedDrivers.nut"
+@include __PATH__ + "/../UsbHostWrapper.nut"
 
 // Sanity test for USB.Host
 class UsbHostMultipleDriversSanity extends ImpTestCase {
@@ -39,7 +40,7 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
     }
 
     function testGetAttachedOneDevice() {
-        local host = USB.Host(_usb, _drivers, true);
+        local host = UsbHostWrapper(_usb, _drivers, true);
         local counter = {
             "connected": 0,
             "disconnected": 0,
@@ -96,7 +97,7 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
     }
 
     function testMultipleDriverForOneDevice() {
-        local host = USB.Host(_usb, [TestDriver4, TestDriver5], true);
+        local host = UsbHostWrapper(_usb, [TestDriver4, TestDriver5], true);
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, device4);
 
@@ -104,7 +105,7 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
             imp.wakeup(0, function() {
                 local devices = host.getAttachedDevices();
                 assertTrue(devices.len() == 1, "Expected one device items");
-                assertTrue(devices[0]._drivers.len() == 1, "Expected one driver instance");
+                assertTrue(devices[0]._driverInstances.len() == 1, "Expected one driver instance");
                 resolve();
             }.bindenv(this));
         }.bindenv(this));

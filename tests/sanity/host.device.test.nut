@@ -37,20 +37,20 @@ class UsbHostSanity extends ImpTestCase {
     }
 
     function testSimpleSetup1() {
-        local host = USB.Host(_usb, _drivers, true);
+        local host = getUsbHost(_drivers, true);
     }
 
     function testSimpleSetup2() {
-        local host = USB.Host(_usb, _drivers, false);
+        local host = getUsbHost(_drivers, false);
     }
 
     function testSimpleSetup3() {
-        local host = USB.Host(_usb, _drivers);
+        local host = getUsbHost(_drivers);
     }
 
     function testNegativeSetup1() {
         try {
-            local host = USB.Host(_usb, [UsbMock], true);
+            local host = getUsbHost([UsbMock], true);
             assertTrue(false, "Exception expected in case of wrong driver");
         } catch (e) {
             // expected behavior
@@ -59,7 +59,7 @@ class UsbHostSanity extends ImpTestCase {
 
     function testNegativeSetup2() {
         try {
-            local host = USB.Host(_usb, [CorrectDriver, UsbMock], true);
+            local host = getUsbHost([CorrectDriver, UsbMock], true);
             assertTrue(false, "Exception expected in case of wrong driver");
         } catch (e) {
            // expected behavior
@@ -68,7 +68,7 @@ class UsbHostSanity extends ImpTestCase {
 
     function testNegativeSetup3() {
         try {
-            local host = USB.Host(_usb, []);
+            local host = getUsbHost([]);
             assertTrue(false, "Exception expected in case of wrong driver");
         } catch (e) {
            // expected behavior
@@ -102,7 +102,22 @@ class UsbHostSanity extends ImpTestCase {
         }
     }
 
+    function getUsbHost(drivers, autoConf = null) {
+        // USB.Host is looking for hardware.usb and throw an exception otherwise
+        local hardware = {};
+        hardware.usb <- _usb;
+        // instantiate usb host with mock _usb
+        if (autoConf == null) {
+            return USB.Host(drivers);
+        }
+        return USB.Host(drivers, autoConf);
+    }
+
     function getValidHost() {
-        return USB.Host(_usb, _drivers, true);
+        // USB.Host is looking for hardware.usb and throw an exception otherwise
+        local hardware = {};
+        hardware.usb <- _usb;
+        // instantiate usb host with mock _usb
+        return USB.Host(_drivers, true);
     }
 }

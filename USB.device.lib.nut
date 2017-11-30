@@ -92,8 +92,8 @@ class USB {
 // for important events like device connection/detachment.
 class USB.Host {
 
-    // The list of registered drivers
-    _drivers = null;
+    // The list of registered driver classes
+    _driverClasses = null;
 
     // The list of connected devices
     _devices = null;
@@ -115,16 +115,21 @@ class USB.Host {
     //
     // Constructor
     // Parameters:
-    //      usb          - an instance of object that implements hardware.usb API
     //      driverList   - a list of special classes that implement USB.Driver API.
     //      autoConfPins - flag to specify whether to configure pins for usb usage
     //                     (see https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb)
     //
-    constructor(usb, driverList, autoConfPins = true) {
+    constructor(driverList, autoConfPins = true) {
+        try {
+            _usb = _usb != null ? _usb : hardware.usb;
+        }
+        catch(e) {
+          throw "Expected `hardware.usb` interface available";
+        }
 
         if (null == driverList || 0 == driverList.len()) throw "Driver list must not be empty";
 
-        _drivers = [];
+        _driverClasses = [];
         _devices = {};
 
         // checks validity, filters duplicate, append to the list
@@ -141,7 +146,6 @@ class USB.Host {
             }
         }
 
-        _usb = usb;
         _usb.configure(_onUsbEvent.bindenv(this));
     }
 
@@ -197,8 +201,8 @@ class USB.Host {
             typeof driverClass.match == "function" &&
             "release" in driverClass &&
             typeof driverClass.release == "function") {
-                if (null == _drivers.find(driverClass)) {
-                    _drivers.append(driverClass);
+                if (null == _driverClasses.find(driverClass)) {
+                    _driverClasses.append(driverClass);
                 }
         } else {
             throw "Invalid driver class";
@@ -236,7 +240,7 @@ class USB.Host {
             local speed = eventDetails.speed;
             local descr = eventDetails.descriptors;
 
-            local device = USB.Device(_usb, speed, descr, _address, _drivers);
+            local device = USB.Device(_usb, speed, descr, _address, _driverClasses);
 
             // a copy application callback
             device._listener = _listener;
@@ -369,7 +373,7 @@ class USB.Device {
 
     // A list of drivers assigned to this device
     // There can be more than one driver for composite device
-    _drivers = [];
+    _driverInstances = [];
 
     // Endpoints instances for this device. Required for quick search from transfer event processor
     _endpoints = {};
@@ -448,7 +452,7 @@ class USB.Device {
     function getAssignedDrivers() {
         _checkStopped();
 
-        return _drivers;
+        return _driverInstances;
     }
 
     // Return Control Endpoint 0 proxy
@@ -517,7 +521,7 @@ class USB.Device {
 
         _address = deviceAddress;
         _usb = usb;
-        _drivers = [];
+        _driverInstances = [];
 
         local ep0 = USB.ControlEndpoint(this, 0, _device["maxpacketsize0"]);
         _endpoints[0] <- ep0;
@@ -555,7 +559,7 @@ class USB.Device {
         // Close all endpoints at first
         foreach (ep in _endpoints) ep._close();
 
-        foreach ( driver in _drivers ) {
+        foreach ( driver in _driverInstances ) {
             try {
                 driver.release();
             } catch (e) {
@@ -570,7 +574,7 @@ class USB.Device {
 
         _configuration = null;
         _interfaces = null;
-        _drivers = null;
+        _driverInstances = null;
         _endpoints = null;
         _device = null;
         _listener = null;
@@ -635,49 +639,18 @@ class USB.Device {
         // test specific behavior: _stop() is called before execution flow yielded
         if (null == _usb) return;
 
+        local devClass = _device["class"];
 
-        local devClass      = _device["class"];
-
-        // if this is not composite device
-        if ( 0 !=  devClass) {
-
-            foreach (driver in  drivers) {
-                try {
-                    local instance;
-                    if (null != (instance = driver.match(this, _interfaces))) {
-                        _drivers.append(instance);
-
-                        if (_listener) _listener("started", instance);
-
-                        return;
-                    }
-                } catch (e) {
-                    _log("Error driver initialization: " + e);
+        foreach (driver in  drivers) {
+            try {
+                local instance;
+                if (null != (instance = driver.match(this, _interfaces))) {
+                    _driverInstances.append(instance);
+                    if (_listener) _listener("started", instance);
                 }
+            } catch (e) {
+                _log("Error driver initialization: " + e);
             }
-
-        } else {
-
-            // Class information should be determined from the Interface Descriptors
-            // TODO: find and parse IAD (Interface Association Descriptor), then group interfaces
-            foreach (ifs in _interfaces) {
-                foreach (driver in  drivers) {
-                    local ifArr = [ifs];
-                    try {
-                        local instance;
-                        if (null != (instance = driver.match(this, ifArr))) {
-                            _drivers.append(instance);
-
-                            if (_listener) _listener("started", instance);
-
-                            break;
-                        }
-                    } catch (e) {
-                        _log("Error driver initialization: " + e);
-                    }
-                }
-            }
-
         }
     }
 
@@ -689,7 +662,6 @@ class USB.Device {
 
         local epAddress = eventDetails.endpoint;
         if (epAddress in _endpoints) {
-            // TODO: check relation of ep with interface and ep type
             local ep = _endpoints[epAddress];
             local error = (eventDetails.state != 0) ? eventDetails.state : null;
             local len = eventDetails.length;
@@ -864,7 +836,7 @@ class USB.FunctionalEndpoint {
     // Auxillary function to handle transfer timeout state
     function _onTimeout() {
         _timer = null;
-        _onTransferComplete(USB_TYPE_TIMEOUT, 0);
+        _onTransferComplete(USB_ERROR_TIMEOUT, 0);
     }
 }
 
@@ -984,5 +956,10 @@ class USB.Driver {
     // No endpoint operation should be performed at this function.
     function release() {
 
+    }
+
+    // Metafunction to return class name when typeof <instance> is run
+    function _typeof() {
+        return "UsbDriver";
     }
 }
