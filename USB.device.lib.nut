@@ -121,7 +121,7 @@ class USB.Host {
     //
     constructor(driverList, autoConfPins = true) {
         try {
-            _usb = _usb != null ? _usb : hardware.usb;
+            _usb = hardware.usb;
         }
         catch(e) {
           throw "Expected `hardware.usb` interface available";

@@ -40,7 +40,7 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
     }
 
     function testGetAttachedOneDevice() {
-        local host = UsbHostWrapper(_usb, _drivers, true);
+        local host = UsbHostWrapper(_usb, _drivers, false);
         local counter = {
             "connected": 0,
             "disconnected": 0,
@@ -97,7 +97,7 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
     }
 
     function testMultipleDriverForOneDevice() {
-        local host = UsbHostWrapper(_usb, [TestDriver4, TestDriver5], true);
+        local host = UsbHostWrapper(_usb, [TestDriver4, TestDriver5], false);
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, device4);
 

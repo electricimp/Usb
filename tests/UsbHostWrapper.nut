@@ -23,8 +23,20 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 class UsbHostWrapper extends USB.Host {
-    constructor(usb, drivers, autoConf) {
+    constructor(usb, driverList, autoConf) {
         _usb = usb;
-        base.constructor(drivers, autoConf);
+
+        if (autoConf)
+            throw "There is no auto configuration support for mock driver";
+
+        if (null == driverList || 0 == driverList.len()) throw "Driver list must not be empty";
+
+        _driverClasses = [];
+        _devices = {};
+
+        // checks validity, filters duplicate, append to the list
+        foreach (driver in driverList) _checkAndAppend(driver);
+
+        _usb.configure(_onUsbEvent.bindenv(this));
     }
 }
