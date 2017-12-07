@@ -36,11 +36,11 @@ The driver must implement these methods in order to be integrated into the [USB 
 
 ### match(device, interfaces)
 
-Implementation of the [USB.Driver](https://github.com/nobitlost/Usb/blob/CSE-433/README.md#matchdeviceobject-interfaces) interface
+Implementation of the [USB.Driver](../../DriverDevelopmentGuide.md#release) interface
 
 ### release()
 
-Implementation of the [USB.Driver](https://github.com/nobitlost/Usb/blob/CSE-433/README.md#matchdeviceobject-interfaces) interface
+Implementation of the [USB.Driver](../../DriverDevelopmentGuide.md#matchdeviceobject-interfaces) interface
 
 ## Driver custom API
 

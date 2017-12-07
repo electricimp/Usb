@@ -21,7 +21,7 @@ class MyUsbDriver extends USB.Driver {
 
 ### Driver probing procedure
 
-To get information whether the driver can deal with attached device, USB framework probes every registered device with [match](#matchdeviceobject-interfaces) function where  [USB.Device](#usbdevice-class) instance (attached device peer) and device exposed [interfaces](#Interface-descriptor) are provided. If the driver can work with this device and the interfaces, it should return new instance of the driver class. After that USB framework keep on probing of other drivers if there is any in the list.
+To get information whether the driver can deal with attached device, USB framework probes every registered device with [match](#matchdeviceobject-interfaces) function where  [USB.Device](#usbdevice-class) instance (attached device peer) and device exposed [interfaces](#interface-descriptor) are provided. If the driver can work with this device and the interfaces, it should return new instance of the driver class. After that USB framework keep on probing of other drivers if there is any in the list.
 
 #### Composite device drivers
 
@@ -29,7 +29,7 @@ From the USB framework point of view attached USB device consists of set of func
 
 ### Getting access to device exposed interfaces
 
-Every driver receives [interfaces](#Interface-descritptor) it may work with at [match](#matchdeviceobject-interfaces) function. To start working with this interface the driver need to get right endpoint by parsing information from `endpoints` array of the interface descriptor. When necessary endpoint descriptor is found, the driver need to call `get()` function provided by every [endpoint](#Endpoint-descriptor) descriptor.
+Every driver receives [interfaces](#interface-descriptor) it may work with at [match](#matchdeviceobject-interfaces) function. To start working with this interface the driver need to get right endpoint by parsing information from `endpoints` array of the interface descriptor. When necessary endpoint descriptor is found, the driver need to call `get()` function provided by every [endpoint](#endpoint-descriptor) descriptor.
 
 ```
     function findEndpont(interfaces) {
@@ -162,7 +162,7 @@ Setting of *null* clears the previously assigned listener.
 
 ##### callback(*eventType, eventObject*)
 
-This callback is happen on the device or driver status change therefore the second argument is variable and could be instance of the [USB.Device](#usbdevice-сlass) or [USB.Driver](#usbdriver-class) .
+This callback is happen on the device or driver status change therefore the second argument is variable and could be instance of the [USB.Device](#usbdevice-class) or [USB.Driver](#usbdriver-class) .
 
 The following event types are supported:
 - device `"connected"`
@@ -223,7 +223,7 @@ imp.wakeup(2, function() {
 
 #### getAttachedDevices()
 
-Auxiliary function to get list of attached devices. Returns an array of **[USB.Device](#usbdevice-сlass)** objects.
+Auxiliary function to get list of attached devices. Returns an array of **[USB.Device](#usbdevice-class)** objects.
 
 
 ## USB.Device class
@@ -439,7 +439,7 @@ A set of constants that may be useful for endpoint search functions.
 
 ### USB framework events structures
 
-USB framework uses a few special structures named `descriptors` and which contain description of attached device, its interfaces and endpoint. [Endpoint](#Endpoint-descriptor) and [Interface](#Interface-descriptor) descriptors are used only at driver probing stage, while [Device](#Device-descriptor) descriptor could be acquired from [USB.Device](#usbdevice-class) instance.
+USB framework uses a few special structures named `descriptors` and which contain description of attached device, its interfaces and endpoint. [Endpoint](#endpoint-descriptor) and [Interface](#interface-descriptor) descriptors are used only at driver probing stage, while [Device](#device-descriptor) descriptor could be acquired from [USB.Device](#usbdevice-class) instance.
 
 #### Device descriptor
 
@@ -448,10 +448,10 @@ Device descriptor contains whole device specification in addition to [Vendor ID]
 | Descriptor key | Type | Description |
 | -------------- | ---- | ----------- |
 | usb | Integer | The USB specification to which the device conforms. \n It is a binary coded decimal value. For example, 0x0110 is USB 1.1 |
-| class | Integer | The USB class assigned by [USB-IF](www.usb.org). If 0x00, each interface specifies its own class. If 0xFF, the class is vendor specific. |
-| subclass | Integer | The USB subclass (assigned by the [USB-IF](www.usb.org)) |
-| protocol | Integer | The USB protocol (assigned by the [USB-IF](www.usb.org)) |
-| vendorid | Integer | The vendor ID (assigned by the [USB-IF](www.usb.org)) |
+| class | Integer | The USB class assigned by [USB-IF](http://www.usb.org). If 0x00, each interface specifies its own class. If 0xFF, the class is vendor specific. |
+| subclass | Integer | The USB subclass (assigned by the [USB-IF](http://www.usb.org)) |
+| protocol | Integer | The USB protocol (assigned by the [USB-IF](http://www.usb.org)) |
+| vendorid | Integer | The vendor ID (assigned by the [USB-IF](http://www.usb.org)) |
 | productid| Integer | The product ID (assigned by the vendor) |
 | device |Integer | The device version number as BCD |
 | manufacturer | Integer | Index to string descriptor containing the manufacturer string |
