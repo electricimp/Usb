@@ -124,7 +124,7 @@ class USB.Host {
             _usb = hardware.usb;
         }
         catch(e) {
-          throw "Expected `hardware.usb` interface available";
+          throw "Expected `hardware.usb` interface is not available";
         }
 
         if (null == driverList || 0 == driverList.len()) throw "Driver list must not be empty";
@@ -277,7 +277,9 @@ class USB.Host {
 
             try {
                 if (null != _listener) _listener("disconnected", device);
-            } catch (e) {} // ignore
+            } catch (e) {
+                _log("Error at user code: " + e);
+            }
 
         } else {
             _log("Detach event for unregistered device: " + address);
@@ -568,7 +570,9 @@ class USB.Device {
 
             try {
                 if (_listener) _listener("stopped", driver);
-            } catch (e) {}//ignore
+            } catch (e) {
+                _log("Error at user code: " + e);
+            }
 
         }
 
