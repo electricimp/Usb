@@ -649,14 +649,27 @@ class USB.Device {
         local devClass = _device["class"];
 
         foreach (driver in  drivers) {
+            local matchResult;
             try {
-                local instance;
-                if (null != (instance = driver.match(this, _interfaces))) {
-                    _driverInstances.append(instance);
-                    if (_listener) _listener("started", instance);
+                if (null != (matchResult = driver.match(this, _interfaces))) {
+                    if (typeof matchResult != "array") {
+                        matchResult = [matchResult];
+                    }
+
+                    foreach (instance in matchResult) {
+                        _driverInstances.append(instance);
+                    }
                 }
             } catch (e) {
                 _log("Error driver initialization: " + e);
+            }
+
+            try {
+                foreach (instance in matchResult) {
+                    if (_listener) _listener("started", instance);
+                }
+            } catch(e) {
+                _log("User Listener code error: " + e);
             }
         }
     }
