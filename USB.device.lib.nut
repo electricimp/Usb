@@ -263,26 +263,29 @@ class USB.Host {
     // Stops corresponding USB.Device instance, notifies application listener
     // with "disconnected" event
     function _onDeviceDetached(eventDetails) {
-        local address = eventDetails.device;
-        if (address in _devices) {
-            local device = _devices[address];
-            delete _devices[address];
+        if ("device" in eventDetails) {
+            local address = eventDetails.device;
+            if (address in _devices) {
+                local device = _devices[address];
+                delete _devices[address];
 
-            try {
-                device._stop();
-                _log("Device " + device + " is removed");
-            } catch (e) {
-                _error("Error on device " + device + " release: " + e);
+                try {
+                    device._stop();
+                    _log("Device " + device + " is removed");
+                } catch (e) {
+                    _error("Error on device " + device + " release: " + e);
+                }
+
+                try {
+                    if (null != _listener) _listener("disconnected", device);
+                } catch (e) {
+                    _log("Error at user code: " + e);
+                }
+            } else {
+                _log("Detach event for unregistered device: " + address);
             }
-
-            try {
-                if (null != _listener) _listener("disconnected", device);
-            } catch (e) {
-                _log("Error at user code: " + e);
-            }
-
         } else {
-            _log("Detach event for unregistered device: " + address);
+            _log("Detach event for unknown device");
         }
     }
 
