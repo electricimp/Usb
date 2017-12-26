@@ -896,8 +896,6 @@ class USB.ControlEndpoint {
     //
     // Note! This operation is synchronous.
     function transfer(reqType, req, value, index, data = null) {
-        if ((reqType & USB_SETUP_TYPE_MASK) != USB_SETUP_TYPE_VENDOR) throw "Only vendor request is allowed";
-
         _transfer(
             reqType,
             req,
