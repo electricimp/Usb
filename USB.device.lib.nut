@@ -78,6 +78,7 @@ class USB {
         const USB_DIRECTION_IN = 0x80;
         const USB_DIRECTION_MASK = 0x80;
 
+        const USB_ERROR_STALL = 4;
         const USB_ERROR_FREE = 15;
         const USB_ERROR_IDLE = 16;
         const USB_ERROR_TIMEOUT = 19;
