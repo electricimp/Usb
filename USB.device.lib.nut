@@ -608,7 +608,7 @@ class USB.Device {
     // Returns Nothing
     //
     function _setConfiguration(config) {
-        _endpoints[0]._transfer(
+        _endpoints[0].transfer(
             USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
             USB_REQUEST_SET_CONFIGURATION,
             config,
@@ -896,7 +896,7 @@ class USB.ControlEndpoint {
     //      data        - [optional] Optional storage for incoming or outgoing data
     //
     // Note! This operation is synchronous.
-    function transfer(reqType, req, value, index, data = null) {
+    function transfer(reqType, req, value, index, data = blob()) {
         _transfer(
             reqType,
             req,
@@ -941,7 +941,7 @@ class USB.ControlEndpoint {
     //      index       - An index value determined by the specific USB request
     //      data        - [optional] Optional storage for incoming or outgoing data
     //
-    function _transfer(reqType, req, value, index, data = blob()) {
+    function _transfer(reqType, req, value, index, data) {
         if (_closed) throw "Closed";
 
         _device._usb.controltransfer(
