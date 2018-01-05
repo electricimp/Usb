@@ -27,7 +27,7 @@
 // This is an example of HID Keyboard driver. Due to complexity of HID Report descriptor parsing
 // this driver matches only keyboards that support Boot Report Descriptor
 // (see http://www.usb.org/developers/hidpage/HID1_11.pdf for more details)
-class HID_Keyboard extends USB.Driver {
+class KeyboardDriver extends USB.Driver {
 
     // ---------------- private variables ---------------------------
     // Interrupt In endpoint
@@ -56,7 +56,7 @@ class HID_Keyboard extends USB.Driver {
              ) {
                  local inEp = interface.find(USB_ENDPOINT_INTERRUPT, USB_DIRECTION_IN);
                  if (null != inEp) {
-                    return HID_Keyboard(inEp, device.getEndpointZero(), number);
+                    return KeyboardDriver(inEp, device.getEndpointZero(), number);
                  }
              }
         }
