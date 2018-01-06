@@ -419,6 +419,11 @@ class USB.Device {
                     return ep.get();
             }
         }
+
+        // Returns USB.Device instance - owner of this interface
+        getDevice = function() {
+            return endpoints[0]._device;
+        }
     }
 
 

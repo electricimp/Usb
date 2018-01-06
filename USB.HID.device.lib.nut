@@ -91,14 +91,15 @@ const USB_CLASS_HID = 3;
 
 const USB_HID_GET_REPORT_REQUEST = 0x01;
 const USB_HID_SET_REPORT_REQUEST = 0x09;
+const USB_HID_SET_IDLE_REQUEST   = 0x0A;
 
 // The class that represents HID report that may be sent or received from particular devices
 // It contains a set of HID report items grouped by their types: INPUT, OUTPUT and FEATURE
 // See more at "Device Class Definition for Human Interface Devices (HID)" 6.2.2
 class HIDReport {
 
-    // USB.HIDDriver instance that generates or receives this report
-    _hidDriver      = null;
+    // USB interface descriptor - owner of this report
+    _interface      = null;
 
     // An array of input items (if any). Doesn't include padding (constant) items
     _inputItems     = null;
@@ -110,70 +111,46 @@ class HIDReport {
     _featureItems   = null;
 
     // This report ID (if any)
-    _reportID       = null;
+    _reportID       = 0;
 
     // Total size of input  report packet
-    _totalInSize    = null;
+    _totalInSize    = 0;
 
     // Total size of output report packet
-    _totalOutSize   = null;
+    _totalOutSize   = 0;
 
     // Total size of feature report packet
-    _totalFeatSize  = null;
-
-    // User callback for asynchronous read of input report.
-    // Also indicates any ongoing operations.
-    _userCb         = null;
-
+    _totalFeatSize  = 0;
 
     // ----------- Public API ---------------------
 
     // Constructor. Receives owner of this report
-    constructor(hidDriver) {
-        _hidDriver      = hidDriver;
+    constructor(interface) {
+        _interface      = interface;
         _inputItems     = [];
         _outputItems    = [];
         _featureItems   = [];
-        _totalInSize    = 0;
-        _totalOutSize   = 0;
-        _totalFeatSize  = 0;
-        _reportID       = 0;
     }
 
     // Synchronous read of input items.
     // Returns: nothing.
-    // Throws: if _error happens during transfer
+    // Throws: if error happens during transfer or control endpoint is closed
     function request() {
 
         local buffer = blob(_totalInSize);
 
-        _hidDriver._ep0.transfer(USB_SETUP_DEVICE_TO_HOST | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE,
-                                 USB_HID_GET_REPORT_REQUEST,
-                                 (HID_REPORT_ITEM_IN + 1) << 8 | _reportID,
-                                 _hidDriver._interface.interfacenumber,
-                                 buffer);
+        local ep0 = _interface.getDevice().getEndpointZero();
+
+        ep0.transfer(USB_SETUP_DEVICE_TO_HOST | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE,
+                    USB_HID_GET_REPORT_REQUEST,
+                    (HID_REPORT_ITEM_IN + 1) << 8 | _reportID,
+                    _interface.interfacenumber,
+                    buffer);
 
         foreach (item in _inputItems) {
             item._parse(buffer);
         }
 
-    }
-
-    // Asynchronous read of input items.
-    // Parameters:
-    //      cb  - a callback to receive notification. Its signature is following:
-    //              function callback(_error, report), where
-    //                  _error  - _error message or null
-    //                  report - HIDReport instance
-    // Throws: if there is ongoing read from related endpoint, or endpoint is closed,
-    //          or something happens during call to native USB API
-    function getAsync(cb) {
-        if (_userCb != null) throw "Ongoing HID report read";
-
-        local buffer = blob(_totalInSize);
-        _hidDriver._epIn.read(buffer, _readAsyncCb.bindenv(this));
-
-        _userCb = cb;
     }
 
     // Synchronous send of output items.
@@ -188,11 +165,32 @@ class HIDReport {
             item.writeTo(buffer);
         }
 
-        _hidDriver._ep0.transfer(USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE,
-                                 USB_HID_SET_REPORT_REQUEST,
-                                 (HID_REPORT_ITEM_OUT + 1) << 8 | _reportID,
-                                 _hidDriver._interface.interfacenumber,
-                                 buffer);
+        local ep0 = _interface.getDevice().getEndpointZero();
+
+        ep0.transfer(USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE,
+                    USB_HID_SET_REPORT_REQUEST,
+                    (HID_REPORT_ITEM_OUT + 1) << 8 | _reportID,
+                    _interface.interfacenumber,
+                    buffer);
+     }
+
+     // Issue "Set Idle" command for the interface this report is bound to.
+     //
+     // Parameters:
+     //     time_ms - IDLE time for this report between 4 - 1020 ms
+     //
+     // Trows is EP0 is closed, or something happens during call to native USB API
+     function setIdleTime(time_ms) {
+
+        local timeUnit = (time_ms.toInteger() / 4) & 0xFF;
+
+        local ep0 = _interface.getDevice().getEndpointZero();
+
+        ep0.transfer(USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE,
+                    USB_HID_SET_IDLE_REQUEST,
+                    (timeUnit) << 8 | _reportID,
+                    _interface.interfacenumber);
+
      }
 
      // Returns an array of input items or null
@@ -209,49 +207,6 @@ class HIDReport {
      function getFeatureItems() {
         return _featureItems;
      }
-
-
-    // ----------- Private  API ---------------------
-
-     // A callback for asynchronous report read.
-     // See USB.FunctionalEndpoint.read for more details.
-     function _readAsyncCb(ep, _error, buffer, len) {
-        local cb = _userCb;
-        _userCb = null;
-
-        if (null == cb) {
-            server._log("null user cb. skipped");
-            return;
-        }
-
-        if (_error == USB_ERROR_FREE || _error == USB_ERROR_IDLE) {
-
-            local newReportId = buffer.readn('b');
-
-            if (newReportId != _reportID) {
-
-                server._log("Oops wrong HID report received:" + newReportId);
-
-                // Oops wrong HID report received
-                getAsync(cb);
-
-                return;
-            }
-
-            try {
-                foreach (item in _inputItems) {
-                    item._parse(buffer);
-                }
-
-                cb(null, this);
-            } catch (e) {
-                cb("HID report data parsing _error:" + e, this);
-            }
-        } else {
-            cb("USB IO _error :" + errro, this);
-        }
-
-     }
 }
 
 
@@ -262,28 +217,27 @@ class HIDReport.Item {
     attributes          = null;
 
     // A set of item HID_IOF_*  flags
-    itemFlags           = null;
+    itemFlags           = 0;
 
     // Item collection path
     collectionPath      = null;
 
-    // Owner of this item
-    _hidReport          = null;
-
     // An offset of this item in the report packet
-    _bitOffset          = null;
+    _bitOffset          = 0;
 
     // Last item value
-    _value              = null;
+    _value              = 0;
 
 
     // Constructor.
     // Parameters:
-    //   hidReport  - owner of the item
     //   attr       - item attributes. Must be instance of HIDReport.Item.Attributes
-    constructor(hidReport, attr) {
-        _hidReport = hidReport;
-        attributes = attr;
+    //   flags      - a set of item HID_IOF_*  flags
+    //   path       - item collection path, instance of HIDReport.CollectionPath
+    constructor(attr, flags, path) {
+        attributes      = attr;
+        itemFlags       = flags;
+        collectionPath  = path;
     }
 
     // Returns last item value
@@ -296,12 +250,7 @@ class HIDReport.Item {
         _value = value;
     }
 
-    // Returns the owner of this item
-    function getReport() {
-        return _hidReport;
-    }
-
-    // Debug function. Prints items with given stream.
+    // Debug function. Prints items to  given stream.
     //
     // Parameters:
     //          stream - function that prints this item to some output stream.
@@ -384,7 +333,7 @@ class HIDReport.Item.Attributes {
 
     bitSize            = 0;
 
-    // Debug function. Prints attributes with given stream.
+    // Debug function. Prints attributes to given stream.
     //
     // Parameters:
     //          stream - function that prints this item to some output stream.
@@ -420,7 +369,7 @@ class HIDReport.CollectionPath {
         this.parent = parent;
     }
 
-    // Debug function. Prints collection path  with given stream.
+    // Debug function. Prints collection path  to given stream.
     //
     // Parameters:
     //          stream - function that prints this item to some output stream.
@@ -446,31 +395,25 @@ class HIDDriver extends USB.Driver {
     // Input endpoint to read data asynchronously
     _epIn       = null;
 
-    // Optional output endpoint
-    _epOut      = null;
-
-    // Endpoint zero
-    _ep0        = null;
-
     // USB interface descriptor this driver assigned to.
     _interface  = null;
 
     // Logger debug flag
     _debug      = true;
 
+    // User callback for async read
+    _userCb     = null;
+
     // Constructor.
     // Parameters:
     //      ep                  - instance of USB.ControlEndpoint for Endpoint 0
-    //      hidReportDescriptor - unparsed HID report descriptor
+    //      reports             - an array of HIDReport instances
     //      interface           - USB device interface this driver assigned to.
-    constructor(ep0, hidReportDescriptor, interface) {
-        _ep0        = ep0;
-
-        _reports    = _parse(hidReportDescriptor);
+    constructor(reports, interface) {
+        _reports    = reports;
 
         _interface  = interface;
         _epIn       = interface.find(USB_ENDPOINT_INTERRUPT, USB_SETUP_DEVICE_TO_HOST);
-        _epOut      = interface.find(USB_ENDPOINT_INTERRUPT, USB_SETUP_HOST_TO_DEVICE);
     }
 
     // Queried by USB.Host if this driver supports
@@ -481,13 +424,9 @@ class HIDDriver extends USB.Driver {
         local found = [];
 
         foreach(interface in interfaces) {
-            // search for non-boot HID
-            if (interface["class"] == USB_CLASS_HID/* &&
-                interface.subclass == 0 &&
-                interface.protocol == 0*/) {
+            if (interface["class"] == USB_CLASS_HID) {
                 found.append(interface);
             }
-
         }
 
         _log("Driver matched " + found.len() + " interfaces");
@@ -497,7 +436,8 @@ class HIDDriver extends USB.Driver {
 
             local wTotalLen = 0;
             {
-                // estimate hidReportDescriptor descriptor max size
+                // estimate Hid Report Descriptor max size:
+                // read buffer size is no more than configuration descriptor size
                 local data = blob(USB_CONFIGURATION_DESCRIPTOR_LENGTH);
                 _log("getting configuration descriptor");
                 ep0.transfer(USB_SETUP_DEVICE_TO_HOST | USB_SETUP_TYPE_STANDARD| USB_SETUP_RECIPIENT_DEVICE,
@@ -508,7 +448,7 @@ class HIDDriver extends USB.Driver {
                 _log("done");
             }
 
-            _log("start driver initiazation");
+            _log("start driver initialization");
             local drivers = [];
 
             foreach(interface in found) {
@@ -516,9 +456,13 @@ class HIDDriver extends USB.Driver {
 
                 if (null != hidReportDescriptor) {
 
-                    local newDriver = HIDDriver(ep0, hidReportDescriptor, interface);
+                    local hidReports = _parse(hidReportDescriptor, interface);
 
-                    drivers.append(newDriver);
+                    if (null != hidReports) {
+                        local newDriver = _createInstance(hidReports, interface);
+
+                        drivers.append(newDriver);
+                    }
 
                 }
             }
@@ -535,6 +479,28 @@ class HIDDriver extends USB.Driver {
     // Returns an array of HIDReport instances.
     function getReports() {
         return _reports;
+    }
+
+    // Asynchronous read of input items. The result of the read is one of registered HID reports.
+    //
+    // Parameters:
+    //      cb  - a callback to receive notification. Its signature is following:
+    //              function callback(_error, report), where
+    //                  _error  - _error message or null
+    //                  report - HIDReport instance
+    //
+    // Throws: if there is ongoing read from related endpoint, or endpoint is closed,
+    //          or something happens during call to native USB API,
+    //          or interface descriptor doesn't describe input endpoint
+    function getAsync(cb) {
+        if (_userCb != null) throw "Ongoing HID report read";
+
+        if (_epIn == null) throw "No Interrupt Input Endpoint found at HID interface";
+
+        local buffer = blob(_epIn.maxpacketsize);
+        _epIn.read(buffer, _readAsyncCb.bindenv(this));
+
+        _userCb = cb;
     }
 
     // --------------------------- private functions ---------------
@@ -570,6 +536,67 @@ class HIDDriver extends USB.Driver {
         return data;
     }
 
+    // Used by HID Report Descriptor parser to check if provided hidItem should be included to the HIDReport.
+    //
+    // Parameters:
+    //      hidItem - instance of HIDReport.Item
+    //
+    // Returns true if the item should be included to the report, or false to drop it.
+    //
+    // Note: custom HIDDriver may rewrite this function to reduce memory consumption.
+    function _filter(hidItem) {
+        return true;
+    }
+
+    // Used by match() function to create correct class instance in case of this class is overridden.
+    //
+    // Parameters:
+    //      reports     - an array of HIDReport instances
+    //      interface   - USB device interface this driver assigned to.
+    function _createInstance(reports, interface) {
+        return HIDDriver(reports, interface);
+    }
+
+	// A callback function that receives notification from HIDReport
+	//
+	// Parameters:
+	//			error  -  possibly error or null
+    //			ep     -  source endpoint
+    //          data   -  blob with data
+    //          len    - read data len
+	function _reportReadCb(error, ep, data, len) {
+
+		if (null == _userCb) return;
+
+		if (null == error) {
+            local reportID = data.read('b');
+
+            foreach( report in _reports) {
+                if (report._reportID == reportID) {
+                    try {
+                        _userCb(null, report);
+                    } catch(e) {
+                        _log("User code exception:" + e);
+                    }
+
+                    _userCb = null;
+                    return report;
+            }
+
+            // not found. possible, the driver is not interesting in this report
+            // try to read next one
+            _log("Report " + reportID + " was read, but not found in watch list. Trying to read next one.");
+            local cb = _userCb;
+            _userCb = null; // prevent exception
+            getAsync(cb);
+
+		} else {
+            _userCb(error, null);
+			_userCb = null;
+		}
+	}
+
+
     // Internal class that represents Report Descriptor parser state
     ParserState = class {
         attributes      = null;
@@ -597,15 +624,17 @@ class HIDDriver extends USB.Driver {
     //
     // Parameters:
     //  hidReportDescriptor  -  blob instance with report descriptor data
+    //  interface            -  owner of all returned reports
     //
-    // Returns an array of HIDReport instances or null if no reports was found.
+    // Returns:
+    //       an array of HIDReport instances or null if no reports was found.
     //
     // Throws if provided buffer contains invalid data or too short
-    function _parse(hidReportDescriptor) {
+    function _parse(hidReportDescriptor, interface) {
 
         local currStateTable     = ParserState();
         local currCollectionPath = null;
-        local currReport        = HIDReport(this);
+        local currReport        = HIDReport(interface);
         local usageList         = [];
         local usageMinMax       = {"Minimum" : 0, "Maximum" : 0};
 
@@ -702,7 +731,7 @@ class HIDDriver extends USB.Driver {
 
                         if (currReport == null)
                         {
-                            currReport = HIDReport(this);
+                            currReport = HIDReport(interface);
 
                             reports.append(currReport);
                         }
@@ -752,10 +781,7 @@ class HIDDriver extends USB.Driver {
 
                     while (reportCount--)
                     {
-                        local newItem = HIDReport.Item(this, clone(currStateTable.attributes));
-
-                        newItem.itemFlags      = reportItemData;
-                        newItem.collectionPath = currCollectionPath;
+                        local newItem = HIDReport.Item(clone(currStateTable.attributes), reportItemData, currCollectionPath);
 
                         if (usageList.len() > 0)
                         {
@@ -809,19 +835,35 @@ class HIDDriver extends USB.Driver {
             }
         }
 
+        {
+            reports = reports.filter(function(index, report) {
+                local len      =  report._featureItems.len() +
+                                  report._outputItems.len()  +
+                                  report._inputItems.len();
+                return len != 0;
+            });
+
+            // notify caller that the driver need no reports
+            // or reports are empty
+            if (reports.len() ==  0) reports = null;
+        }
+
         return reports;
     }
 
     // INFO severity logger function.
     function _log(txt) {
-        if (debug)  server._log("HIDDriver:" + txt);
+        if (debug)  server.log(_typeof() + ":" + txt);
     }
 
     // ERROR severity logger function.
     function _error(txt) {
-        server._error("HIDDriver:" + txt);
+        server._error(_typeof() + ":" + txt);
     }
 
-
+	// Metafunction to return class name when typeof <instance> is run
+	function _typeof() {
+		return "HIDDriver";
+	}
 }
 

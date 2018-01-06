@@ -1,4 +1,3 @@
-
 // MIT License
 //
 // Copyright 2017 Electric Imp
@@ -29,39 +28,12 @@
 const USAGE_PAGE_KEYBOARD = 7;
 
 // Example class that reduce generic HID API to simple keyset notification.
-class HIDKeyboard {
+class HIDKeyboard extends HIDDriver {
 
-	_keyItems = null;
-	_timerTick = false;
-	_userCb   = null;
+	_timerTick = null;
+	_userCb    = null;
 
 	// ------- Public API ---------------------------------------
-
-	// Static function to check if given HID drivers reports include
-	// keyboard related items.
-	// Returns:
-	//		an instance of HIDKeyboard class or null
-	//
-	// Notes:
-	//		this function tries to find only first HIDReport that contain keyboard report items.
-	function checkIfSupport(hidDriver) {
-		local itemsToWatch = [];
-		foreach (report in hidDriver.getReports()) {
-			foreach (item in report.getInputItems()) {
-				if (item.attributes.usagePage == USAGE_PAGE_KEYBOARD) {
-					itemsToWatch.append(item);
-				}
-			}
-
-			if (itemsToWatch.len() > 0) break;
-		}
-
-		if (itemsToWatch.len() > 0) {
-			return HIDKeyboard(itemsToWatch);
-		}
-
-		return null;
-	}
 
 	// Start keyboard polling.
 	// Parameters:
@@ -84,29 +56,59 @@ class HIDKeyboard {
 		if (null == cb) return;
 
 		if (_userCb != null) throw "Poll is already started";
-		local report = _keyItems[0].getReport();
-		try {
-			report.setIdleTime(time_ms);
-		} catch(e) {
-			if (e == USB_ERROR_STALL) {
-				server.log("Set IDLE is not supported by device. Using poll timer");
-				_timerTick = time_ms;
-			} else {
-				throw "USB error " + e;
+
+		foreach( report in _reports )
+			try {
+				report.setIdleTime(time_ms);
+			} catch(e) {
+				if (e == USB_ERROR_STALL) {
+					_log("Set IDLE is not supported by device. Using poll timer");
+					_timerTick = time_ms;
+				} else {
+					throw "USB error " + e;
+				}
 			}
+
 		}
 
-		report.getAsync(_reportReadCb.bindenv(this));
+		getAsync(_reportReadCb.bindenv(this));
 
 		_userCb = cb;
 	}
 
 	// Stops keyboard polling.
 	function stopPoll() {
-		_timerTick = null;
+		_timerTick  = null;
+		_userCb		= null;
 	}
 
+    // Notify that driver is going to be released
+    // No endpoint operation should be performed at this function.
+    function release() {
+		stopPoll();
+    }
+
 	// --------- private functions section -------------------
+
+
+    // Used by HID Report Descriptor parser to check if provided hidItem should be included to the HIDReport.
+    //
+    // Parameters:
+    //      hidItem - instance of HIDReport.Item
+    //
+    // Returns true if the item should be included to the report, or false to drop it.
+    function _filter(hidItem) {
+		return  (hidItem.attributes.usagePage == USAGE_PAGE_KEYBOARD);
+	}
+
+    // Used by match() function to create correct class instance in case of this class is overridden.
+    //
+    // Parameters:
+    //      reports     - an array of HIDReport instances
+    //      interface   - USB device interface this driver assigned to.
+    function _createInstance(reports, interface) {
+        return HIDKeyboard(reports, interface);
+    }
 
 	// A callback function that receives notification from HIDReport
 	//
@@ -114,9 +116,12 @@ class HIDKeyboard {
 	//			error  -  possibly error or null
 	//			report -  HIDReport instance that calls this function if no error was observed.
 	function _reportReadCb(error, report) {
+
+		if (null == _userCb) return;
+
 		if (null == error) {
 			local keys = [];
-			foreach( item in _keyItems) {
+			foreach( item in report.getInputItems()) {
 				local val = item.get();
 				if (null != val) keys.append(val);
 			}
@@ -124,16 +129,16 @@ class HIDKeyboard {
 			try {
 				_userCb(keys);
 			} catch (e) {
-				server.error("User code exception: " + e);
+				_error("User code exception: " + e);
 			}
 
-			if (_timerTick) {
+			if (_timerTick)
 				imp.wakeup(_timerTick, _timerCb.bindenv(this));
 			} else {
-				report.getAsync(_reportReadCb.bindenv(this));
+				getAsync(_reportReadCb.bindenv(this));
 			}
 		} else {
-			server.error("Some HID driver issue: " + error);
+			_error("Some HID driver issue: " + error);
 
 			_userCb = null;
 		}
@@ -142,14 +147,12 @@ class HIDKeyboard {
 	// Timer callback function if a hardware doesn't support "Set Idle" command
 	function _timerCb() {
 		if (null != _timerTick) {
-			report.getAsync(_reportReadCb.bindenv(this));
+			getAsync(_reportReadCb.bindenv(this));
 		}
 	}
 
-	// Constructor
-	// Parameters:
-	//			itemsToWatch - an array of HIDReport.Item
-	constructor(itemsToWatch) {
-		_keyItems = itemsToWatch;
+	// Metafunction to return class name when typeof <instance> is run
+	function _typeof() {
+		return "HIDKeyboard";
 	}
 }
