@@ -24,8 +24,8 @@
 
 // ----------------------------------------------------------------------
 
-// This is an example of HID Keyboard driver. Due to complexity of HID Report descriptor parsing
-// this driver matches only keyboards that support Boot Report Descriptor
+// This is an example of Keyboard driver.
+// This driver matches only keyboards that support Boot Report Descriptor
 // (see http://www.usb.org/developers/hidpage/HID1_11.pdf for more details)
 class KeyboardDriver extends USB.Driver {
 

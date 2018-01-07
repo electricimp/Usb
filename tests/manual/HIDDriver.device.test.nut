@@ -34,7 +34,7 @@
 // Tests
 // ---------------------------------------------------------------------
 
-@include "../../USB.HID.device.lib.nut"
+@include "USB.HID.device.lib.nut"
 
 //
 class HIDDriverTest extends ImpTestCase {
@@ -46,27 +46,62 @@ class HIDDriverTest extends ImpTestCase {
     _keyboard = null;
 
     function setUp() {
-        _host = USB.Host(HIDDriver);
+        _host = USB.Host([HIDDriver]);
 
         return "USB setup complete";
     }
 
-    // Test if is up and ready
+    // Test HIDReport.setIdleTime
     function test1() {
         return _setUpHost().then(function(driverInstance) {
 
+            foreach (report in driverInstance.getReports()) {
+                report.setIdleTime(55);
+            }
+
+        });
+    }
+
+    // Test HIDReport.request
+    function test2() {
+        return _setUpHost().then(function(driverInstance) {
+
+            foreach (report in driverInstance.getReports()) {
+                report.request();
+            }
+
+        });
+    }
+
+    // Test HIDReport.send
+    function test3() {
+        return _setUpHost().then(function(driverInstance) {
+
+            foreach (report in driverInstance.getReports()) {
+                report.send();
+            }
+
+        });
+    }
+
+    // Test if is up and ready
+    function test4() {
+        local infoFunc = this.info.bindenv(this);
+
+        return _setUpHost().then(function(driverInstance) {
+
             return Promise(function(resolve, reject) {
-                local newTimer = imp.wakeup(1000, function() {
-                    reject("getAsync() timeout");
+
+                imp.wakeup(10, function() {
+                   resolve("No reports from getAsync().  May be there was no action at device?");
                 });
 
-                data.getAsync(function(error, report) {
-
-                    imp.cancelwakeup(newTimer);
+                infoFunc("Calling HIDDriver.getAsync. Make any action with HID device");
+                driverInstance.getAsync(function(error, report) {
 
                     if (error) reject("HIDDriver.getAsync notifies error:" + error);
                     else {
-                        foreach (knownReports in data.getReports()) {
+                        foreach (knownReports in driverInstance.getReports()) {
                             if (knownReports == report) {
                                 resolve();
                                 return;
@@ -81,60 +116,24 @@ class HIDDriverTest extends ImpTestCase {
         });
     }
 
-    // Test HIDReport.setIdleTime
-    function test2() {
-        return _setUpHost().then(function(driverInstance) {
 
-            foreach (report in driverInstance.getReports()) {
-                report.setIdleTime(55);
-            }
-
-        });
-    }
-
-    // Test HIDReport.request
-    function test3() {
-        return _setUpHost().then(function(driverInstance) {
-
-            foreach (report in driverInstance.getReports()) {
-                report.request();
-            }
-
-        });
-    }
-
-    // Test HIDReport.send
-    function test4() {
-        return _setUpHost().then(function(driverInstance) {
-
-            foreach (report in driverInstance.getReports()) {
-                report.send();
-            }
-
-        });
-    }
 
     function tearDown() {
-        usb.disable();
+        hardware.usb.disable();
 
         _host = null;
     }
 
     // Setup USB.Host and wait to driver start
     function _setUpHost() {
+        local usbHost = _host;
+        local infoFunc = this.info.bindenv(this);
         return Promise(function(resolve, reject) {
 
-            // report error if no device is attached
-            local timer = imp.wakeup(1000, function() {
-                reject("No HID device is attached");
-            });
+            usbHost.setEventListener(function(event, data) {
 
-
-            _host.setEventListener(function(event, data) {
                 if (event == "started") {
                     if (typeof data == "HIDDriver") {
-
-                        imp.cancelwakeup(timer);
 
                         if (data.getReports().len() == 0) {
                             reject("Invalid reports number");
@@ -149,9 +148,7 @@ class HIDDriverTest extends ImpTestCase {
                 }
             });
 
-            _host.reset();
-
-            this.info("HIDDriver setup  complete");
+            usbHost.reset();
 
         });
 

@@ -128,6 +128,8 @@ class USB.Host {
           throw "Expected `hardware.usb` interface is not available";
         }
 
+        if (typeof driverList != "array") throw "Driver list must be array";
+
         if (null == driverList || 0 == driverList.len()) throw "Driver list must not be empty";
 
         _driverClasses = [];
@@ -655,7 +657,7 @@ class USB.Device {
         local devClass = _device["class"];
 
         foreach (driver in  drivers) {
-            local matchResult;
+            local matchResult = [];
             try {
                 if (null != (matchResult = driver.match(this, _interfaces))) {
                     if (typeof matchResult != "array") {
@@ -769,6 +771,11 @@ class USB.FunctionalEndpoint {
         } else {
             throw "Invalid endpoint direction: " + _address;
         }
+    }
+
+    // Returns maximum packet size for this endpoint
+    function getMaxPacketSize() {
+        return _maxPacketSize;
     }
 
     // Returns this endpoint address

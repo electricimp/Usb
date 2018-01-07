@@ -34,10 +34,12 @@
 // Tests
 // ---------------------------------------------------------------------
 
-@include "../../USB.HID.device.lib.nut"
-@include "../../examples/HID_Keyboard/HIDKeyboard.nut"
+@include "USB.HID.device.lib.nut"
+@include "examples/HID_Keyboard/HIDKeyboard.nut"
 
-// HIDKEyboard driver test
+// HIDKeyboard driver test
+// NOTE: The keyboard MUST support IDLE time setting, e.g. generate reports periodically
+//       Otherwise the will fail with
 class HIDKeyboardTest extends ImpTestCase {
 
     _host = null;
@@ -47,21 +49,25 @@ class HIDKeyboardTest extends ImpTestCase {
     _keyboard = null;
 
     function setUp() {
-        _host = USB.Host(HIDKeyboard);
+        _host = USB.Host([HIDKeyboard]);
 
         return "USB setup complete";
     }
 
     function test1() {
+
+        local usbHost = this._host;
+        local infoFunc = this.info.bindenv(this);
+
         return Promise(function(resolve, reject) {
 
             // report error if no device is attached
-            local timer = imp.wakeup(1000, function() {
+            local timer = imp.wakeup(1, function() {
                 reject("No keyboard is attached");
             });
 
 
-            _host.setEventListener(function(event, data) {
+            usbHost.setEventListener(function(event, data) {
                 if (event == "started") {
                     if (typeof data == "HIDKeyboard") {
 
@@ -70,14 +76,16 @@ class HIDKeyboardTest extends ImpTestCase {
                         local numberOfPoll = 0;
 
                         // read data timeout
-                        timer = imp.wakeup(300, function() {
+                        timer = imp.wakeup(3, function() {
 
                             data.stopPoll();
 
-                            if (numberOfPoll > 4) reject("Invalid HID IDLE time");
-                            if (numberOfPoll > 2) resolve();
-                            else reject("Invalid HID device poll period. Number of wakes " + numberOfPoll);
+                            if (numberOfPoll > 4) reject("Too may report events");
+                            else if (numberOfPoll > 2) resolve();
+                            else reject("Invalid HID device poll period. Is the device real keyboard?");
                         });
+
+                        infoFunc("Start keyboard polling. Press any button");
 
                         data.startPoll(100, function(keys) {
                             numberOfPoll++;
@@ -89,15 +97,13 @@ class HIDKeyboardTest extends ImpTestCase {
                 }
             });
 
-            _host.reset();
-
-            this.info("Test1 setup complete");
+            usbHost.reset();
 
         });
     }
 
     function tearDown() {
-        usb.disable();
+        hardware.usb.disable();
 
         _host = null;
     }

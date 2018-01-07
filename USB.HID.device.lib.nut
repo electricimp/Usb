@@ -162,7 +162,7 @@ class HIDReport {
        local buffer = blob(_totalOutSize);
 
        foreach (item in _outputItems) {
-            item.writeTo(buffer);
+            item._writeTo(buffer);
         }
 
         local ep0 = _interface.getDevice().getEndpointZero();
@@ -182,7 +182,7 @@ class HIDReport {
      // Trows is EP0 is closed, or something happens during call to native USB API
      function setIdleTime(time_ms) {
 
-        local timeUnit = (time_ms.toInteger() / 4) & 0xFF;
+        local timeUnit = (time_ms.tointeger() / 4) & 0xFF;
 
         local ep0 = _interface.getDevice().getEndpointZero();
 
@@ -413,7 +413,12 @@ class HIDDriver extends USB.Driver {
         _reports    = reports;
 
         _interface  = interface;
-        _epIn       = interface.find(USB_ENDPOINT_INTERRUPT, USB_SETUP_DEVICE_TO_HOST);
+        try {
+            _epIn       = interface.find(USB_ENDPOINT_INTERRUPT, USB_SETUP_DEVICE_TO_HOST);
+        } catch (e) {
+            // we may face a limitation of native API when only one Interrupt In endpoint may be opened.
+            _log("Can't open Interrupt In endpoint:" + e);
+        }
     }
 
     // Queried by USB.Host if this driver supports
@@ -462,6 +467,8 @@ class HIDDriver extends USB.Driver {
                         local newDriver = _createInstance(hidReports, interface);
 
                         drivers.append(newDriver);
+                    } else {
+                        _log("Empty Report is returned from parser");
                     }
 
                 }
@@ -497,8 +504,8 @@ class HIDDriver extends USB.Driver {
 
         if (_epIn == null) throw "No Interrupt Input Endpoint found at HID interface";
 
-        local buffer = blob(_epIn.maxpacketsize);
-        _epIn.read(buffer, _readAsyncCb.bindenv(this));
+        local buffer = blob(_epIn.getMaxPacketSize());
+        _epIn.read(buffer, _reportReadCb.bindenv(this));
 
         _userCb = cb;
     }
@@ -568,7 +575,7 @@ class HIDDriver extends USB.Driver {
 
 		if (null == _userCb) return;
 
-		if (null == error) {
+		if (null == error || error == USB_ERROR_FREE || error == USB_ERROR_IDLE) {
             local reportID = data.read('b');
 
             foreach( report in _reports) {
@@ -581,6 +588,7 @@ class HIDDriver extends USB.Driver {
 
                     _userCb = null;
                     return report;
+                }
             }
 
             // not found. possible, the driver is not interesting in this report
@@ -591,7 +599,7 @@ class HIDDriver extends USB.Driver {
             getAsync(cb);
 
 		} else {
-            _userCb(error, null);
+            _userCb("USB error: " + error, null);
 			_userCb = null;
 		}
 	}
@@ -794,29 +802,26 @@ class HIDDriver extends USB.Driver {
 
                         local ItemTypeTag = (reportItem & (HID_RI_TYPE_MASK | HID_RI_TAG_MASK));
 
+                        local destArr = currReport._featureItems;
+
                         if (ItemTypeTag == HID_RI_INPUT) {
                             newItem._bitOffset = currReport._totalInSize;
                             currReport._totalInSize += newItem.attributes.bitSize;
 
-                            if (!(reportItemData & HID_IOF_CONSTANT)) {
-                                currReport._inputItems.append(newItem);
-                            }
-                        }
-                        else if (ItemTypeTag == HID_RI_OUTPUT) {
+                            destArr = currReport._inputItems;
+
+                        } else if (ItemTypeTag == HID_RI_OUTPUT) {
                             newItem._bitOffset = currReport._totalOutSize;
                             currReport._totalOutSize += newItem.attributes.bitSize;
 
-                            if (!(reportItemData & HID_IOF_CONSTANT)) {
-                                currReport._outputItems.append(newItem);
-                            }
-                        }
-                        else {
+                            destArr = currReport._outputItems;
+                        } else {
                             newItem._bitOffset = currReport._totalFeatSize;
                             currReport._totalFeatSize += newItem.attributes.bitSize;
+                        }
 
-                            if (!(reportItemData & HID_IOF_CONSTANT)) {
-                                currReport._featureItems.append(newItem);
-                            }
+                        if (!(reportItemData & HID_IOF_CONSTANT) && _filter(newItem)) {
+                            destArr.append(newItem);
                         }
 
                     }
@@ -851,19 +856,19 @@ class HIDDriver extends USB.Driver {
         return reports;
     }
 
-    // INFO severity logger function.
-    function _log(txt) {
-        if (debug)  server.log(_typeof() + ":" + txt);
-    }
-
-    // ERROR severity logger function.
-    function _error(txt) {
-        server._error(_typeof() + ":" + txt);
-    }
-
 	// Metafunction to return class name when typeof <instance> is run
 	function _typeof() {
 		return "HIDDriver";
 	}
+
+    // INFO severity logger function.
+    function _log(txt) {
+        if (_debug)  server.log((typeof this) + ":" + txt);
+    }
+
+    // ERROR severity logger function.
+    function _error(txt) {
+        server._error((typeof this) + ":" + txt);
+    }
 }
 

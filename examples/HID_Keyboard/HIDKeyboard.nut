@@ -57,7 +57,7 @@ class HIDKeyboard extends HIDDriver {
 
 		if (_userCb != null) throw "Poll is already started";
 
-		foreach( report in _reports )
+		foreach( report in _reports ) {
 			try {
 				report.setIdleTime(time_ms);
 			} catch(e) {
@@ -132,8 +132,8 @@ class HIDKeyboard extends HIDDriver {
 				_error("User code exception: " + e);
 			}
 
-			if (_timerTick)
-				imp.wakeup(_timerTick, _timerCb.bindenv(this));
+			if (_timerTick) {
+				imp.wakeup(_timerTick / 1000.0, _timerCb.bindenv(this));
 			} else {
 				getAsync(_reportReadCb.bindenv(this));
 			}
