@@ -30,6 +30,8 @@ const USAGE_PAGE_KEYBOARD = 7;
 // Example class that reduce generic HID API to simple keyset notification.
 class HIDKeyboard extends HIDDriver {
 
+	static VERSION = "1.0.0"
+
 	_timerTick = null;
 	_userCb    = null;
 

@@ -78,11 +78,11 @@ class KeyboardDriver extends USB.Driver {
     // Parameters:
     //      callback - a function to receive the keyboard status
     //                 Its signature is following:
-    //                  callback(error, status), where
-    //                    error  - error description
+    //                  callback(status), where
     //                    status - a table with a fields named after modifiers keys and
     //                             set of Key0...Key5 fields with pressed key scancodes
     //                             Example: status = {
+    //                                          error : null,
     //                                          LEFT_CTRL  : 1,
     //                                          LEFT_SHIFT : 0,
     //                                          Key0       : 32
@@ -179,13 +179,22 @@ class KeyboardDriver extends USB.Driver {
         if (error !=  USB_ERROR_FREE && error != USB_ERROR_IDLE) {
             if (null != _asyncCb) {
                 try {
-                    _asyncCb("USB error " + error, null);
+                    local result = {"error" : "USB error " + error};
+                    _asyncCb(error);
                 } catch (e) {
-                    // oops, I did it again
+                    server.log("User code exception: " + e);
                 }
             }
         } else {
-            return _generateReport(data, len);
+            local res =  _generateReport(data, len);
+
+            try {
+                _asyncCb(res);
+            } catch (e) {
+                // oops, I did it again
+                server.log("User code exception: " + e);
+            }
+
         }
     }
 

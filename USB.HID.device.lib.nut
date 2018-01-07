@@ -124,14 +124,6 @@ class HIDReport {
 
     // ----------- Public API ---------------------
 
-    // Constructor. Receives owner of this report
-    constructor(interface) {
-        _interface      = interface;
-        _inputItems     = [];
-        _outputItems    = [];
-        _featureItems   = [];
-    }
-
     // Synchronous read of input items.
     // Returns: nothing.
     // Throws: if error happens during transfer or control endpoint is closed
@@ -207,6 +199,16 @@ class HIDReport {
      function getFeatureItems() {
         return _featureItems;
      }
+
+     // ---------------- Private Functions -------------------------
+
+    // Constructor. Receives owner of this report
+    constructor(interface) {
+        _interface      = interface;
+        _inputItems     = [];
+        _outputItems    = [];
+        _featureItems   = [];
+    }
 }
 
 
@@ -229,25 +231,16 @@ class HIDReport.Item {
     _value              = 0;
 
 
-    // Constructor.
-    // Parameters:
-    //   attr       - item attributes. Must be instance of HIDReport.Item.Attributes
-    //   flags      - a set of item HID_IOF_*  flags
-    //   path       - item collection path, instance of HIDReport.CollectionPath
-    constructor(attr, flags, path) {
-        attributes      = attr;
-        itemFlags       = flags;
-        collectionPath  = path;
-    }
-
     // Returns last item value
     function get() {
         return _value;
     }
 
     // Updates item value
+    //
+    // Throws if provided value in not a number
     function set(value) {
-        _value = value;
+        _value = value.tointeger();
     }
 
     // Debug function. Prints items to  given stream.
@@ -263,6 +256,17 @@ class HIDReport.Item {
     }
 
     // ---------------------- private API -----------------------------------
+
+    // Constructor.
+    // Parameters:
+    //   attr       - item attributes. Must be instance of HIDReport.Item.Attributes
+    //   flags      - a set of item HID_IOF_*  flags
+    //   path       - item collection path, instance of HIDReport.Collection
+    constructor(attr, flags, path) {
+        attributes      = attr;
+        itemFlags       = flags;
+        collectionPath  = path;
+    }
 
     // Extract item data from given data buffer.
     // Parameters:
@@ -322,15 +326,31 @@ class HIDReport.Item {
 
 // HID Report Item attributes storage
 class HIDReport.Item.Attributes {
+    // Maximum value that a variable or array item will report
     logicalMaximum     = null;
+
+    // Minimum  value that a variable or array item will report
     logicalMinimum     = null;
+
+    // This represents the Logical Minimum with units applied to it
     physicalMaximum    = null;
+
+    // This represents the Logical Minimum with units applied to it
     physicalMinimum    = null;
+
+    // Value of the unit exponent
     unitExponent       = null;
+
+    // Item unit
     unitType           = null;
+
+    // The item Usage Page
     usagePage          = null;
+
+    // The item usage ID
     usageUsage         = null;
 
+    // A number of bits this item occupies in the report
     bitSize            = 0;
 
     // Debug function. Prints attributes to given stream.
@@ -353,7 +373,7 @@ class HIDReport.Item.Attributes {
 }
 
 // HID Report Collection Path class
-class HIDReport.CollectionPath {
+class HIDReport.Collection {
 
     // Parent unit in path chain,
     parent      = null;
@@ -362,27 +382,29 @@ class HIDReport.CollectionPath {
     usagePage   = null;
     usageUsage  = null;
 
-    // Constructor.
-    // Parameters:
-    //      paranet - previous item in path chain.
-    constructor(parent) {
-        this.parent = parent;
-    }
-
     // Debug function. Prints collection path  to given stream.
     //
     // Parameters:
     //          stream - function that prints this item to some output stream.
     function print(stream) {
-        stream("HIDReport.CollectionPath: ");
+        stream("HIDReport.Collection: ");
         stream("                    type: " + type);
         stream("               usagePage: " + usagePage);
         stream("              usageUsage: " + usageUsage);
-        stream("====== END OF HIDReport.CollectionPath =========");
+        stream("====== END OF HIDReport.Collection =========");
 
         if (null != parent) {
             parent.print(stream);
         }
+    }
+
+    // ------------- Private Functions ---------------
+
+    // Constructor.
+    // Parameters:
+    //      parent - previous item in path chain.
+    constructor(parent) {
+        this.parent = parent;
     }
 }
 
@@ -406,23 +428,6 @@ class HIDDriver extends USB.Driver {
 
     // User callback for async read
     _userCb     = null;
-
-    // Constructor.
-    // Parameters:
-    //      ep                  - instance of USB.ControlEndpoint for Endpoint 0
-    //      reports             - an array of HIDReport instances
-    //      interface           - USB device interface this driver assigned to.
-    constructor(reports, interface) {
-        _reports    = reports;
-
-        _interface  = interface;
-        try {
-            _epIn       = interface.find(USB_ENDPOINT_INTERRUPT, USB_SETUP_DEVICE_TO_HOST);
-        } catch (e) {
-            // we may face a limitation of native API when only one Interrupt In endpoint may be opened.
-            _log("Can't open Interrupt In endpoint:" + e);
-        }
-    }
 
     // Queried by USB.Host if this driver supports
     // given interface function of the device.
@@ -514,6 +519,23 @@ class HIDDriver extends USB.Driver {
     }
 
     // --------------------------- private functions ---------------
+
+    // Constructor.
+    // Parameters:
+    //      ep                  - instance of USB.ControlEndpoint for Endpoint 0
+    //      reports             - an array of HIDReport instances
+    //      interface           - USB device interface this driver assigned to.
+    constructor(reports, interface) {
+        _reports    = reports;
+
+        _interface  = interface;
+        try {
+            _epIn       = interface.find(USB_ENDPOINT_INTERRUPT, USB_SETUP_DEVICE_TO_HOST);
+        } catch (e) {
+            // we may face a limitation of native API when only one Interrupt In endpoint may be opened.
+            _log("Can't open Interrupt In endpoint:" + e);
+        }
+    }
 
     // Try to get HID Report Descriptor of the given interface with "Get Report" command.
     //
@@ -765,7 +787,7 @@ class HIDDriver extends USB.Driver {
                     break;
 
                 case HID_RI_COLLECTION:
-                    currCollectionPath = HIDReport.CollectionPath(currCollectionPath);
+                    currCollectionPath = HIDReport.Collection(currCollectionPath);
 
                     currCollectionPath.type      = reportItemData;
                     currCollectionPath.usagePage = currStateTable.attributes.usagePage;

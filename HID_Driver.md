@@ -51,6 +51,38 @@ Interpretation of item value according to value data description (see [HIDReport
 
 ### Complete example
 
+```squirrel
+
+hidDrv < - null;
+
+function hidEventListener(error, report) {
+    server.log("HID event");
+
+    // Do with report here
+
+    // Start new read
+    hidDriver.getAsync(hidEventListener);
+}
+
+function usbEventListener(event, data) {
+    if (event == "started") {
+        local hidDrv = data;
+
+        hidDriver.getAsync(hidEventListener);
+    }
+}
+
+host <- USB.Host([HIDDriver]);
+
+host.setEventListener(usbEventListener);
+
+server.log("USB initialization complete");
+
+```
+
+### An application of this driver
+
+[HIDKeyboard](examples/HID_Keyboard) is an example of this driver application. It converts this driver API to simple single function API.
 
 ### Known limitation
 
@@ -103,6 +135,10 @@ Returns an array of [HIDReport](#hidreport-class) instances
 
 Performs read through Interrupt In Endpoint. The result depends on how many Input Reports are available at associated interface. In case of multiple Input Reports, the result depends on duplicate report generation rate (can be changed by [setIdleTime](#setidletimetime_ms)). See section __7.2.4__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf) for more details.
 
+May throw an exception if there is ongoing read from related endpoint, or input endpoint is closed, or something happens during call to native USB API, or interface descriptor doesn't describe input endpoint, or input endpoint was not open due to limit of native [USB API](https://electricimp.com/docs/api/hardware/usb/)
+
+If endpoint was not open due to reached limit of open Interrupt Endpoints, the developer may use synchronous version provided by [HIDReport](#request) class.
+
 ###### Callback function signature
 
 The must accept the following parameters.
@@ -114,43 +150,90 @@ The must accept the following parameters.
 
 #### HIDReport class
 
-##### constructor(interface)
+This class represents HID Report - a data packet that can be transferred from/to the device.
 
 ##### request()
 
+Obtains HID state from device through Endpoint 0. No result is returned but it may throws if error happens during transfer or control endpoint is closed
+
 ##### send()
+
+Synchronous send of output items. The items value need to be updated prior to call. Throws if endpoint is closed or something happens during call to native USB API
 
 ##### setIdleTime(time_ms)
 
+Issue "Set Idle" command for the associated interface.  Returns nothing but may trow if  EP0 is closed, or something happens during call to native USB API.
+
+The function accepts following parameters:
+
+| Parameters name | Type | Description |
+| --------------- | ---- | ----------- |
+| *time_ms* | Integer | IDLE time (in milliseconds) for this report between 4 - 1020 ms |
+
+See more at section __7.2.4__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf).
+
 ##### getInputItems()
+
+Returns an array of input items or null if no items was found at the report descriptor.
 
 ##### getOutputItems()
 
+Returns an array of output items or null if no items was found at the report descriptor.
+
 ##### getFeatureItems()
+
+Returns an array of feature items or null if no items was found at the report descriptor.
+
 
 #### HIDReport.Item class
 
+This represent single report item at report packet. It is just container for a number of attributes.
+
+| Class field | Type | Description |
+| ----------- | ---- | ----------- |
+| *attributes* | [HIDReport.Item.Attributes](#hidreportitemattributes-class) | Defines item tags |
+| *itemFlags*  | Bitfield/Integer | Defines item value attributes. [HID Constants](#hid-constants) may be used for tag interpretation |
+| *collectionPath* | [HIDReport.Collection](#hidreportcollectionpath) | Defines the collection this item is part of |
+
 ##### print(stream)
+
+#### get()
+
+Returns last item value.
+
+#### set(value)
+
+Updates item value with provided data. The parameter should be convertible to Integer with `tointeger()` function.
 
 
 #### HIDReport.Item.Attributes class
 
-##### Class fields
-    logicalMaximum     = null;
-    logicalMinimum     = null;
-    physicalMaximum    = null;
-    physicalMinimum    = null;
-    unitExponent       = null;
-    unitType           = null;
-    usagePage          = null;
-    usageUsage         = null;
+This class is container for item tags.
 
-    bitSize            = 0;
+| Class field | Type | Description |
+| ----------- | ---- | ----------- |
+| *logicalMaximum* | Integer | Maximum value that a variable or array item will report |
+| *logicalMinimum* | Integer | Minimum value that a variable or array item will report|
+| *physicalMaximum* | Integer | This represents the Logical Maximum  with units applied to it |
+| *physicalMinimum* | Integer | This represents the Logical Minimum with units applied to it |
+| *unitExponent* | Integer | Value of the unit exponent |
+| *unitType* | Integer | Item unit |
+| *usagePage* | Integer | The item Usage Page |
+| *usageUsage* | Integer | The item usage ID|
+| *bitSize* | Integer | A number of bits this item occupies in the report|
+
 ##### print(stream)
 
+Debug function. Prints items with provided function `stream`.
 
-#### HIDReport.CollectionPath
+#### HIDReport.Collection
+
+This class is used to create items collection hierarchy. Collection Path constructs as chain of Collection.
 
 ##### constructor(parent)
 
+New collection is always created as part of collection path and thus should receive previous chain element. Or `null` if this first element.
+
 ##### print(stream)
+
+Debug function. Prints items with provided function `stream`.
