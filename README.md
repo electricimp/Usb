@@ -17,6 +17,16 @@ It is important for an application developer to read driver API first (for each 
 
 USB Driver Framework make it possible to cooperate multiple drivers in a single application it means that application developer could simply include custom driver library without investigation of it's internals therefore. And driver developer should implement `match()` method very carefully to avoid matching to a wrong device see [multiple drivers support](./ApplicationDevelopmentGuide.md#multiple-drivers-support) Application Development Guide and [match() method](./DriverDevelopmentGuide.md#matchdeviceobject-interfaces) of the Driver Development Guide.
 
+
+## Driver examples
+
+Either application or driver developer may be interesting in examples of concrete device drivers. The framework includes a set of such drivers:
+- [Generic HID device](./HID_Driver.md/)
+- [QL720NW printer](./examples/QL720NW_UART_USB_Driver/)
+- [FTDI usb-to-uart converter](./examples/FT232RL_FTDI_USB_Driver/)
+- [Keyboard with HID protocol](./examples/HID_Keyboard/)
+- [Keyboard with boot protocol](./examples/Keyboard/)
+
 # License
 
 This library is licensed under the [MIT License](/LICENSE).

@@ -21,11 +21,11 @@ class MyUsbDriver extends USB.Driver {
 
 ### Driver probing procedure
 
-To get information whether the driver can deal with attached device, USB framework probes every registered device with [match](#matchdeviceobject-interfaces) function where  [USB.Device](#usbdevice-class) instance (attached device peer) and device exposed [interfaces](#interface-descriptor) are provided. If the driver can work with this device and the interfaces, it should return new instance of the driver class. After that USB framework keep on probing of other drivers if there is any in the list.
+To get information whether the driver can deal with attached device, USB framework probes every registered device with [match](#matchdeviceobject-interfaces) function where  [USB.Device](#usbdevice-class) instance (attached device peer) and device exposed [interfaces](#interface-descriptor) are provided. If the driver can work with this device and the interfaces, it should return new instance of the driver class. Or an array of instances if the driver decides to work with each interface individually. After that USB framework keep on probing of other drivers if there is any in the list.
 
-#### Composite device drivers
+#### Single interface access from different drivers
 
-From the USB framework point of view attached USB device consists of set of functional interfaces, and each interface `may` have individually assigned driver. USB specification distinguishes composite type device ( where every interface acts individually) and regular devices (where interfaces are only parts of the device function). In case of composite device USB framework split up device interfaces according to [Interface Association Descriptor](http://www.usb.org/developers/docs/InterfaceAssociationDescriptor_ecn.pdf) (or individually if no IAD is provided) and try to find driver for every interface (or group of interfaces).  Thus there is possible situation when a single driver is probed and instantiated several times for the same device.
+The framework doesn't limit the drivers from access to every interface resources the driver receives through [match](#matchdeviceobject-interfaces) function. It is up to driver author to create it safe way and to address situation when several drivers may want to change device state in parallel. An example of such collision is an exception that may be thrown by [USB.FunctionalEndpoint.read()](#readdata-oncomplete) if second driver call it while previous session is not finished.
 
 ### Getting access to device exposed interfaces
 
@@ -58,10 +58,15 @@ To simplify new driver code every interface descriptor comes with `find` functio
         _bulkIn = interface.find(USB_ENDPOINT_BULK, USB_DIRECTION_IN);
     }
 ```
+#### Native USB API limitation
+
+Due to limits applied by native [USB API](https://electricimp.com/docs/api/hardware/usb/) endpoints `get()` function may result in exception when a number of open endpoint exceeds some limits, e.g. there can be only one open interrupt in endpoint.
 
 ### Driver release procedure
 
 When device resources required for the driver functionality were gone, USB framework call drivers [release](#release) function to give it a change to shutdown gracefully and release any resources were allocated during its lifetime.
+
+Please note that all the framework resources should be considered as closed and `MUST NOT` be used from [release](#release) function.
 
 
 ### Example
@@ -125,7 +130,7 @@ If you have more then one USB port on development board then you should create U
 
 #### USB.Host(drivers, [, autoConfigPins]*)
 
-Instantiates the USB.Host class. USB.Host is an abstraction for USB port. It should be instantiated only once for any application.
+Instantiates the USB.Host class. USB.Host is an abstraction for USB port. It should be instantiated only once per physical port for any application.
 
 There are some imp boards which does not have usb port, therefore exception will be thrown in that case.
 
@@ -150,9 +155,7 @@ usbHost <- USB.Host([MyCustomDriver1, MyCustomDriver2]);
 
 Assign listener for runtime device and driver events. User could plug an unplug device in runtime and application should get the corresponding events.
 
-For the device which was attached before the `USB.Host` instantiation all events will be triggered on this listener registration call.
-
-Callback could provide driver related events if some driver match to the device only otherwise an application will get device related events only [see](https://github.com/nobitlost/Usb/tree/CSE-433/#callbackeventtype-eventobject)
+Callback could provide driver related events if some driver match to the device only otherwise an application will get device related events only [see](#callbackeventtype-eventobject)
 
 | Parameter   | Data Type | Required | Description |
 | ----------- | --------- | -------- | ----------- |
@@ -173,7 +176,7 @@ The following event types are supported:
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
 | *eventType*  | String  |  Name of the event `"connected"`, `"disconnected"`, `"started"`, `"stopped"` |
-| *object* | USB.Device or USB.Driver |  In case of `"connected"`/`"disconnected"` event - USB.Device instance. In case of `"started"`/`"stopped"` event USB.Driver instance. |
+| *object* | USB.Device or USB.Driver |  In case of `"connected"`/`"disconnected"` event is USB.Device instance. In case of `"started"`/`"stopped"` event is USB.Driver instance. |
 
 ##### Example (subscribe)
 
@@ -248,7 +251,7 @@ Returns the device product ID. Throws exception if the device is detached.
 #### getAssignedDrivers()
 
 Returns an array of drivers for the attached device. Throws exception if the device is detached.
-Each device USB device could provide the number of interfaces which could be supported by a single driver or by the number of different drives (For example keyboard with touch pad could have keyboard driver and a separate touch pad driver).
+Each USB device could provide the number of interfaces which could be supported by a single driver or by the number of different drives (For example keyboard with touch pad could have keyboard driver and a separate touch pad driver).
 
 #### getEndpointZero()
 
@@ -276,7 +279,6 @@ device
 #### transfer(reqType, type, value, index, data = null)
 
 Generic method for transferring data over control endpoint.
-**Note:** Only vendor specific requests are allowed for now. For other control operation use USB.Device or USB.ControlEndpoint public API
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
@@ -335,6 +337,8 @@ class MyCustomDriver imptements USB.Driver {
 } // class
 ```
 
+**NOTE** Not all error codes indicate actual error status. However the USB framework doesn't filter out such error code to provide full information for device driver. See more information [here](https://electricimp.com/docs/resources/usberrors/).
+
 #### read(data, onComplete)
 
 Asynchronously reads data through the endpoint. Throws exception if the endpoint is closed, or has incompatible type, or already busy.
@@ -376,6 +380,9 @@ class MyCustomDriver imptements USB.Driver {
 } // class
 ```
 
+**NOTE** Not all error codes indicate actual error status. However the USB framework doesn't filter out such error code to provide full information for device driver. See more information [here](https://electricimp.com/docs/resources/usberrors/).
+
+
 #### getAddress()
 
 Returns the endpoint address. Typical use case for this function is to get endpoint ID for some of device control operation performed over Endpoint 0.
@@ -387,14 +394,14 @@ This class is the base for all drivers that are developed for USB Drivers Framew
 
 ### match(*deviceObject, interfaces*)
 
-Checks if the driver can support all the specified interfaces for the specified device. Returns the driver object (if it can support) or *null* (if it can not support).
+Checks if the driver can support all the specified interfaces for the specified device. Returns the driver object (if it can support), array of driver objects (if few interfaces are supported by this driver) or *null* (if it can not support).
 
-The method may be called many times by USB Drivers Framework. The method's implementation can be based on VID, PID, device class, subclass and interfaces.
+The method's implementation can be based on VID, PID, device class, subclass and interfaces.
 
 | Parameter 	 | Data Type | Required/Default | Description |
 | -------------- | --------- | ------- | ----------- |
 | *deviceObject* 		 | USB.Device 	 | required  | an instance of the USB.Device for the attached device |
-| *interfaces*      | Array of tables | required  | An array of tables which describe [interfaces](#Interface-descriptor) for the attached device |
+| *interfaces*      | Array of tables | required  | An array of tables which describe [interfaces](d#interface-descriptor) for the attached device |
 
 ### release()
 
@@ -447,7 +454,7 @@ Device descriptor contains whole device specification in addition to [Vendor ID]
 
 | Descriptor key | Type | Description |
 | -------------- | ---- | ----------- |
-| usb | Integer | The USB specification to which the device conforms. \n It is a binary coded decimal value. For example, 0x0110 is USB 1.1 |
+| usb | Integer | The USB specification to which the device conforms. <br /> It is a binary coded decimal value. For example, 0x0110 is USB 1.1 |
 | class | Integer | The USB class assigned by [USB-IF](http://www.usb.org). If 0x00, each interface specifies its own class. If 0xFF, the class is vendor specific. |
 | subclass | Integer | The USB subclass (assigned by the [USB-IF](http://www.usb.org)) |
 | protocol | Integer | The USB protocol (assigned by the [USB-IF](http://www.usb.org)) |
@@ -457,7 +464,7 @@ Device descriptor contains whole device specification in addition to [Vendor ID]
 | manufacturer | Integer | Index to string descriptor containing the manufacturer string |
 | product | Integer | Index to string descriptor containing the product string |
 | serial |Integer | Index to string descriptor containing the serial number string |
-| numofconfigurations |Integer	The number of possible configurations |
+| numofconfigurations |Integer | The number of possible configurations |
 
 
 #### Interface descriptor
@@ -475,6 +482,18 @@ As it is described at driver selection section [match function](#matchdeviceobje
 | endpoints | Array of table |The endpoint [descriptors](#endpoint-descriptor) |
 | find | function | Auxiliary function to search endpoint with required attributes |
 
+##### find function signature
+
+Interface descriptors `find` function signature is following:
+
+| Parameter | Type | Accepted values |
+| ------------- | ---- | ----------- |
+| Endpoint type | Integer | USB_ENDPOINT_CONTROL, USB_ENDPOINT_BULK, USB_ENDPOINT_INTERRUPT |
+| Endpoint direction | Integer | USB_DIRECTION_IN, USB_DIRECTION_OUT |
+
+This function returns an instance of either [ControlEndpoint](#usbcontrolendpoint-class) or [FunctionalEndpoint](#usbfunctionalendpoint-class) or null if no endpoints were found.
+
+
 #### Endpoint descriptor
 
 Each endpoints table contains the following keys:
@@ -491,5 +510,8 @@ Each endpoints table contains the following keys:
 
 # USB Driver Examples
 
-- [UartOverUsbDriver](./examples/QL720NW_UART_USB_Driver/)
-- [FtdiUsbDriver](./examples/FT232RL_FTDI_USB_Driver/)
+- [Generic HID device](./HID_Driver.md/)
+- [QL720NW printer](./examples/QL720NW_UART_USB_Driver/)
+- [FTDI usb-to-uart converter](./examples/FT232RL_FTDI_USB_Driver/)
+- [Keyboard with HID protocol](./examples/HID_Keyboard/)
+- [Keyboard with boot protocol](./examples/Keyboard/)
