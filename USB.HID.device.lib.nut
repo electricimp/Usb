@@ -389,6 +389,9 @@ class HIDReport.CollectionPath {
 // Generic driver for HID devices.
 class HIDDriver extends USB.Driver {
 
+    // Implementation version
+    static VERSION = "1.0.0";
+
     // A set of reports supported by this drivers
     _reports    = null;
 
