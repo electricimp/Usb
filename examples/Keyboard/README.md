@@ -71,11 +71,13 @@ This driver exposes following function for application usage.
 Function sends read request through Interrupt In endpoint, that gets data and notifies the caller asynchronously.
 
 The function signature is following:
+
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
 | *callback* | Function | A function to receive the keyboard status |
 
 The signature of callback function is following:
+
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
 | *error*   | Any | error description if any |
@@ -85,13 +87,14 @@ The signature of callback function is following:
 
 Function read keyboard report  through control endpoint 0 and thus synchronously.
 
-It returns keyboard status [table](#table) or throws if an error happens during transfer
+It returns keyboard status [table](#keyboard-status-table) or throws if an error happens during transfer
 
 #### setLeds(leds)
 
 Changes Keyboard LED status. It returns error description (if any) or NULL.
 
 The function signature is following:
+
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
 | *leds* | Integer/Bitfield | 8-bit field:</br>bit 0 - NUM LOCK</br>bit 1 - CAPS LOCK</br>bit 2 - SCROLL LOCK</br>bit 3 - COMPOSE</br>bit 4 - KANA |
@@ -99,7 +102,7 @@ The function signature is following:
 
 #### Keyboard status table
 
-Both [getKeyStatusAsync]() and [getKeyStatus]() notifies about keyboard state with special table. The table format is following
+Both [getKeyStatusAsync](#getkeystatusasynccallback) and [getKeyStatus](#getkeystatus) notifies about keyboard state with special table. The table format is following
 
 | Field | Type | Description |
 | --------- | ---- | ----------- |

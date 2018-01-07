@@ -70,7 +70,8 @@ Starts keyboard polling with provided frequency. The function returns nothing bu
 | *time_ms* | Integer| Poll time in a range of [4 .. 1020] ms |
 | *cb* | Function |user callback function that receive keyboard state |
 
-The signature of callback function is following:
+The signature of callback *callback(keyset)*:
+
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
 | *keyset* | Array of Integers | An array of pressed keys |
