@@ -17,9 +17,25 @@ In the example below HID driver is included into an application:
 #require "USB.HID.device.lib.nut:1.0.0"
 ```
 
+### Basic concepts
 
+The HID group consists of device that are used by humans to interact with computer systems. Typical examples of HID class devices include:
+- Keyboards and pointing devices (mouse, trackballs, joysticks).
+- Bar-code readers, thermometers, voltmeters
+- LCD, LED indicator
+- Speakers
+
+To covers wide range of possible devices HID specification states that every device must describe its functionality in special form known for remote host and named as `descriptors`.  The HID driver may request those descriptors to get information about device identification and protocol required to speak with the device.
+
+The main protocol unit, used to control HID, is `HID report`. HID report consists of a set of `items` -  an elementary peace of data that describes state of single part or group of parts of the device.
+
+Every `item` is described by a set of attributes. Some of them are describing `item` function, another one is for item data interpretation.
+
+To select necessary `item` application developer consults with [HID usage table](http://www.usb.org/developers/hidpage/Hut1_12v2.pdf) where to chose required attributes. For example, `USAGE_PAGE_KEYBOARD` indicates that the `item` may contain pressed key number, or may be used to control keyboard LED indicator. Than chosen `usage page` and `usage ID` are used to find required HID report `item`.
 
 ### Known limitation
+
+The driver issues special command `"Get Descriptor"` to acquire HID report descriptor. Some devices doesn't support this command, so the driver doesn't match such devices. Workaround for this case is a subject for future release.
 
 ### Public API
 
