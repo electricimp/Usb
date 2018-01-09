@@ -127,7 +127,7 @@ class HIDKeyboard extends HIDDriver {
 			local keys = [];
 			foreach( item in report.getInputItems()) {
 				local val = item.get();
-				if (null != val) keys.append(val);
+				if (0 != val) keys.append(val);
 			}
 
 			try {
