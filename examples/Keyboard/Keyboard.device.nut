@@ -94,7 +94,8 @@ class KeyboardDriver extends USB.Driver {
             _inEp.read(blob, _receiveCallback.bindenv(this));
             _asyncCb = callback;
         } catch (e) {
-            callback(e, null, 0);
+            local st = {"error" : e};
+            callback(st);
         }
     }
 

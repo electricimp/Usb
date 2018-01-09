@@ -139,10 +139,7 @@ class HIDReport {
                     _interface.interfacenumber,
                     buffer);
 
-        foreach (item in _inputItems) {
-            item._parse(buffer);
-        }
-
+        _parseInputData(buffer);
     }
 
     // Synchronous send of output items.
@@ -209,6 +206,13 @@ class HIDReport {
         _outputItems    = [];
         _featureItems   = [];
     }
+
+    // Update input items with data stored at provided buffer
+    function _parseInputData(buffer) {
+        foreach (item in _inputItems) {
+            item._parse(buffer);
+        }
+    }
 }
 
 
@@ -250,6 +254,7 @@ class HIDReport.Item {
     function print(stream) {
         stream("HIDReport.Item: ");
         stream("     itemFlags: " + itemFlags);
+        stream("     bitOffset: " + _bitOffset);
         attributes.print(stream);
         collectionPath.print(stream);
         stream("====== END OF HIDReport.Item =========");
@@ -277,6 +282,8 @@ class HIDReport.Item {
         local offset   = _bitOffset;
         local bitMask  = (1 << 0);
 
+        _value = 0;
+
         buffer.seek(offset / 8, 'b');
 
         local data = buffer.readn('b');
@@ -288,7 +295,7 @@ class HIDReport.Item {
             offset++;
             bitMask = bitMask << 1;
 
-            if ( 0 == (offset % 8)) {
+            if ( 0 == (offset % 8) && size > 0) {
                 data = buffer.readn('b');
             }
         }
@@ -602,10 +609,17 @@ class HIDDriver extends USB.Driver {
 
 
 		if (null == error || error == USB_ERROR_FREE || error == USB_ERROR_IDLE) {
+            data.seek(0, 'b');
             local reportID = data.readn('b');
 
             foreach( report in _reports) {
                 if (report._reportID == reportID) {
+                    try {
+                        report._parseInputData(data);
+                    } catch (e) {
+                        cb("Report data parsing error: " + e, null);
+                        return;
+                    }
                     try {
                         cb(null, report);
                     } catch(e) {
