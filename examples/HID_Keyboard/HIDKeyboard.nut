@@ -33,7 +33,7 @@ class HIDKeyboard extends HIDDriver {
 	static VERSION = "1.0.0"
 
 	_timerTick = null;
-	_userCb    = null;
+	_getAsyncUserCb    = null;
 
 	// ------- Public API ---------------------------------------
 
@@ -57,11 +57,13 @@ class HIDKeyboard extends HIDDriver {
 
 		if (null == cb) return;
 
-		if (_userCb != null) throw "Poll is already started";
+		if (_getAsyncUserCb != null) throw "Poll is already started";
 
 		foreach( report in _reports ) {
 			try {
 				report.setIdleTime(time_ms);
+
+				_log("Idle time set to " + time_ms);
 			} catch(e) {
 				if (e == USB_ERROR_STALL) {
 					_log("Set IDLE is not supported by device. Using poll timer");
@@ -73,15 +75,15 @@ class HIDKeyboard extends HIDDriver {
 
 		}
 
-		getAsync(_reportReadCb.bindenv(this));
+		getAsync(_getAsyncCb.bindenv(this));
 
-		_userCb = cb;
+		_getAsyncUserCb = cb;
 	}
 
 	// Stops keyboard polling.
 	function stopPoll() {
 		_timerTick  = null;
-		_userCb		= null;
+		_getAsyncUserCb		= null;
 	}
 
     // Notify that driver is going to be released
@@ -117,9 +119,9 @@ class HIDKeyboard extends HIDDriver {
 	// Parameters:
 	//			error  -  possibly error or null
 	//			report -  HIDReport instance that calls this function if no error was observed.
-	function _reportReadCb(error, report) {
+	function _getAsyncCb(error, report) {
 
-		if (null == _userCb) return;
+		if (null == _getAsyncUserCb) return;
 
 		if (null == error) {
 			local keys = [];
@@ -129,7 +131,7 @@ class HIDKeyboard extends HIDDriver {
 			}
 
 			try {
-				_userCb(keys);
+				_getAsyncUserCb(keys);
 			} catch (e) {
 				_error("User code exception: " + e);
 			}
@@ -137,19 +139,19 @@ class HIDKeyboard extends HIDDriver {
 			if (_timerTick) {
 				imp.wakeup(_timerTick / 1000.0, _timerCb.bindenv(this));
 			} else {
-				getAsync(_reportReadCb.bindenv(this));
+				getAsync(_getAsyncCb.bindenv(this));
 			}
 		} else {
 			_error("Some HID driver issue: " + error);
 
-			_userCb = null;
+			_getAsyncUserCb = null;
 		}
 	}
 
 	// Timer callback function if a hardware doesn't support "Set Idle" command
 	function _timerCb() {
 		if (null != _timerTick) {
-			getAsync(_reportReadCb.bindenv(this));
+			getAsync(_getAsyncCb.bindenv(this));
 		}
 	}
 

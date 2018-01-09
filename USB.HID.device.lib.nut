@@ -423,11 +423,8 @@ class HIDDriver extends USB.Driver {
     // USB interface descriptor this driver assigned to.
     _interface  = null;
 
-    // Logger debug flag
-    _debug      = true;
-
     // User callback for async read
-    _userCb     = null;
+    _epReadUserCb     = null;
 
     // Queried by USB.Host if this driver supports
     // given interface function of the device.
@@ -501,21 +498,21 @@ class HIDDriver extends USB.Driver {
     // Parameters:
     //      cb  - a callback to receive notification. Its signature is following:
     //              function callback(_error, report), where
-    //                  _error  - _error message or null
+    //                  error  - error message or null
     //                  report - HIDReport instance
     //
     // Throws: if there is ongoing read from related endpoint, or endpoint is closed,
     //          or something happens during call to native USB API,
     //          or interface descriptor doesn't describe input endpoint
     function getAsync(cb) {
-        if (_userCb != null) throw "Ongoing HID report read";
+        if (_epReadUserCb != null) throw "Ongoing HID report read";
 
         if (_epIn == null) throw "No Interrupt Input Endpoint found at HID interface";
 
         local buffer = blob(_epIn.getMaxPacketSize());
-        _epIn.read(buffer, _reportReadCb.bindenv(this));
+        _epIn.read(buffer, _epReadCb.bindenv(this));
 
-        _userCb = cb;
+        _epReadUserCb = cb;
     }
 
     // --------------------------- private functions ---------------
@@ -596,36 +593,40 @@ class HIDDriver extends USB.Driver {
     //			ep     -  source endpoint
     //          data   -  blob with data
     //          len    - read data len
-	function _reportReadCb(error, ep, data, len) {
+	function _epReadCb(ep, error, data, len) {
 
-		if (null == _userCb) return;
+		if (null == _epReadUserCb) return;
+
+        local cb = _epReadUserCb;
+        _epReadUserCb = null; // prevent exception
+
 
 		if (null == error || error == USB_ERROR_FREE || error == USB_ERROR_IDLE) {
-            local reportID = data.read('b');
+            local reportID = data.readn('b');
 
             foreach( report in _reports) {
                 if (report._reportID == reportID) {
                     try {
-                        _userCb(null, report);
+                        cb(null, report);
                     } catch(e) {
                         _log("User code exception:" + e);
                     }
 
-                    _userCb = null;
-                    return report;
+                    return;
                 }
             }
 
             // not found. possible, the driver is not interesting in this report
             // try to read next one
             _log("Report " + reportID + " was read, but not found in watch list. Trying to read next one.");
-            local cb = _userCb;
-            _userCb = null; // prevent exception
             getAsync(cb);
 
 		} else {
-            _userCb("USB error: " + error, null);
-			_userCb = null;
+            try {
+                cb("USB error: " + error, null);
+            } catch (e) {
+                _log("User code exception:" + e);
+            }
 		}
 	}
 
@@ -885,15 +886,5 @@ class HIDDriver extends USB.Driver {
 	function _typeof() {
 		return "HIDDriver";
 	}
-
-    // INFO severity logger function.
-    function _log(txt) {
-        if (_debug)  server.log((typeof this) + ":" + txt);
-    }
-
-    // ERROR severity logger function.
-    function _error(txt) {
-        server._error((typeof this) + ":" + txt);
-    }
 }
 

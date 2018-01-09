@@ -84,6 +84,24 @@ class USB {
         const USB_ERROR_TIMEOUT = 19;
 
     }
+
+    // Auxiliary class for logging
+    Logger = class {
+        // Debug flag
+        _debug = true;
+
+        // Information level logger
+        function _log(txt) {
+            if (_debug) {
+                server.log("[" + (typeof this) + "]:" + txt);
+            }
+        }
+
+        // Error level logger
+        function _error(txt) {
+            server.error("[" + (typeof this) + "]:" + txt);
+        }
+    }
 }
 
 
@@ -91,7 +109,7 @@ class USB {
 // The main interface to start working with USB devices.
 // Here an application registers drivers and assigns listeners
 // for important events like device connection/detachment.
-class USB.Host {
+class USB.Host extends USB.Logger {
 
     // The list of registered driver classes
     _driverClasses = null;
@@ -101,9 +119,6 @@ class USB.Host {
 
     // The address available to assign to next device
     _address = 1;
-
-    // Debug flag
-    _debug = true; //false;
 
     // USB device pointer
     _usb = null;
@@ -347,16 +362,9 @@ class USB.Host {
         imp.wakeup(0, reset.bindenv(this));
     }
 
-    // Information level logger
-    function _log(txt) {
-        if (_debug) {
-            server.log("[Usb.Host] " + txt);
-        }
-    }
-
-    // Error level logger
-    function _error(txt) {
-        server.error("[Usb.Host] " + txt);
+    // Metafunction to return class name when typeof <instance> is run
+    function _typeof() {
+        return "USB.Host";
     }
 };
 
@@ -365,7 +373,7 @@ class USB.Host {
 // It manages its configuration, interfaces and endpoints.
 // An application does not need such object normally.
 // It is usually used by drivers to acquire required endpoints
-class USB.Device {
+class USB.Device extends USB.Logger {
 
     // Assigned device address
     _address = 0;
@@ -391,9 +399,6 @@ class USB.Device {
 
     // USB interface
     _usb = null;
-
-    // debug flag
-    _debug = true;
 
     // Listener callback of USB events
     _listener = null;
@@ -701,23 +706,16 @@ class USB.Device {
         }
     }
 
-    // Information level logger
-    function _log(txt) {
-        if (_debug) {
-            server.log("[Usb.Device] " + txt);
-        }
-    }
-
-    // Error level logger
-    function _error(txt) {
-        server.error("[Usb.Device] " + txt);
+    // Metafunction to return class name when typeof <instance> is run
+    function _typeof() {
+        return "USB.Device";
     }
 }
 
 
 // The class that represent all non-control endpoints, e.g. bulk, interrupt etc
 // This class is managed by USB.Device and should be acquired through USB.Device instance
-class USB.FunctionalEndpoint {
+class USB.FunctionalEndpoint extends USB.Logger {
     // Owner
     _device = null;
 
@@ -832,7 +830,7 @@ class USB.FunctionalEndpoint {
             try {
                 if (onComplete != null) onComplete(this, error, data, length);
             } catch (e) {
-                _device._error(e);
+                _log("User code exception: " + e);
             }
         };
 
@@ -854,7 +852,7 @@ class USB.FunctionalEndpoint {
         }
 
         if (null == _transferCb) {
-            _device.error("Unexpected transfer event: there is no listener for it");
+            _error("Unexpected transfer event: there is no listener for it");
             return;
         }
 
@@ -871,12 +869,17 @@ class USB.FunctionalEndpoint {
         _timer = null;
         _onTransferComplete(USB_ERROR_TIMEOUT, 0);
     }
+
+    // Metafunction to return class name when typeof <instance> is run
+    function _typeof() {
+        return "USB.FunctionalEndpoint";
+    }
 }
 
 // Represent control endpoints.
 // This class is required due to specific EI usb API
 // This class is managed by USB.Device and should be acquired through USB.Device instance
-class USB.ControlEndpoint {
+class USB.ControlEndpoint extends USB.Logger {
 
     // to keep consistency with functional endpoint
     static _type = USB_ENDPOINT_CONTROL;
@@ -968,12 +971,17 @@ class USB.ControlEndpoint {
             data
         );
     }
+
+    // Metafunction to return class name when typeof <instance> is run
+    function _typeof() {
+        return "USB.ControlEndpoint";
+    }
 }
 
 // Interface class for all drivers.
 // Driver developer is not required to subclass it though.
 // No class hierarchy is verified by any USB.* functions.
-class USB.Driver {
+class USB.Driver extends USB.Logger {
 
     // Queried by USB.Host if this driver supports
     // given interface function of the device.
@@ -986,7 +994,7 @@ class USB.Driver {
     // Notify that driver is going to be released
     // No endpoint operation should be performed at this function.
     function release() {
-
+        _log("Released");
     }
 
     // Metafunction to return class name when typeof <instance> is run
@@ -994,3 +1002,4 @@ class USB.Driver {
         return "UsbDriver";
     }
 }
+
