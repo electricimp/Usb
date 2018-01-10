@@ -322,9 +322,11 @@ class HIDReport.Item {
             offset++;
             bitMask = bitMask << 1;
 
-            if ( 0 == (offset % 8)) {
+            buffer.seek(-1, 'c');
+            buffer.writen(data, 'b');
+
+            if ( 0 == (offset % 8) && size > 0) {
                 buffer.seek(-1, 'c');
-                buffer.writen(data, 'b');
                 data = buffer.readn('b');
             }
         }
@@ -575,12 +577,13 @@ class HIDDriver extends USB.Driver {
     // Used by HID Report Descriptor parser to check if provided hidItem should be included to the HIDReport.
     //
     // Parameters:
+	//		type	- item type [HID_RI_INPUT, HID_RI_OUTPUT, HID_RI_FEATURE]
     //      hidItem - instance of HIDReport.Item
     //
     // Returns true if the item should be included to the report, or false to drop it.
     //
     // Note: custom HIDDriver may rewrite this function to reduce memory consumption.
-    function _filter(hidItem) {
+    function _filter(type, hidItem) {
         return true;
     }
 
@@ -860,7 +863,7 @@ class HIDDriver extends USB.Driver {
                             currReport._totalFeatSize += newItem.attributes.bitSize;
                         }
 
-                        if (!(reportItemData & HID_IOF_CONSTANT) && _filter(newItem)) {
+                        if (!(reportItemData & HID_IOF_CONSTANT) && _filter(ItemTypeTag, newItem)) {
                             destArr.append(newItem);
                         }
 

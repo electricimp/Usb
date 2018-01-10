@@ -25,7 +25,16 @@
 
 // Keyboard usage page defined by USB specification
 // http://www.usb.org/developers/hidpage/Hut1_12v2.pdf
-const USAGE_PAGE_KEYBOARD = 7;
+const USAGE_PAGE_KEYBOARD 	= 7;
+const USAGE_PAGE_LED 		= 8;
+
+// ID of Num Lock Led to use with HIDKeyboard.SetLEDs
+const HID_LED_NUMLOCK		= 1;
+// ID of Caps Lock Led to use with HIDKeyboard.SetLEDs
+const HID_LED_CAPSLOCK		= 2;
+// ID of Scroll Lock Led to use with HIDKeyboard.SetLEDs
+const HID_LED_SCROLLLOCK	= 3;
+
 
 // Example class that reduce generic HID API to simple keyset notification.
 class HIDKeyboard extends HIDDriver {
@@ -86,6 +95,41 @@ class HIDKeyboard extends HIDDriver {
 		_getAsyncUserCb		= null;
 	}
 
+	// Update Keyboard LED status
+	//
+	// Parameters:
+	//		ledList - a list of integers with a LED identifier according to HID spec chap.8
+	//
+	//	Throws if argument is not array or due to USB issue
+	//
+	// Note: the function report nothing if the device doesn't have any LEDs
+	function setLEDs(ledList) {
+		if (typeof ledList == "array") {
+			local toSend = [];
+
+			foreach (report in _reports) {
+				local found = false;
+
+				foreach(item in report.getOutputItems()) {
+					foreach (led in ledList) {
+						if (item.attributes.usagePage == USAGE_PAGE_LED &&
+							item.attributes.usageUsage == led) {
+								item.set(1);
+								found = true;
+						}
+					}
+				}
+
+				if (found) toSend.append(report);
+			}
+
+			foreach (report in toSend) report.send();
+
+			if (toSend.len() == 0) return "No LED found at the keyboard";
+
+		} else throw "The argument must be Integer array";
+	}
+
     // Notify that driver is going to be released
     // No endpoint operation should be performed at this function.
     function release() {
@@ -97,12 +141,14 @@ class HIDKeyboard extends HIDDriver {
 
     // Used by HID Report Descriptor parser to check if provided hidItem should be included to the HIDReport.
     //
-    // Parameters:
+	// Parameters:
+	//		type	- item type [HID_RI_INPUT, HID_RI_OUTPUT, HID_RI_FEATURE]
     //      hidItem - instance of HIDReport.Item
     //
     // Returns true if the item should be included to the report, or false to drop it.
-    function _filter(hidItem) {
-		return  (hidItem.attributes.usagePage == USAGE_PAGE_KEYBOARD);
+    function _filter(type, hidItem) {
+		return  (hidItem.attributes.usagePage == USAGE_PAGE_KEYBOARD ||
+				 hidItem.attributes.usagePage == USAGE_PAGE_LED);
 	}
 
     // Used by match() function to create correct class instance in case of this class is overridden.

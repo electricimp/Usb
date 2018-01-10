@@ -44,9 +44,6 @@ class HIDKeyboardTest extends ImpTestCase {
 
     _host = null;
 
-    _hid = null;
-
-    _keyboard = null;
 
     function setUp() {
         _host = USB.Host([HIDKeyboard]);
@@ -55,8 +52,56 @@ class HIDKeyboardTest extends ImpTestCase {
     }
 
     function test1() {
+        local infoFunc = this.info.bindenv(this);
 
-        local usbHost = this._host;
+        return _setUpHost().then(function(kdbDrv) {
+
+            return Promise(function(resolve, reject) {
+                local numberOfPoll = 0;
+
+                // read data timeout
+                imp.wakeup(0.3, function() {
+
+                    kdbDrv.stopPoll();
+
+                    // As we set timeout to 300ms and poll time to 100ms,
+                    // the test is considered as passed if read event were more than 1 but less then 4.
+                    // if there was more then 4 events, that may mean Set IDLE time command is not actually supported by device.
+                    if (numberOfPoll > 4) resolve("Too may report events. Is device support IDLE time");
+                    else if (numberOfPoll > 1) resolve();
+                    else reject("Invalid HID device poll period. Is the device real keyboard?");
+                });
+
+                infoFunc("Start keyboard polling.");
+
+                kdbDrv.startPoll(100, function(keys) {
+                    numberOfPoll++;
+                });
+            });
+
+        });
+
+    }
+
+    function test2() {
+
+        local infoFunc = this.info.bindenv(this);
+
+        return _setUpHost().then(function(kdbDrv) {
+            kdbDrv.setLEDs([HID_LED_NUMLOCK, HID_LED_CAPSLOCK, HID_LED_SCROLLLOCK]);
+            return "Check if keyboard leds have changed their status";
+        });
+    }
+
+    function tearDown() {
+        hardware.usb.disable();
+
+        _host = null;
+    }
+
+    // Setup USB.Host and wait to driver start
+    function _setUpHost() {
+        local usbHost = _host;
         local infoFunc = this.info.bindenv(this);
 
         return Promise(function(resolve, reject) {
@@ -66,34 +111,13 @@ class HIDKeyboardTest extends ImpTestCase {
                 reject("No keyboard is attached");
             });
 
-
             usbHost.setEventListener(function(event, data) {
                 if (event == "started") {
+
+                    imp.cancelwakeup(timer);
+
                     if (typeof data == "HIDKeyboard") {
-
-                        imp.cancelwakeup(timer);
-
-                        local numberOfPoll = 0;
-
-                        // read data timeout
-                        timer = imp.wakeup(0.3, function() {
-
-                            data.stopPoll();
-
-                            // As we set timeout to 300ms and poll time to 100ms,
-                            // the test is considered as passed if read event were more than 1 but less then 4.
-                            // if there was more then 4 events, that may mean Set IDLE time command is not actually supported by device.
-                            if (numberOfPoll > 4) resolve("Too may report events. Is device support IDLE time");
-                            else if (numberOfPoll > 1) resolve();
-                            else reject("Invalid HID device poll period. Is the device real keyboard?");
-                        });
-
-                        infoFunc("Start keyboard polling.");
-
-                        data.startPoll(100, function(keys) {
-                            numberOfPoll++;
-                        });
-
+                        resolve(data);
                     } else {
                         reject("Invalid driver is started: " + (typeof data));
                     }
@@ -103,12 +127,7 @@ class HIDKeyboardTest extends ImpTestCase {
             usbHost.reset();
 
         });
-    }
 
-    function tearDown() {
-        hardware.usb.disable();
-
-        _host = null;
     }
 
 }
