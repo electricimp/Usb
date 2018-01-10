@@ -495,7 +495,7 @@ class USB.Device extends USB.Logger {
     //
     // Throws exception if the device was detached
     //
-    function _getEndpoint(reqEp, pollTime = 255) {
+    function _getEndpoint(reqEp, pollTime) {
         _checkStopped();
 
         foreach (ifs in _interfaces) {
@@ -505,8 +505,13 @@ class USB.Device extends USB.Logger {
                     local address = ep.address;
                     local type = ep.attributes;
 
-                    _usb.openendpoint(_speed, _address, ifs.interfacenumber,
-                                      type, maxSize, address, pollTime);
+                    if (type == USB_ENDPOINT_INTERRUPT) {
+                        _usb.openendpoint(_speed, _address, ifs.interfacenumber,
+                                        type, maxSize, address, pollTime);
+                    } else {
+                        _usb.openendpoint(_speed, _address, ifs.interfacenumber,
+                            type, maxSize, address);
+                    }
 
                     local newEp = (type == USB_ENDPOINT_CONTROL) ?
                                     USB.ControlEndpoint(this, address, maxSize) :
@@ -664,14 +669,17 @@ class USB.Device extends USB.Logger {
         foreach (driver in  drivers) {
             local matchResult = [];
             try {
-                if (null != (matchResult = driver.match(this, _interfaces))) {
-                    if (typeof matchResult != "array") {
-                        matchResult = [matchResult];
+                local result =driver.match(this, _interfaces);
+                if (null != result) {
+                    if (typeof result != "array") {
+                        result = [result];
                     }
 
-                    foreach (instance in matchResult) {
+                    foreach (instance in result) {
                         _driverInstances.append(instance);
                     }
+
+                    matchResult = result;
                 }
             } catch (e) {
                 _log("Error driver initialization: " + e);
@@ -835,8 +843,9 @@ class USB.FunctionalEndpoint extends USB.Logger {
         };
 
         // Disable 5 seconds time limit for an interrupt endpoint
-        if (_type != USB_ENDPOINT_INTERRUPT)
+        if (_type != USB_ENDPOINT_INTERRUPT) {
             _timer = imp.wakeup(5, _onTimeout.bindenv(this));
+        }
 
     }
 

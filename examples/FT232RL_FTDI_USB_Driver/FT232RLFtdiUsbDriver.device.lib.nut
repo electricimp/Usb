@@ -28,6 +28,23 @@
 //  - Imp005
 //  - FT232RL FTDI USB to TTL Serial Adapter Module
 
+    // FTDI driver
+const FTDI_REQUEST_FTDI_OUT = 0x40;
+const FTDI_SIO_SET_BAUD_RATE = 3;
+const FTDI_SIO_SET_FLOW_CTRL = 2;
+const FTDI_SIO_DISABLE_FLOW_CTRL = 0;
+const FTDI_SIO_SET_DATA_REQUEST = 4;
+
+    // FTDI UART configuration types
+const FTDI_PARITY_NONE = 0;
+const FTDI_PARITY_ODD = 1;
+const FTDI_PARITY_EVEN = 2;
+const FTDI_PARITY_MARK = 3;
+const FTDI_PARITY_SPACE = 4;
+const FTDI_STOP_BIT_1 = 0;
+const FTDI_STOP_BIT_15 = 1;
+const FTDI_STOP_BIT_2 = 2;
+
 // Driver for FT232RL FTDI USB to TTL Serial Adapter Module
 class FT232RLFtdiUsbDriver extends USB.Driver {
     // the driver version
@@ -36,23 +53,6 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
     // FTDI vid and pid
     static VID = 0x0403;
     static PID = 0x6001;
-
-    // FTDI driver
-    static FTDI_REQUEST_FTDI_OUT = 0x40;
-    static FTDI_SIO_SET_BAUD_RATE = 3;
-    static FTDI_SIO_SET_FLOW_CTRL = 2;
-    static FTDI_SIO_DISABLE_FLOW_CTRL = 0;
-    static FTDI_SIO_SET_DATA_REQUEST = 4;
-
-    // FTDI UART configuration types
-    static FTDI_PARITY_NONE = 0;
-    static FTDI_PARITY_ODD = 1;
-    static FTDI_PARITY_EVEN = 2;
-    static FTDI_PARITY_MARK = 3;
-    static FTDI_PARITY_SPACE = 4;
-    static FTDI_STOP_BIT_1 = 0;
-    static FTDI_STOP_BIT_15 = 1;
-    static FTDI_STOP_BIT_2 = 2;
 
     _bulkIn = null;
     _bulkOut = null;
@@ -76,8 +76,8 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
     function match(device, interfaces) {
         if (device.getVendorId()  == VID &&
             device.getProductId() == PID) {
-                local devType = device.getDescriptor()[device];
-                return FT232RLFtdiUsbDriver(device.getEndpointZero(), interfaces[0], devType);
+                local devType = device.getDescriptor()["device"];
+                return _createInstance(device.getEndpointZero(), interfaces[0], devType);
         }
         return null;
     }
@@ -148,7 +148,7 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
             local baudIndex = 0;
             local divisor3 = 48000000 / 2 / baud; // divisor shifted 3 bits to the left
 
-            if (device == 0x0200) { // FT232AM
+            if (_devType == 0x0200) { // FT232AM
                 if ((divisor3 & 0x07) == 0x07) {
                     divisor3++; // round x.7/8 up to x+1
                 }
@@ -191,32 +191,32 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
            switch (parity)
            {
                case FTDI_PARITY_NONE:
-                   value |= (0x00 << 8);
+                   value = value | 0; //(0x00 << 8)
                    break;
                case FTDI_PARITY_ODD:
-                   value |= (0x01 << 8);
+                   value = value | 0x100;//(0x01 << 8)
                    break;
                case FTDI_PARITY_EVEN:
-                   value |= (0x02 << 8);
+                   value = value | 0x200;//(0x02 << 8)
                    break;
                case FTDI_PARITY_MARK:
-                   value |= (0x03 << 8);
+                   value = value | 0x300;//(0x03 << 8)
                    break;
                case FTDI_PARITY_SPACE:
-                   value |= (0x04 << 8);
+                   value = value | 0x400;//(0x04 << 8)
                    break;
            }
 
            switch (stopbits)
            {
                case FTDI_STOP_BIT_1:
-                   value |= (0x00 << 11);
+                   value = value | 0x00;//(0x00 << 11);
                    break;
                case FTDI_STOP_BIT_15:
-                   value |= (0x01 << 11);
+                   value = value | 0x800;//(0x01 << 11);
                    break;
                case FTDI_STOP_BIT_2:
-                   value |= (0x02 << 11);
+                   value = value | 0x1000;//(0x02 << 11);
                    break;
            }
 
@@ -225,5 +225,11 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
 
            // disable flow control
            _ep0.transfer(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_FLOW_CTRL, 0, FTDI_SIO_DISABLE_FLOW_CTRL << 8);
+        }
+
+
+        // The function that help to create the driver extentions
+        function _createInstance(p0, interface, deviceVersion = 0x0200) {
+          return FT232RLFtdiUsbDriver(p0, interface, deviceVersion);
         }
 }
