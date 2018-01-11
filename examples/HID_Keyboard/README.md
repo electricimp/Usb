@@ -1,6 +1,6 @@
 ## HID keyboard driver
 
-This class is an example of [HIDDriver](../../HID_Driver.md) application. It exposes very simple API that allows to work with any devices that implements keyboard function.
+This class is an example of [HIDDriver](../../HID_Driver.md) application. It exposes very simple API that allows to work with any devices that implements keyboard function: receive pressed key IDs and update keyboard LED indicator.
 
 
 ### Include the driver and dependencies
@@ -82,3 +82,11 @@ The signature of callback *callback(keyset)*:
 #### stopPoll()
 
 Stops keyboard polling.
+
+#### setLEDs(ledList)
+
+Update Keyboard LED status. The function accepts an array of integers with LED indicator IDs, declared at [HID usage table](http://www.usb.org/developers/hidpage/Hut1_12v2.pdf) chap.8.
+
+The function may throw if argument is not array or due to USB issue.
+
+**Note:** the function returns error string if the device doesn't have any LEDs indicators.
