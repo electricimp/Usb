@@ -30,4 +30,7 @@ class CorrectDriver extends USB.Driver {
         return CorrectDriver();
     }
 
+    function _typeof() {
+        return "CorrectDriver";
+    }
 }

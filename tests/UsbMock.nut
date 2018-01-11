@@ -52,7 +52,7 @@ class UsbMock {
         _checkStatus();
     }
 
-    function openendpoint(speed, deviceAddress, interface, type, maxpacketsize, endpointAddress, interval) {
+    function openendpoint(speed, deviceAddress, interface, type, maxpacketsize, endpointAddress, interval = 255) {
         _checkStatus();
     }
 

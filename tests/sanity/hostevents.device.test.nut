@@ -48,12 +48,10 @@ class UsbHostEventsSanity extends ImpTestCase {
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 
         return Promise(function(resolve, reject) {
-            imp.wakeup(0, function() {
-                local devices = host.getAttachedDevices();
-                assertTrue(devices.len() == 1, "Expected one device item");
-                assertEqual("instance", typeof(devices[0]), "Unexpected driver");
-                resolve();
-            }.bindenv(this));
+            local devices = host.getAttachedDevices();
+            assertTrue(devices.len() == 1, "Expected one device item");
+            assertEqual("USB.Device", typeof(devices[0]), "Unexpected driver");
+            resolve();
         }.bindenv(this));
     }
 
@@ -64,34 +62,32 @@ class UsbHostEventsSanity extends ImpTestCase {
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 
         return Promise(function(resolve, reject) {
-            imp.wakeup(0, function() {
-                local devices = host.getAttachedDevices();
-                assertTrue(devices.len() == 2, "Expected two device attached");
-                assertEqual("instance", typeof(devices[0]), "Unexpected driver");
-                assertEqual("instance", typeof(devices[1]), "Unexpected driver");
-                resolve();
-            }.bindenv(this));
+            local devices = host.getAttachedDevices();
+            assertTrue(devices.len() == 2, "Expected two device attached");
+            assertEqual("USB.Device", typeof(devices[0]), "Unexpected driver");
+            assertEqual("USB.Device", typeof(devices[1]), "Unexpected driver");
+            resolve();
         }.bindenv(this));
     }
 
 
     function testSetListenerOnConnect() {
         return Promise(function(resolve, reject) {
-            local host = getUsbHost(_drivers, true);
+            local host = getUsbHost(_drivers, false);
             local counter = 0;
             host.setEventListener(function(type, payload) {
                 counter++;
                 if (counter == 1) {
                     assertEqual("connected", type, "Unexpected type of event.");
                     // payload is description
-                    assertEqual("instance", typeof payload, "Unextepced device type")
+                    assertEqual("USB.Device", typeof payload, "Unexpected device type")
                 } else if (counter == 2) {
                     assertEqual("started", type, "Unexpected type of event.");
                     // payload is driver instance
-                    assertEqual("CorrectDriver", typeof payload, "Unextepced driver type")
+                    assertEqual("CorrectDriver", typeof payload, "Unexpected driver type")
                 } else {
                     // no more events expected
-                    assertTrue(false, "Unextepced event.");
+                    assertTrue(false, "Unexpected event.");
                 }
             }.bindenv(this));
 
@@ -110,25 +106,38 @@ class UsbHostEventsSanity extends ImpTestCase {
     }
 
     function testSetListenerDisconnect() {
-        return Promise(function(resolve, reject) {
-            local host = getUsbHost(_drivers, true);
+        local counter = 0;
+        local host = getUsbHost(_drivers, false);
 
+        return Promise.resolve(null)
+        .then( function(prevRes) {
             _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
-
-            imp.wakeup(0, function() {
-                local counter = 0;
+        }.bindenv(this)).then(function(prevRes) {
+            return Promise(function(resolve, reject) {
                 host.setEventListener(function(type, payload) {
                     if (counter == 1) {
-                        assertEqual("disconnected", type, "Unexpected type of event:" + type + ". Need disconnected");
+                        if("disconnected" != type) {
+                            reject("Unexpected type of event:" + type + ". Need disconnected") ;
+                            return;
+                        }
                         // payload is description
-                        assertEqual("instance", typeof payload, "Unexpected device type")
+                        if ("USB.Device" !=  typeof payload) {
+                            reject("Unexpected device type");
+                            return;
+                        }
                     } else if (counter == 0) {
-                        assertEqual("stopped", type, "Unexpected type of event: " + type + ". Need stopped");
+                        if ("stopped" != type) {
+                            reject("Unexpected type of event: " + type + ". Need stopped");
+                            return;
+                        }
                         // payload is driver instance
-                        assertEqual("instance", typeof payload, "Unexpected driver type")
+                        if ("CorrectDriver" != typeof payload) {
+                            reject("Unexpected driver type: " + (typeof payload));
+                            return;
+                        }
                     } else {
                         // no more events expected
-                        assertTrue(false, "Unexpected event.");
+                        reject("Unexpected event:" + type);
                     }
                     counter++;
                 }.bindenv(this));
@@ -138,17 +147,16 @@ class UsbHostEventsSanity extends ImpTestCase {
                     "device": 1
                 });
 
-                // reject this test on failure
-                imp.wakeup(0, function() {
-                    host.setEventListener(null);
-                    if (counter == 2)
-                        resolve()
-                    else
-                        reject();
-
-                }.bindenv(this));
+                resolve();
             }.bindenv(this));
-
-        }.bindenv(this));
+        }.bindenv(this)).then(function(prevRes) {
+            return Promise(function(resolve, reject){
+                host.setEventListener(null);
+                if (counter == 2)
+                    resolve()
+                else
+                    reject("Unexpected number of events " + counter);
+            });
+        });
     }
 }
