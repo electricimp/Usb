@@ -23,41 +23,31 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 
-// This is an example of keyboard control application
-
-@include "../../../../USB.device.lib.nut"
-@include "../../../../USB.HID.device.lib.nut"
-@include "../../US-ASCII.table.nut"
-@include "../../HIDKeyboard.nut"
-
-log <- server.log.bindenv(server);
-
-kbdDrv <- null;
-
-function kdbEventListener(keys) {
-	local txt = "Keys received: ";
-	foreach (key in keys) {
-		txt += key + " ";
-	}
-
-	log (txt);
+// A class that plays a role of table for converting of HID keyboard usage ID to US-ASCII codes
+// Used with HIDKeyboard class if this file is included into application code
+class HIDUsage2ASCII {
+    function _get(key) {
+        if (key > 3 && key < 30) {
+            return 'a' + (key - 3);
+        } else if ((key > 29 && key < 40) ) {
+            return '1' + (key - 29);
+        } else if (key == 44) {
+            return ' ';
+        } else if (key == 43) { // tab
+            return '\t';
+        } else if (key > 44 && key < 47) { // - =
+            return '-' + (key - 44);
+        } else if (key == 47 || key == 48) { // [ ]
+            return '[' + (key - 47);
+        } else if (key == 51 || key == 52) { // ; '
+            return ';' + (key - 51);
+        } else if (key == 49) { // \
+            return '\\';
+        } else if (key > 53 && key < 57) { // ,./
+            return ',' + key - 53;
+        } else { //
+            // Zero means error
+            return 0;
+        }
+    }
 }
-
-function usbEventListener(event, data) {
-	log("USB event: " + event);
-
-	if (event == "started") {
-		kbdDrv = data;
-
-		log("Start polling");
-		kbdDrv.startPoll(0, kdbEventListener);
-	}
-}
-
-usbHost <- USB.Host([HIDKeyboard]);
-log("USB.Host setup complete");
-
-usbHost.setEventListener(usbEventListener);
-log("USB.Host setEventListener complete");
-
-log("Waiting for attach event");

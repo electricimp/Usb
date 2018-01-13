@@ -44,6 +44,9 @@ class HIDKeyboard extends HIDDriver {
 	_timerTick = null;
 	_getAsyncUserCb    = null;
 
+	// keyboard layout
+	_layout = null;
+
 	// ------- Public API ---------------------------------------
 
 	// Start keyboard polling.
@@ -134,10 +137,27 @@ class HIDKeyboard extends HIDDriver {
     // No endpoint operation should be performed at this function.
     function release() {
 		stopPoll();
-    }
+	}
+
+	// Change keyboard layout.
+	// Receives a tbale that is used to convert native scancodes to desired values
+	// Setting NULL force the class to report native HID usage ID.
+	function setLayout(newLayout) {
+		_layout = newLayout;
+	}
 
 	// --------- private functions section -------------------
 
+	// Constructor. Overrides default one by trying to set default keyboard layout
+	constructor(reports, interface) {
+		base.constructor(reports, interface);
+		try {
+			_layout = HIDUsage2ASCII();
+		} catch (e) {
+			// no default layout found or not included into the source
+			_log("Default keyboard layout not found: " + e);
+		}
+	}
 
     // Used by HID Report Descriptor parser to check if provided hidItem should be included to the HIDReport.
     //
@@ -173,7 +193,12 @@ class HIDKeyboard extends HIDDriver {
 			local keys = [];
 			foreach( item in report.getInputItems()) {
 				local val = item.get();
-				if (0 != val) keys.append(val);
+				if (_layout != null) {
+					val = _layout[val];
+				}
+				if (0 != val) {
+					keys.append(val);
+				}
 			}
 
 			try {
