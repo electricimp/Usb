@@ -23,31 +23,38 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 
-// A class that plays a role of table for converting of HID keyboard usage ID to US-ASCII codes
+// A function that plays a role of table for converting of HID keyboard usage ID to US-ASCII codes
 // Used with HIDKeyboard class if this file is included into application code
-class HIDUsage2ASCII {
-    function _get(key) {
-        if (key > 3 && key < 30) {
-            return 'a' + (key - 3);
-        } else if ((key > 29 && key < 40) ) {
-            return '1' + (key - 29);
-        } else if (key == 44) {
-            return ' ';
-        } else if (key == 43) { // tab
-            return '\t';
-        } else if (key > 44 && key < 47) { // - =
-            return '-' + (key - 44);
-        } else if (key == 47 || key == 48) { // [ ]
-            return '[' + (key - 47);
-        } else if (key == 51 || key == 52) { // ; '
-            return ';' + (key - 51);
-        } else if (key == 49) { // \
-            return '\\';
-        } else if (key > 53 && key < 57) { // ,./
-            return ',' + key - 53;
-        } else { //
-            // Zero means error
-            return 0;
+// NOTE: this is just example function that doesn't process key modifier like CRTL or SHIFT
+local US_ASCII_LAYOUT = function (keys) {
+        local result = [];
+
+        foreach (key in keys) {
+            if (key > 3 && key < 30) {
+                key =  'a' + (key - 3);
+            } else if ((key > 29 && key < 40) ) {
+                key = '1' + (key - 29);
+            } else if (key == 44) {
+                key = ' ';
+            } else if (key == 43) { // tab
+                key = '\t';
+            } else if (key > 44 && key < 47) { // - =
+                key = '-' + (key - 44);
+            } else if (key == 47 || key == 48) { // [ ]
+                key = '[' + (key - 47);
+            } else if (key == 51 || key == 52) { // ; '
+                key = ';' + (key - 51);
+            } else if (key == 49) { // \
+                key = '\\';
+            } else if (key > 53 && key < 57) { // ,./
+                key = ',' + key - 53;
+            } else { //
+                // Zero means error
+                key = 0;
+            }
+
+            if (key != 0) result.append(key);
         }
-    }
+
+        return result;
 }

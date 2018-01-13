@@ -612,8 +612,13 @@ class HIDDriver extends USB.Driver {
 
 
 		if (null == error || error == USB_ERROR_FREE || error == USB_ERROR_IDLE) {
-            data.seek(0, 'b');
-            local reportID = data.readn('b');
+
+            local reportID = 0;
+
+            if (_reports.len() > 1) {
+                data.seek(0, 'b');
+                reportID = data.readn('b');
+            }
 
             foreach( report in _reports) {
                 if (report._reportID == reportID) {

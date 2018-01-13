@@ -140,8 +140,13 @@ class HIDKeyboard extends HIDDriver {
 	}
 
 	// Change keyboard layout.
-	// Receives a tbale that is used to convert native scancodes to desired values
 	// Setting NULL force the class to report native HID usage ID.
+	//
+	// Parameters:
+	//	newLayout - function that is used to convert native scancodes to desired values.
+	//				the function signature is
+	//					functin newLayout(keyArrays), where
+	//						keyArray - the array of scancodes (integers)
 	function setLayout(newLayout) {
 		_layout = newLayout;
 	}
@@ -152,7 +157,7 @@ class HIDKeyboard extends HIDDriver {
 	constructor(reports, interface) {
 		base.constructor(reports, interface);
 		try {
-			_layout = HIDUsage2ASCII();
+			_layout = US_ASCII_LAYOUT;
 		} catch (e) {
 			// no default layout found or not included into the source
 			_log("Default keyboard layout not found: " + e);
@@ -193,15 +198,16 @@ class HIDKeyboard extends HIDDriver {
 			local keys = [];
 			foreach( item in report.getInputItems()) {
 				local val = item.get();
-				if (_layout != null) {
-					val = _layout[val];
-				}
 				if (0 != val) {
 					keys.append(val);
 				}
 			}
 
 			try {
+				if (null != _layout) {
+					keys =  _layout(keys);
+				}
+
 				_getAsyncUserCb(keys);
 			} catch (e) {
 				_error("User code exception: " + e);

@@ -90,3 +90,21 @@ Update Keyboard LED status. The function accepts an array of integers with LED i
 The function may throw if argument is not array or due to USB issue.
 
 **Note:** the function returns error string if the device doesn't have any LEDs indicators.
+
+#### setLayout(newLayout)
+
+Change keyboard layout. Receives keycode processor - the function that is used to convert native scancodes to desired values.
+Setting NULL force the class to report native HID usage ID.
+
+The class tries to use the [US_ASCII_LAYOUT](./US-ASCII.table.nut) function defined at [US-ASCII.table.nut](././US-ASCII.table.nut) as default layout if it is included by application developer.
+
+##### Layout processor
+
+This class uses special function that processes native keyboard scan codes to application specific values.
+
+The [example](./US-ASCII.table.nut) of this processor may be a function that converts native code to language specific codes.
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| *keyArray* | Array of Integers | the array of scancodes (integers) |
+
