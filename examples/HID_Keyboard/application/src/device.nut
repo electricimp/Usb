@@ -37,7 +37,7 @@ kbdDrv <- null;
 function kdbEventListener(keys) {
 	local txt = "Keys received: ";
 	foreach (key in keys) {
-		txt += key + " ";
+		txt += key.tochar() + " ";
 	}
 
 	log (txt);

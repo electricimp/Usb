@@ -23,31 +23,23 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 
+local HID_INPUT     = [  40,   43,  44,  45,  46,  47,  48,   49,  51,   52,  54,  55,  56];
+local ASCII_OUTPUT  = ['\n', '\t', ' ', '-', '=', '[', ']', '\\', ';', '\'', ',', '.', '/'];
+
 // A function that plays a role of table for converting of HID keyboard usage ID to US-ASCII codes
 // Used with HIDKeyboard class if this file is included into application code
 // NOTE: this is just example function that doesn't process key modifier like CRTL or SHIFT
 local US_ASCII_LAYOUT = function (keys) {
         local result = [];
+        local index = -1;
 
         foreach (key in keys) {
             if (key > 3 && key < 30) {
-                key =  'a' + (key - 3);
+                key =  'a' + (key - 4);
             } else if ((key > 29 && key < 40) ) {
-                key = '1' + (key - 29);
-            } else if (key == 44) {
-                key = ' ';
-            } else if (key == 43) { // tab
-                key = '\t';
-            } else if (key > 44 && key < 47) { // - =
-                key = '-' + (key - 44);
-            } else if (key == 47 || key == 48) { // [ ]
-                key = '[' + (key - 47);
-            } else if (key == 51 || key == 52) { // ; '
-                key = ';' + (key - 51);
-            } else if (key == 49) { // \
-                key = '\\';
-            } else if (key > 53 && key < 57) { // ,./
-                key = ',' + key - 53;
+                key = '1' + (key - 30);
+            } else if (-1 != (index = HID_INPUT.find(key))) {
+                key = ASCII_OUTPUT[index];
             } else { //
                 // Zero means error
                 key = 0;
