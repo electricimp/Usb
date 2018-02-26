@@ -28,14 +28,14 @@
 //  - Imp005
 //  - FT232RL FTDI USB to TTL Serial Adapter Module
 
-    // FTDI driver
+// FTDI driver
 const FTDI_REQUEST_FTDI_OUT = 0x40;
 const FTDI_SIO_SET_BAUD_RATE = 3;
 const FTDI_SIO_SET_FLOW_CTRL = 2;
 const FTDI_SIO_DISABLE_FLOW_CTRL = 0;
 const FTDI_SIO_SET_DATA_REQUEST = 4;
 
-    // FTDI UART configuration types
+// FTDI UART configuration types
 const FTDI_PARITY_NONE = 0;
 const FTDI_PARITY_ODD = 1;
 const FTDI_PARITY_EVEN = 2;
@@ -143,93 +143,91 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
     // Device UART configuration
     function configure(baud = 115200, databits = 8, parity = FTDI_PARITY_NONE, stopbits = FTDI_STOP_BIT_1) {
 
-            // Set Baud Rate
-            local baudValue;
-            local baudIndex = 0;
-            local divisor3 = 48000000 / 2 / baud; // divisor shifted 3 bits to the left
+        // Set Baud Rate
+        local baudValue;
+        local baudIndex = 0;
+        local divisor3 = 48000000 / 2 / baud; // divisor shifted 3 bits to the left
 
-            if (_devType == 0x0200) { // FT232AM
-                if ((divisor3 & 0x07) == 0x07) {
-                    divisor3++; // round x.7/8 up to x+1
-                }
-
-                baudValue = divisor3 >> 3;
-                divisor3 = divisor3 & 0x7;
-
-                if (divisor3 == 1) {
-                    baudValue = baudValue | 0xc000; // 0.125
-                } else if (divisor3 >= 4) {
-                    baudValue = baudValue | 0x4000; // 0.5
-                } else if (divisor3 != 0) {
-                    baudValue = baudValue | 0x8000; // 0.25
-                }
-
-                if (baudValue == 1) {
-                    baudValue = 0; // special case for maximum baud rate
-                }
-
-            } else {
-                local divfrac = [0, 3, 2, 0, 1, 1, 2, 3];
-                local divindex = [0, 0, 0, 1, 0, 1, 1, 1];
-
-                baudValue = divisor3 >> 3;
-                baudValue = baudValue | (divfrac[divisor3 & 0x7] << 14);
-
-                baudIndex = divindex[divisor3 & 0x7];
-
-                // Deal with special cases for highest baud rates.
-                if (baudValue == 1) {
-                    baudValue = 0; // 1.0
-                } else if (baudValue == 0x4001) {
-                    baudValue = 1; // 1.5
-                }
+        if (_devType == 0x0200) { // FT232AM
+            if ((divisor3 & 0x07) == 0x07) {
+                divisor3++; // round x.7/8 up to x+1
             }
 
-           _ep0.transfer(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_BAUD_RATE, baudValue, baudIndex);
+            baudValue = divisor3 >> 3;
+            divisor3 = divisor3 & 0x7;
 
-           local value = databits;
-           switch (parity)
-           {
-               case FTDI_PARITY_NONE:
-                   value = value | 0; //(0x00 << 8)
-                   break;
-               case FTDI_PARITY_ODD:
-                   value = value | 0x100;//(0x01 << 8)
-                   break;
-               case FTDI_PARITY_EVEN:
-                   value = value | 0x200;//(0x02 << 8)
-                   break;
-               case FTDI_PARITY_MARK:
-                   value = value | 0x300;//(0x03 << 8)
-                   break;
-               case FTDI_PARITY_SPACE:
-                   value = value | 0x400;//(0x04 << 8)
-                   break;
-           }
+            if (divisor3 == 1) {
+                baudValue = baudValue | 0xc000; // 0.125
+            } else if (divisor3 >= 4) {
+                baudValue = baudValue | 0x4000; // 0.5
+            } else if (divisor3 != 0) {
+                baudValue = baudValue | 0x8000; // 0.25
+            }
 
-           switch (stopbits)
-           {
-               case FTDI_STOP_BIT_1:
-                   value = value | 0x00;//(0x00 << 11);
-                   break;
-               case FTDI_STOP_BIT_15:
-                   value = value | 0x800;//(0x01 << 11);
-                   break;
-               case FTDI_STOP_BIT_2:
-                   value = value | 0x1000;//(0x02 << 11);
-                   break;
-           }
+            if (baudValue == 1) {
+                baudValue = 0; // special case for maximum baud rate
+            }
 
-           _ep0.transfer(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_DATA_REQUEST, value, 0);
+        } else {
+            local divfrac = [0, 3, 2, 0, 1, 1, 2, 3];
+            local divindex = [0, 0, 0, 1, 0, 1, 1, 1];
 
+            baudValue = divisor3 >> 3;
+            baudValue = baudValue | (divfrac[divisor3 & 0x7] << 14);
 
-           // disable flow control
-           _ep0.transfer(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_FLOW_CTRL, 0, FTDI_SIO_DISABLE_FLOW_CTRL << 8);
+            baudIndex = divindex[divisor3 & 0x7];
+
+            // Deal with special cases for highest baud rates.
+            if (baudValue == 1) {
+                baudValue = 0; // 1.0
+            } else if (baudValue == 0x4001) {
+                baudValue = 1; // 1.5
+            }
         }
 
+        _ep0.transfer(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_BAUD_RATE, baudValue, baudIndex);
 
-        // The function that help to create the driver extentions
-        function _createInstance(p0, interface, deviceVersion = 0x0200) {
-          return FT232RLFtdiUsbDriver(p0, interface, deviceVersion);
+        local value = databits;
+        switch (parity) {
+            case FTDI_PARITY_NONE:
+                value = value | 0; //(0x00 << 8)
+                break;
+            case FTDI_PARITY_ODD:
+                value = value | 0x100;//(0x01 << 8)
+                break;
+            case FTDI_PARITY_EVEN:
+                value = value | 0x200;//(0x02 << 8)
+                break;
+            case FTDI_PARITY_MARK:
+                value = value | 0x300;//(0x03 << 8)
+                break;
+            case FTDI_PARITY_SPACE:
+                value = value | 0x400;//(0x04 << 8)
+                break;
         }
+
+        switch (stopbits) {
+            case FTDI_STOP_BIT_1:
+                value = value | 0x00;//(0x00 << 11);
+                break;
+            case FTDI_STOP_BIT_15:
+                value = value | 0x800;//(0x01 << 11);
+                break;
+            case FTDI_STOP_BIT_2:
+                value = value | 0x1000;//(0x02 << 11);
+                break;
+         }
+
+        _ep0.transfer(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_DATA_REQUEST, value, 0);
+
+
+        // disable flow control
+        _ep0.transfer(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_FLOW_CTRL, 0, FTDI_SIO_DISABLE_FLOW_CTRL << 8);
+    }
+
+
+    // The function that help to create the driver extentions
+    function _createInstance(p0, interface, deviceVersion = 0x0200) {
+        return FT232RLFtdiUsbDriver(p0, interface, deviceVersion);
+    }
 }
