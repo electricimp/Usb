@@ -23,9 +23,9 @@ Once the necessary driver libraries are included in the application code, the US
 
 The main entrance point into the USB Drivers Framework is **[USB.Host](DriverDevelopmentGuide.md#usbhost-class)** class.
 
-This class is responsible for driver registration, event notification handling, and driver lifecycle management.
+This class is responsible for driver registration, instantiation, device and driver event notification handling, driver lifecycle management.
 
-The below example shows typical steps of the framework initialization. In this example the application creates instance of [USB.Host](DriverDevelopmentGuide.md#usbhost-class) class for an array of the pre-defined driver classes (one FT232RLFtdi USB driver in this example). To get notification when the required device is connected and the corresponding driver is started and ready to use, the application assigns a [callback function](DriverDevelopmentGuide.md#callbackeventtype-eventobject) that receives USB event type and event object. In simple case it is enough to listen for `"started"` and `"stopped"` events, where event object is the driver instance.
+The below example shows typical steps of the framework initialization. In this example the application creates an instance of [USB.Host](DriverDevelopmentGuide.md#usbhost-class) class for an array of the pre-defined driver classes (an FT232RL FTDI USB driver in this example). To get notification when the required device is connected and the corresponding driver is started and ready to use, the application assigns a [callback function](DriverDevelopmentGuide.md#callbackeventtype-eventobject) that receives USB event type and event object. In simple case it is enough to listen for `USB_DEVICE_DRIVER_STATE_STARTED` and `USB_DEVICE_DRIVER_STATE_STOPPED` events, where event object is the driver instance.
 
 ```
 #require "USB.device.lib.nut:1.0.0"
@@ -34,14 +34,14 @@ The below example shows typical steps of the framework initialization. In this e
 ft232DriverInstance <- null;
 
 function driverStatusListener(eventType, eventObject) {
-    if (eventType == "started") {
+    if (eventType == USB_DEVICE_DRIVER_STATE_STARTED) {
 
         if (typeof eventObject == "FT232RLFtdiUsbDriver")
             ft232DriverInstance = eventObject;
 
         // start work with FT232rl driver API here
 
-    } else if (eventType == "stopped") {
+    } else if (eventType == USB_DEVICE_DRIVER_STATE_STOPPED) {
 
         // immediately stop all interaction with FT232rl driver API
         // and reset driver reference
@@ -56,7 +56,7 @@ host.setEventListener(driverStatusListener);
 ### Multiple drivers support
 
 It is possible to register several drivers in USB Drivers Framework. Thus you can plug/unplug devices in runtime and corresponding drivers will be instantiated. There are some devices which provide several interfaces and that interfaces could be implemented via one or several drivers.
-USB Framework instantiate all drivers which could match to the plugged device therefore it is up to the application developer which drivers needs to be included into the application scope.
+USB Framework instantiate all drivers which could match to the plugged device therefore it is up to the application developer which drivers needs to be included in the application.
 
 For example, if one of these drivers is matching to the attached device, then driver will be instantiated:
 
@@ -72,9 +72,9 @@ But if all tree drivers are matching to the device interfaces then all three dri
 
 ### Driver API access
 
-**Please note**: *API exposed by a particular driver is not a subject of USB Driver Framework.*
+**Please note**: *API exposed by a particular driver is not a regulated by the USB Driver Framework and is solely the USB driver developer decision.*
 
-Each driver provides it's own custom API for interactions with a USB device. Therefore an application developer should read the documentation provided for the concrete driver.
+Each driver provides it's own custom API for interaction with USB devices. Appliaction developer should refere to the specific driver documentation for more details.
 
 ### Hardware pins configuration for USB
 
@@ -86,9 +86,9 @@ If your application is intended for a custom board, you may need to set *autoCon
 
 A primary way to interact with an attached device is to use one of the drivers that support that device.
 
-However it may be important to access the device directly, e.g. to select alternative configuration or change it's power state. To provide such access USB Driver Framework creates a proxy **[USB.Device](DriverDevelopmentGuide.md#usbdevice-class)** class for every device attached to the USB interface. To get correct instance the application needs to either listen `connected` events at the callback function assigned by [`USB.Host.setListener`](DriverDevelopmentGuide.md#seteventlistenercallback) method or get a list of the attached devices by [`USB.Host.getAttachedDevices`](DriverDevelopmentGuide.md#getattacheddevices) method and filter out the required one. Than it is possible to use one of the **[USB.Device](DriverDevelopmentGuide.md#usbdevice-class)** class methods or to get access to the special [control endpoint 0](DriverDevelopmentGuide.md#usbcontrolendpoint-class) and send custom messages through this channel. The format of such messages is out the scope of this document. Please refer to [USB specification](http://www.usb.org/) for more details.
+However it may be important to access the device directly, e.g. to select alternative configuration or change it's power state. To provide such access USB Driver Framework creates a proxy **[USB.Device](DriverDevelopmentGuide.md#usbdevice-class)** class for every device attached to the USB interface. To get correct instance the application needs to either listen to the `USB_DEVICE_STATE_CONNECTED` events at the callback function assigned by [`USB.Host.setListener`](DriverDevelopmentGuide.md#seteventlistenercallback) method or get a list of the attached devices by calling the [`USB.Host.getAttachedDevices`](DriverDevelopmentGuide.md#getattacheddevices) method and filter out the required one. Than it is possible to use one of the **[USB.Device](DriverDevelopmentGuide.md#usbdevice-class)** class methods or to get access to the special [control endpoint 0](DriverDevelopmentGuide.md#usbcontrolendpoint-class) and send custom messages through this channel. The format of such messages is out the scope of this document. Please refer to [USB specification](http://www.usb.org/) for more details.
 
-Example below shows how to get control endpoint 0 for the required device:
+Example below shows how to get control over the endpoint 0 for a device:
 
 ```
 #require "USB.device.lib.nut:1.0.0"
@@ -102,7 +102,7 @@ ep0 <- null;
 function driverStatusListener(eventType, eventObject) {
     if (eventType == "connected") {
         local device = eventObject;
-        if (device.getVendorId() == VID &&
+        if (device.getVendorId()  == VID &&
             device.getProductId() == PID) {
                 ep0 = device.getEndpointZero();
                 //

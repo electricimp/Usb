@@ -25,73 +25,73 @@
 
 // HID Input, Output and Feature Report Item Flags
 // May be useful for an application
-const HID_IOF_CONSTANT                    =   0x01;
-const HID_IOF_DATA                        =   0x00;
-const HID_IOF_VARIABLE                    =   0x02;
-const HID_IOF_ARRAY                       =   0x00;
-const HID_IOF_RELATIVE                    =   0x04;
-const HID_IOF_ABSOLUTE                    =   0x00;
-const HID_IOF_WRAP                        =   0x08;
-const HID_IOF_NO_WRAP                     =   0x00;
-const HID_IOF_NON_LINEAR                  =   0x10;
-const HID_IOF_LINEAR                      =   0x00;
-const HID_IOF_NO_PREFERRED_STATE          =   0x20;
-const HID_IOF_PREFERRED_STATE             =   0x00;
-const HID_IOF_NULLSTATE                   =   0x40;
-const HID_IOF_NO_NULL_POSITION            =   0x00;
-const HID_IOF_VOLATILE                    =   0x80;
-const HID_IOF_NON_VOLATILE                =   0x00;
-const HID_IOF_BUFFERED_BYTES              =   0x100;
-const HID_IOF_BITFIELD                    =   0x00;
+const HID_IOF_CONSTANT              =   0x01;
+const HID_IOF_DATA                  =   0x00;
+const HID_IOF_VARIABLE              =   0x02;
+const HID_IOF_ARRAY                 =   0x00;
+const HID_IOF_RELATIVE              =   0x04;
+const HID_IOF_ABSOLUTE              =   0x00;
+const HID_IOF_WRAP                  =   0x08;
+const HID_IOF_NO_WRAP               =   0x00;
+const HID_IOF_NON_LINEAR            =   0x10;
+const HID_IOF_LINEAR                =   0x00;
+const HID_IOF_NO_PREFERRED_STATE    =   0x20;
+const HID_IOF_PREFERRED_STATE       =   0x00;
+const HID_IOF_NULLSTATE             =   0x40;
+const HID_IOF_NO_NULL_POSITION      =   0x00;
+const HID_IOF_VOLATILE              =   0x80;
+const HID_IOF_NON_VOLATILE          =   0x00;
+const HID_IOF_BUFFERED_BYTES        =   0x100;
+const HID_IOF_BITFIELD              =   0x00;
 
 // HID Report Descriptor Item Types and Tags
 // No so useful for an application
-const HID_RI_DATA_SIZE_MASK        =  0x03;
-const HID_RI_TYPE_MASK             =  0x0C;
-const HID_RI_TAG_MASK              =  0xF0;
+const HID_RI_DATA_SIZE_MASK         =  0x03;
+const HID_RI_TYPE_MASK              =  0x0C;
+const HID_RI_TAG_MASK               =  0xF0;
 
-const HID_RI_TYPE_MAIN             =  0x00;
-const HID_RI_TYPE_GLOBAL           =  0x04;
-const HID_RI_TYPE_LOCAL            =  0x08;
+const HID_RI_TYPE_MAIN              =  0x00;
+const HID_RI_TYPE_GLOBAL            =  0x04;
+const HID_RI_TYPE_LOCAL             =  0x08;
 
-const HID_RI_DATA_BITS_0           =  0x00;
-const HID_RI_DATA_BITS_8           =  0x01;
-const HID_RI_DATA_BITS_16          =  0x02;
-const HID_RI_DATA_BITS_32          =  0x03;
+const HID_RI_DATA_BITS_0            =  0x00;
+const HID_RI_DATA_BITS_8            =  0x01;
+const HID_RI_DATA_BITS_16           =  0x02;
+const HID_RI_DATA_BITS_32           =  0x03;
 
-const HID_RI_INPUT              = 0x80;
-const HID_RI_OUTPUT             = 0x90;
-const HID_RI_COLLECTION         = 0xA0;
-const HID_RI_FEATURE            = 0xB0;
-const HID_RI_END_COLLECTION     = 0xC0;
-const HID_RI_USAGE_PAGE         = 0x04;
-const HID_RI_LOGICAL_MINIMUM    = 0x14;
-const HID_RI_LOGICAL_MAXIMUM    = 0x24;
-const HID_RI_PHYSICAL_MINIMUM   = 0x34;
-const HID_RI_PHYSICAL_MAXIMUM   = 0x44;
-const HID_RI_UNIT_EXPONENT      = 0x54;
-const HID_RI_UNIT               = 0x64;
-const HID_RI_REPORT_SIZE        = 0x74;
-const HID_RI_REPORT_ID          = 0x84;
-const HID_RI_REPORT_COUNT       = 0x94;
-const HID_RI_PUSH               = 0xA4;
-const HID_RI_POP                = 0xB4;
-const HID_RI_USAGE              = 0x08;
-const HID_RI_USAGE_MINIMUM      = 0x18;
-const HID_RI_USAGE_MAXIMUM      = 0x28;
+const HID_RI_INPUT                  = 0x80;
+const HID_RI_OUTPUT                 = 0x90;
+const HID_RI_COLLECTION             = 0xA0;
+const HID_RI_FEATURE                = 0xB0;
+const HID_RI_END_COLLECTION         = 0xC0;
+const HID_RI_USAGE_PAGE             = 0x04;
+const HID_RI_LOGICAL_MINIMUM        = 0x14;
+const HID_RI_LOGICAL_MAXIMUM        = 0x24;
+const HID_RI_PHYSICAL_MINIMUM       = 0x34;
+const HID_RI_PHYSICAL_MAXIMUM       = 0x44;
+const HID_RI_UNIT_EXPONENT          = 0x54;
+const HID_RI_UNIT                   = 0x64;
+const HID_RI_REPORT_SIZE            = 0x74;
+const HID_RI_REPORT_ID              = 0x84;
+const HID_RI_REPORT_COUNT           = 0x94;
+const HID_RI_PUSH                   = 0xA4;
+const HID_RI_POP                    = 0xB4;
+const HID_RI_USAGE                  = 0x08;
+const HID_RI_USAGE_MINIMUM          = 0x18;
+const HID_RI_USAGE_MAXIMUM          = 0x28;
 
-const HID_REPORT_ITEM_IN        = 0;
-const HID_REPORT_ITEM_OUT       = 1;
-const HID_REPORT_ITEM_FEATURE   = 2;
+const HID_REPORT_ITEM_IN            = 0;
+const HID_REPORT_ITEM_OUT           = 1;
+const HID_REPORT_ITEM_FEATURE       = 2;
 
 // USB protocol HID related constants
-const USB_DESCRIPTOR_HID_REPORT = 34;
-const USB_DESCRIPTOR_HID        = 33;
-const USB_CLASS_HID = 3;
+const USB_DESCRIPTOR_HID_REPORT     = 34;
+const USB_DESCRIPTOR_HID            = 33;
+const USB_CLASS_HID                 = 3;
 
-const USB_HID_GET_REPORT_REQUEST = 0x01;
-const USB_HID_SET_REPORT_REQUEST = 0x09;
-const USB_HID_SET_IDLE_REQUEST   = 0x0A;
+const USB_HID_GET_REPORT_REQUEST    = 0x01;
+const USB_HID_SET_REPORT_REQUEST    = 0x09;
+const USB_HID_SET_IDLE_REQUEST      = 0x0A;
 
 // The class that represents HID report that may be sent or received from particular devices
 // It contains a set of HID report items grouped by their types: INPUT, OUTPUT and FEATURE
@@ -472,27 +472,20 @@ class HIDDriver extends USB.Driver {
 
             foreach(interface in found) {
                 local hidReportDescriptor = _getReportDescr(ep0, interface, wTotalLen);
-
                 if (null != hidReportDescriptor) {
-
                     local hidReports = _parse(hidReportDescriptor, interface);
-
                     if (null != hidReports) {
                         local newDriver = _createInstance(hidReports, interface);
-
                         drivers.append(newDriver);
                     } else {
                         _log("Empty Report is returned from parser");
                     }
-
                 }
             }
 
             _log("initialization done");
-
             return drivers;
         }
-
         return null;
     }
 

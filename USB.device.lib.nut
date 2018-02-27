@@ -75,8 +75,8 @@ const USB_ERROR_FREE                        = 15;
 const USB_ERROR_IDLE                        = 16;
 const USB_ERROR_TIMEOUT                     = 19;
 
-const USB_DEVICE_STATE_STARTED              = "started";
-const USB_DEVICE_STATE_STOPPED              = "stopped";
+const USB_DEVICE_DRIVER_STATE_STARTED       = "started";
+const USB_DEVICE_DRIVER_STATE_STOPPED       = "stopped";
 const USB_DEVICE_STATE_CONNECTED            = "connected";
 const USB_DEVICE_STATE_DISCONNECTED         = "disconnected";
 
@@ -202,7 +202,7 @@ class USB.Host extends USB.Logger {
     // Assign listener about device and  driver status changes.
     // Parameters:
     //      listener  - null or the function that receives two parameters:
-    //                      eventType - USB_DEVICE_STATE_STARTED, USB_DEVICE_STATE_STOPPED,
+    //                      eventType - USB_DEVICE_DRIVER_STATE_STARTED, USB_DEVICE_DRIVER_STATE_STOPPED,
     //                                  USB_DEVICE_STATE_CONNECTED, USB_DEVICE_STATE_DISCONNECTED
     //                      eventObject - depending on event type it could be
     //                                    either USB.Device or USB.Driver instance
@@ -594,7 +594,7 @@ class USB.Device extends USB.Logger {
             }
 
             try {
-                if (_listener) _listener(USB_DEVICE_STATE_STOPPED, driver);
+                if (_listener) _listener(USB_DEVICE_DRIVER_STATE_STOPPED, driver);
             } catch (e) {
                 _log("Error at user code: " + e);
             }
@@ -671,7 +671,7 @@ class USB.Device extends USB.Logger {
         foreach (driver in  drivers) {
             local matchResult = [];
             try {
-                local result =driver.match(this, _interfaces);
+                local result = driver.match(this, _interfaces);
                 if (null != result) {
                     if (typeof result != "array") {
                         result = [result];
@@ -680,7 +680,6 @@ class USB.Device extends USB.Logger {
                     foreach (instance in result) {
                         _driverInstances.append(instance);
                     }
-
                     matchResult = result;
                 }
             } catch (e) {
@@ -689,7 +688,9 @@ class USB.Device extends USB.Logger {
 
             try {
                 foreach (instance in matchResult) {
-                    if (_listener) _listener(USB_DEVICE_STATE_STARTED, instance);
+                    if (_listener) {
+                        _listener(USB_DEVICE_DRIVER_STATE_STARTED, instance);
+                    }
                 }
             } catch(e) {
                 _log("User Listener code error: " + e);
