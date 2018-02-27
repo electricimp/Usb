@@ -240,19 +240,21 @@ class USB.Host extends USB.Logger {
     //          eventType       - The type of event that triggered the event
     //          eventDetails    - Event-specific information
     function _onUsbEvent(eventType, eventDetails) {
-        _log("usb event " + eventType);
-
         switch (eventType) {
             case USB_DEVICE_CONNECTED:
+                _log("USB_DEVICE_CONNECTED event");
                 _onDeviceConnected(eventDetails);
                 break;
             case USB_DEVICE_DISCONNECTED:
+                _log("USB_DEVICE_DISCONNECTED event");
                 _onDeviceDetached(eventDetails);
                 break;
             case USB_TRANSFER_COMPLETED:
+                _log("USB_TRANSFER_COMPLETED event");
                 _onTransferComplete(eventDetails);
                 break;
             case USB_UNRECOVERABLE_ERROR:
+                _log("USB_UNRECOVERABLE_ERROR event");
                 _onError();
                 break;
         }

@@ -49,7 +49,7 @@ class CH340 extends FT232RLFtdiUsbDriver {
 
     // The function that help to create the driver extentions
     function _createInstance(p0, interface, deviceVersion = 0x0200) {
-      return CH340(p0, interface, deviceVersion);
+        return CH340(p0, interface, deviceVersion);
     }
 }
 
@@ -62,7 +62,7 @@ function deviceReadCb(error, data, len) {
     data.seek(0, 'b');
     local str = data.readstring(len);
     local txt = "Data received: " + str;
-    log (txt);
+    log(txt);
 
     if (str == PING) ch340.write(PONG, deviceWriteCb);
     else ch340.write(PING, deviceWriteCb);
@@ -75,7 +75,7 @@ function deviceReadCb(error, data, len) {
 function deviceWriteCb(error, data, len) {
     data.seek(0, 'b');
     local txt = "Data written: " + data.readstring(len);
-    log (txt);
+    log(txt);
 }
 
 function usbEventListener(event, data) {
