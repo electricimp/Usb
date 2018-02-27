@@ -19,13 +19,11 @@ In the example below FT232RL FTDI USB Device Driver is included into an applicat
 
 ### Initializing the framework
 
-Once the necessary driver libraries are included into the application code, it's necessary to instantiate them via the USB Framework initialization API.
+Once the necessary driver libraries are included in the application code, the USB frameworks should be configured to be using them.
 
 The main entrance point into the USB Drivers Framework is **[USB.Host](DriverDevelopmentGuide.md#usbhost-class)** class.
 
 This class is responsible for driver registration, event notification handling, and driver lifecycle management.
-
-of an application when the required device is attached and ready to operate through the provided driver.
 
 The below example shows typical steps of the framework initialization. In this example the application creates instance of [USB.Host](DriverDevelopmentGuide.md#usbhost-class) class for an array of the pre-defined driver classes (one FT232RLFtdi USB driver in this example). To get notification when the required device is connected and the corresponding driver is started and ready to use, the application assigns a [callback function](DriverDevelopmentGuide.md#callbackeventtype-eventobject) that receives USB event type and event object. In simple case it is enough to listen for `"started"` and `"stopped"` events, where event object is the driver instance.
 
@@ -51,7 +49,7 @@ function driverStatusListener(eventType, eventObject) {
     }
 }
 
-host <- USB.Host([FT232rl]);
+host <- USB.Host([FT232RLFtdiUsbDriver]);
 host.setEventListener(driverStatusListener);
 ```
 

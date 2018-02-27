@@ -143,15 +143,21 @@ class USB.Host extends USB.Logger {
             throw "Expected `hardware.usb` interface is not available";
         }
 
-        if (typeof driverList != "array") throw "Driver list must be array";
+        if (typeof driverList != "array") {
+            throw "Driver list must be array";
+        }
 
-        if (null == driverList || 0 == driverList.len()) throw "Driver list must not be empty";
+        if (null == driverList || 0 == driverList.len()) {
+            throw "Driver list must not be empty";
+        }
 
-        _driverClasses = [];
         _devices = {};
+        _driverClasses = [];
 
         // checks validity, filters duplicate, append to the list
-        foreach (driver in driverList) _checkAndAppend(driver);
+        foreach (driver in driverList) {
+            _checkAndAppend(driver);
+        }
 
         if (autoConfPins) {
             if ("pinW" in hardware && "pinR" in hardware) {
@@ -217,12 +223,13 @@ class USB.Host extends USB.Logger {
     // Checks if given parameter implement USB.Driver API,
     // filters duplicate and append to the driver list
     function _checkAndAppend(driverClass) {
-        if (typeof driverClass == "class" && "match" in driverClass &&
-            typeof driverClass.match == "function" && "release" in driverClass &&
-            typeof driverClass.release == "function") {
-                if (null == _driverClasses.find(driverClass)) {
-                    _driverClasses.append(driverClass);
-                }
+        if (typeof driverClass == "class" &&
+            "match"   in driverClass && typeof driverClass.match   == "function" &&
+            "release" in driverClass && typeof driverClass.release == "function")
+        {
+            if (null == _driverClasses.find(driverClass)) {
+                _driverClasses.append(driverClass);
+            }
         } else {
             throw "Invalid driver class";
         }
@@ -401,36 +408,45 @@ class USB.Device extends USB.Logger {
     // Listener callback of USB events
     _listener = null;
 
-    // Delegate for endpoint descriptor
-    _epDelegate = {
-        // The function to acquire the framework proxy
-        get = function(pollTime = 255) {
+    // Constructs device peer.
+    // Parameters:
+    //      speed            - supported device speed
+    //      deviceDescriptor - new device descriptor as specified by ElectricImpl USB API
+    //      deviceAddress    - device address reserved (but assigned) for new device
+    //      drivers          - an array of available USB drives
+    constructor(usb, speed, deviceDescriptor, deviceAddress, drivers) {
+        _speed = speed;
 
-            if (! ("_proxy" in this) ) {
-                _proxy <- _device._getEndpoint(this, pollTime);
+        _device = deviceDescriptor;
+        _configuration = deviceDescriptor.configurations[0];
+        _interfaces = _configuration.interfaces;
+
+        _address = deviceAddress;
+        _usb = usb;
+        _driverInstances = [];
+
+        local ep0 = USB.ControlEndpoint(this, 0, _device["maxpacketsize0"]);
+        _endpoints[0] <- ep0;
+
+        // When a device is first connected you can communicate with it at address 0x00.
+        // This should be set to a unique value for the device, using a set address control transfer.
+        _setAddress(_address);
+
+        // Select default configuration
+        _setConfiguration(_configuration.value);
+
+        // Delegate to bind native endpoint descriptor and the framework
+        foreach(ifs in _interfaces) {
+
+            ifs.setdelegate(_ifsDelegate);
+
+            foreach (ep in ifs.endpoints) {
+                ep._device <- this;
+                ep.setdelegate(_epDelegate);
             }
-
-            return _proxy;
         }
+        imp.wakeup(0, (function() {_selectDrivers(drivers);}).bindenv(this));
     }
-
-    // Delegate for interface descriptor
-    _ifsDelegate = {
-        // Auxiliary function to search required endpoint
-        find = function(type, dir) {
-            foreach(ep in endpoints) {
-                if (ep.attributes == type &&
-                    (ep.address & USB_DIRECTION_MASK) == dir)
-                    return ep.get();
-            }
-        }
-
-        // Returns USB.Device instance - owner of this interface
-        getDevice = function() {
-            return endpoints[0]._device;
-        }
-    }
-
 
     // Returns device descriptor
     //
@@ -481,6 +497,36 @@ class USB.Device extends USB.Logger {
 
     // -------------------- Private functions --------------------
 
+    // Delegate for endpoint descriptor
+    _epDelegate = {
+        // The function to acquire the framework proxy
+        get = function(pollTime = 255) {
+
+            if (! ("_proxy" in this) ) {
+                _proxy <- _device._getEndpoint(this, pollTime);
+            }
+
+            return _proxy;
+        }
+    }
+
+    // Delegate for interface descriptor
+    _ifsDelegate = {
+        // Auxiliary function to search required endpoint
+        find = function(type, dir) {
+            foreach(ep in endpoints) {
+                if (ep.attributes == type &&
+                    (ep.address & USB_DIRECTION_MASK) == dir)
+                    return ep.get();
+            }
+        }
+
+        // Returns USB.Device instance - owner of this interface
+        getDevice = function() {
+            return endpoints[0]._device;
+        }
+    }
+
     // Request endpoint of required type and direction.
     // The function creates new endpoint if it was not cached.
     // Parameters:
@@ -526,49 +572,6 @@ class USB.Device extends USB.Logger {
         return null;
     }
 
-
-    // Constructs device peer.
-    // Parameters:
-    //      speed            - supported device speed
-    //      deviceDescriptor - new device descriptor as specified by ElectricImpl USB API
-    //      deviceAddress    - device address reserved (but assigned) for new device
-    //      drivers          - an array of available USB drives
-    constructor(usb, speed, deviceDescriptor, deviceAddress, drivers) {
-        _speed = speed;
-
-        _device = deviceDescriptor;
-        _configuration = deviceDescriptor.configurations[0];
-        _interfaces = _configuration.interfaces;
-
-        _address = deviceAddress;
-        _usb = usb;
-        _driverInstances = [];
-
-        local ep0 = USB.ControlEndpoint(this, 0, _device["maxpacketsize0"]);
-        _endpoints[0] <- ep0;
-
-        // When a device is first connected you can communicate with it at address 0x00.
-        // This should be set to a unique value for the device, using a set address control transfer.
-        _setAddress(_address);
-
-        // Select default configuration
-        _setConfiguration(_configuration.value);
-
-        // Delegate to bind native endpoint descriptor and the framework
-        foreach(ifs in _interfaces) {
-
-            ifs.setdelegate(_ifsDelegate);
-
-            foreach (ep in ifs.endpoints) {
-                ep._device <- this;
-                ep.setdelegate(_epDelegate);
-            }
-        }
-
-        imp.wakeup(0, (function() {_selectDrivers(drivers);}).bindenv(this));
-    }
-
-
     // Called by USB.Host when the devices is detached
     // Closes all open endpoint and releases all drivers
     //
@@ -578,9 +581,12 @@ class USB.Device extends USB.Logger {
         _checkStopped();
 
         // Close all endpoints at first
-        foreach (ep in _endpoints) ep._close();
+        foreach (ep in _endpoints) {
+            ep._close();
+        }
 
-        foreach ( driver in _driverInstances ) {
+        // Release all drivers now
+        foreach (driver in _driverInstances) {
             try {
                 driver.release();
             } catch (e) {
@@ -592,25 +598,22 @@ class USB.Device extends USB.Logger {
             } catch (e) {
                 _log("Error at user code: " + e);
             }
-
         }
 
-        _configuration = null;
-        _interfaces = null;
-        _driverInstances = null;
-        _endpoints = null;
+        _usb = null;
         _device = null;
         _listener = null;
-        _usb = null;
+        _endpoints = null;
+        _interfaces = null;
+        _configuration = null;
+        _driverInstances = null;
     }
-
 
     // Notifies new listener about device current state
     //
     // Parameter:
     //      listener  - null or the function that receives two parameters:
-    //                      eventType -   USB_DEVICE_STATE_STARTED, USB_DEVICE_STATE_STOPPED,
-    //                                    USB_DEVICE_STATE_CONNECTED, USB_DEVICE_STATE_DISCONNECTED
+    //                      eventType -   USB_DEVICE_STATE_CONNECTED, USB_DEVICE_STATE_DISCONNECTED
     //                      eventObject - USB.Driver instance
     function _setListener(listener) {
         _listener = listener;
