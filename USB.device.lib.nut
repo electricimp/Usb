@@ -23,68 +23,63 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 
+const USB_ENDPOINT_CONTROL                  = 0x00;
+const USB_ENDPOINT_ISOCHRONOUS              = 0x01;
+const USB_ENDPOINT_BULK                     = 0x02;
+const USB_ENDPOINT_INTERRUPT                = 0x03;
+const USB_ENDPOINT_TYPE_MASK                = 0x03;
+
+const USB_SETUP_HOST_TO_DEVICE              = 0x00;
+const USB_SETUP_DEVICE_TO_HOST              = 0x80;
+const USB_SETUP_TYPE_STANDARD               = 0x00;
+const USB_SETUP_TYPE_CLASS                  = 0x20;
+const USB_SETUP_TYPE_VENDOR                 = 0x40;
+const USB_SETUP_TYPE_MASK                   = 0x60;
+const USB_SETUP_RECIPIENT_DEVICE            = 0x00;
+const USB_SETUP_RECIPIENT_INTERFACE         = 0x01;
+const USB_SETUP_RECIPIENT_ENDPOINT          = 0x02;
+const USB_SETUP_RECIPIENT_OTHER             = 0x03;
+
+const USB_REQUEST_GET_STATUS                = 0;
+const USB_REQUEST_CLEAR_FEATURE             = 1;
+const USB_REQUEST_SET_FEATURE               = 3;
+const USB_REQUEST_SET_ADDRESS               = 5;
+const USB_REQUEST_GET_DESCRIPTOR            = 6;
+const USB_REQUEST_SET_DESCRIPTOR            = 7;
+const USB_REQUEST_GET_CONFIGURATION         = 8;
+const USB_REQUEST_SET_CONFIGURATION         = 9;
+const USB_REQUEST_GET_INTERFACE             = 10;
+const USB_REQUEST_SET_INTERFACE             = 11;
+const USB_REQUEST_SYNCH_FRAME               = 12;
+
+const USB_DEVICE_DESCRIPTOR_LENGTH          = 0x12;
+const USB_CONFIGURATION_DESCRIPTOR_LENGTH   = 0x09;
+
+const USB_DESCRIPTOR_DEVICE                 = 0x01;
+const USB_DESCRIPTOR_CONFIGURATION          = 0x02;
+const USB_DESCRIPTOR_STRING                 = 0x03;
+const USB_DESCRIPTOR_INTERFACE              = 0x04;
+const USB_DESCRIPTOR_ENDPOINT               = 0x05;
+const USB_DESCRIPTOR_DEVICE_QUALIFIER       = 0x06;
+const USB_DESCRIPTOR_OTHER_SPEED            = 0x07;
+const USB_DESCRIPTOR_INTERFACE_POWER        = 0x08;
+const USB_DESCRIPTOR_OTG                    = 0x09;
+const USB_DESCRIPTOR_HID                    = 0x21;
+
+const USB_DIRECTION_OUT                     = 0x0;
+const USB_DIRECTION_IN                      = 0x80;
+const USB_DIRECTION_MASK                    = 0x80;
+
+const USB_ERROR_STALL                       = 4;
+const USB_ERROR_FREE                        = 15;
+const USB_ERROR_IDLE                        = 16;
+const USB_ERROR_TIMEOUT                     = 19;
 
 // The class that introduces USB namespace and related constants.
 // Not intended to use by any developers.
 class USB {
 
     static VERSION = "1.0.0";
-
-    constructor() {
-
-        const USB_ENDPOINT_CONTROL                  = 0x00;
-        const USB_ENDPOINT_ISOCHRONOUS              = 0x01;
-        const USB_ENDPOINT_BULK                     = 0x02;
-        const USB_ENDPOINT_INTERRUPT                = 0x03;
-        const USB_ENDPOINT_TYPE_MASK                = 0x03;
-
-        const USB_SETUP_HOST_TO_DEVICE              = 0x00;
-        const USB_SETUP_DEVICE_TO_HOST              = 0x80;
-        const USB_SETUP_TYPE_STANDARD               = 0x00;
-        const USB_SETUP_TYPE_CLASS                  = 0x20;
-        const USB_SETUP_TYPE_VENDOR                 = 0x40;
-        const USB_SETUP_TYPE_MASK                   = 0x60;
-        const USB_SETUP_RECIPIENT_DEVICE            = 0x00;
-        const USB_SETUP_RECIPIENT_INTERFACE         = 0x01;
-        const USB_SETUP_RECIPIENT_ENDPOINT          = 0x02;
-        const USB_SETUP_RECIPIENT_OTHER             = 0x03;
-
-        const USB_REQUEST_GET_STATUS                = 0;
-        const USB_REQUEST_CLEAR_FEATURE             = 1;
-        const USB_REQUEST_SET_FEATURE               = 3;
-        const USB_REQUEST_SET_ADDRESS               = 5;
-        const USB_REQUEST_GET_DESCRIPTOR            = 6;
-        const USB_REQUEST_SET_DESCRIPTOR            = 7;
-        const USB_REQUEST_GET_CONFIGURATION         = 8;
-        const USB_REQUEST_SET_CONFIGURATION         = 9;
-        const USB_REQUEST_GET_INTERFACE             = 10;
-        const USB_REQUEST_SET_INTERFACE             = 11;
-        const USB_REQUEST_SYNCH_FRAME               = 12;
-
-        const USB_DEVICE_DESCRIPTOR_LENGTH          = 0x12;
-        const USB_CONFIGURATION_DESCRIPTOR_LENGTH   = 0x09;
-
-        const USB_DESCRIPTOR_DEVICE                 = 0x01;
-        const USB_DESCRIPTOR_CONFIGURATION          = 0x02;
-        const USB_DESCRIPTOR_STRING                 = 0x03;
-        const USB_DESCRIPTOR_INTERFACE              = 0x04;
-        const USB_DESCRIPTOR_ENDPOINT               = 0x05;
-        const USB_DESCRIPTOR_DEVICE_QUALIFIER       = 0x06;
-        const USB_DESCRIPTOR_OTHER_SPEED            = 0x07;
-        const USB_DESCRIPTOR_INTERFACE_POWER        = 0x08;
-        const USB_DESCRIPTOR_OTG                    = 0x09;
-        const USB_DESCRIPTOR_HID                    = 0x21;
-
-        const USB_DIRECTION_OUT                     = 0x0;
-        const USB_DIRECTION_IN                      = 0x80;
-        const USB_DIRECTION_MASK                    = 0x80;
-
-        const USB_ERROR_STALL                       = 4;
-        const USB_ERROR_FREE                        = 15;
-        const USB_ERROR_IDLE                        = 16;
-        const USB_ERROR_TIMEOUT                     = 19;
-
-    }
 
     // Auxiliary class for logging
     Logger = class {
@@ -140,7 +135,7 @@ class USB.Host extends USB.Logger {
         try {
             _usb = hardware.usb;
         } catch(e) {
-          throw "Expected `hardware.usb` interface is not available";
+            throw "Expected `hardware.usb` interface is not available";
         }
 
         if (typeof driverList != "array") throw "Driver list must be array";
@@ -154,8 +149,7 @@ class USB.Host extends USB.Logger {
         foreach (driver in driverList) _checkAndAppend(driver);
 
         if (autoConfPins) {
-            if ("pinW" in hardware &&
-                "pinR" in hardware) {
+            if ("pinW" in hardware && "pinR" in hardware) {
                 // Configure the pins required for usb
                 hardware.pinW.configure(DIGITAL_IN_PULLUP);
                 hardware.pinR.configure(DIGITAL_OUT, 1);
