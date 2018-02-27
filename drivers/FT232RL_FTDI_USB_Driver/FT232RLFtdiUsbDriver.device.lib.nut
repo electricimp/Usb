@@ -29,21 +29,23 @@
 //  - FT232RL FTDI USB to TTL Serial Adapter Module
 
 // FTDI driver
-const FTDI_REQUEST_FTDI_OUT = 0x40;
-const FTDI_SIO_SET_BAUD_RATE = 3;
-const FTDI_SIO_SET_FLOW_CTRL = 2;
-const FTDI_SIO_DISABLE_FLOW_CTRL = 0;
-const FTDI_SIO_SET_DATA_REQUEST = 4;
+const FTDI_REQUEST_FTDI_OUT         = 0x40;
+const FTDI_SIO_SET_BAUD_RATE        = 3;
+const FTDI_SIO_SET_FLOW_CTRL        = 2;
+const FTDI_SIO_DISABLE_FLOW_CTRL    = 0;
+const FTDI_SIO_SET_DATA_REQUEST     = 4;
 
 // FTDI UART configuration types
-const FTDI_PARITY_NONE = 0;
-const FTDI_PARITY_ODD = 1;
-const FTDI_PARITY_EVEN = 2;
-const FTDI_PARITY_MARK = 3;
-const FTDI_PARITY_SPACE = 4;
-const FTDI_STOP_BIT_1 = 0;
-const FTDI_STOP_BIT_15 = 1;
-const FTDI_STOP_BIT_2 = 2;
+const FTDI_PARITY_NONE              = 0;
+const FTDI_PARITY_ODD               = 1;
+const FTDI_PARITY_EVEN              = 2;
+const FTDI_PARITY_MARK              = 3;
+const FTDI_PARITY_SPACE             = 4;
+
+// FTDI stop bit constants
+const FTDI_STOP_BIT_1               = 0;
+const FTDI_STOP_BIT_15              = 1;
+const FTDI_STOP_BIT_2               = 2;
 
 // Driver for FT232RL FTDI USB to TTL Serial Adapter Module
 class FT232RLFtdiUsbDriver extends USB.Driver {
