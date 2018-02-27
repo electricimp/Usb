@@ -75,6 +75,11 @@ const USB_ERROR_FREE                        = 15;
 const USB_ERROR_IDLE                        = 16;
 const USB_ERROR_TIMEOUT                     = 19;
 
+const USB_DEVICE_STATE_STARTED              = "started";
+const USB_DEVICE_STATE_STOPPED              = "stopped";
+const USB_DEVICE_STATE_CONNECTED            = "connected";
+const USB_DEVICE_STATE_DISCONNECTED         = "disconnected";
+
 // The class that introduces USB namespace and related constants.
 // Not intended to use by any developers.
 class USB {
@@ -191,8 +196,8 @@ class USB.Host extends USB.Logger {
     // Assign listener about device and  driver status changes.
     // Parameters:
     //      listener  - null or the function that receives two parameters:
-    //                      eventType - "connected",  "disconnected",
-    //                                 "started", "stopped"
+    //                      eventType - USB_DEVICE_STATE_STARTED, USB_DEVICE_STATE_STOPPED,
+    //                                  USB_DEVICE_STATE_CONNECTED, USB_DEVICE_STATE_DISCONNECTED
     //                      eventObject - depending on event type it could be
     //                                    either USB.Device or USB.Driver instance
     function setEventListener(listener) {
@@ -248,7 +253,7 @@ class USB.Host extends USB.Logger {
 
     // New device processing function
     // Creates new USB.Device instance, notifies application listener
-    // with "connected" event
+    // with USB_DEVICE_STATE_CONNECTED event
     function _onDeviceConnected(eventDetails) {
         try {
             local speed = eventDetails.speed;
@@ -264,7 +269,7 @@ class USB.Host extends USB.Logger {
             _address++;
 
             if (null != _listener) {
-                _listener("connected", device);
+                _listener(USB_DEVICE_STATE_CONNECTED, device);
             }
         } catch (e) {
             _error("Error driver instantiation: " + e);
@@ -273,7 +278,7 @@ class USB.Host extends USB.Logger {
 
     // Device detach processing function.
     // Stops corresponding USB.Device instance, notifies application listener
-    // with "disconnected" event
+    // with USB_DEVICE_STATE_DISCONNECTED event
     function _onDeviceDetached(eventDetails) {
         if ("device" in eventDetails) {
             local address = eventDetails.device;
@@ -289,7 +294,7 @@ class USB.Host extends USB.Logger {
                 }
 
                 try {
-                    if (null != _listener) _listener("disconnected", device);
+                    if (null != _listener) _listener(USB_DEVICE_STATE_DISCONNECTED, device);
                 } catch (e) {
                     _log("Error at user code: " + e);
                 }
@@ -583,7 +588,7 @@ class USB.Device extends USB.Logger {
             }
 
             try {
-                if (_listener) _listener("stopped", driver);
+                if (_listener) _listener(USB_DEVICE_STATE_STOPPED, driver);
             } catch (e) {
                 _log("Error at user code: " + e);
             }
@@ -604,7 +609,8 @@ class USB.Device extends USB.Logger {
     //
     // Parameter:
     //      listener  - null or the function that receives two parameters:
-    //                      eventType -   "started", "stopped"
+    //                      eventType -   USB_DEVICE_STATE_STARTED, USB_DEVICE_STATE_STOPPED,
+    //                                    USB_DEVICE_STATE_CONNECTED, USB_DEVICE_STATE_DISCONNECTED
     //                      eventObject - USB.Driver instance
     function _setListener(listener) {
         _listener = listener;
@@ -680,7 +686,7 @@ class USB.Device extends USB.Logger {
 
             try {
                 foreach (instance in matchResult) {
-                    if (_listener) _listener("started", instance);
+                    if (_listener) _listener(USB_DEVICE_STATE_STARTED, instance);
                 }
             } catch(e) {
                 _log("User Listener code error: " + e);

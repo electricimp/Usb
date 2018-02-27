@@ -32,7 +32,6 @@
 @include "../../../../USB.device.lib.nut"
 @include "../../FT232RLFtdiUsbDriver.device.lib.nut"
 
-
 log <- server.log.bindenv(server);
 
 const PING = "ping";

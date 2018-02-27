@@ -1,27 +1,31 @@
 ## Application Development Guide
 
-This guide is intended for those developers who is going to integrate one or more existing USB drivers into their applications.
+This guide is intended for those developers who is going to integrate one or more of the existing USB drivers into their applications.
 
 ### Include the framework and drivers
 
-By default USB Drivers Framework does not provide any drivers. Therefore, a scope of the required device drivers should be identified and controlled by an application developer.
+By default the base USB Drivers Framework itself does not provide any device drivers out of the box. So application developers should explicitely include and manage the drivers they need.
 
-**To add USB Driver Framework library to your project, add** `#require "USB.device.lib.nut:1.0.0"` **to the top of your device code.**
+**To add the base USB Driver Framework library to your project, add** `#require "USB.device.lib.nut:1.0.0"` **to the top of your device code.**
 
 After that, include into your device code the libraries with all USB drivers needed for your application.
 
-In the example below FT232RLFtdi USB driver is included into an application:
+In the example below FT232RL FTDI USB Device Driver is included into an application:
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
-#require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0" // driver example
+#require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0"
 ```
 
-### Initialize the framework
+### Initializing the framework
 
-Next, it is necessary to initialize USB Drivers Framework with a scope of drivers.
+Once the necessary driver libraries are included into the application code, it's necessary to instantiate them via the USB Framework initialization API.
 
-The main entrance to USB Drivers Framework is **[USB.Host](DriverDevelopmentGuide.md#usbhost-class)** class. This class is responsible for a driver registration and notification of an application when the required device is attached and ready to operate through the provided driver.
+The main entrance point into the USB Drivers Framework is **[USB.Host](DriverDevelopmentGuide.md#usbhost-class)** class.
+
+This class is responsible for driver registration, event notification handling, and driver lifecycle management.
+
+of an application when the required device is attached and ready to operate through the provided driver.
 
 The below example shows typical steps of the framework initialization. In this example the application creates instance of [USB.Host](DriverDevelopmentGuide.md#usbhost-class) class for an array of the pre-defined driver classes (one FT232RLFtdi USB driver in this example). To get notification when the required device is connected and the corresponding driver is started and ready to use, the application assigns a [callback function](DriverDevelopmentGuide.md#callbackeventtype-eventobject) that receives USB event type and event object. In simple case it is enough to listen for `"started"` and `"stopped"` events, where event object is the driver instance.
 
