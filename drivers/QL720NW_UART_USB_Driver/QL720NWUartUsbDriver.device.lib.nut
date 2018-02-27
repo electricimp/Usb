@@ -434,7 +434,7 @@ class QL720NWUartUsbDriver extends USB.Driver {
         }
 
         if (callback != null) {
-            local env = {callback : callback}
+            local env = {"callback" : callback};
             _bulkOut.write(data, _onComplete.bindenv(env));
         }
     }
