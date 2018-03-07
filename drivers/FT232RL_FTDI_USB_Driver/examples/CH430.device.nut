@@ -55,7 +55,7 @@ class CH340 extends FT232RLFtdiUsbDriver {
 
 function deviceReadCb(error, data, len) {
     if (error != null) {
-        log("Read timeout! Check loopback conection.");
+        log("Read timeout! Check loopback connection.");
         return;
     }
 
@@ -64,12 +64,11 @@ function deviceReadCb(error, data, len) {
     local txt = "Data received: " + str;
     log(txt);
 
-    if (str == PING) ch340.write(PONG, deviceWriteCb);
-    else ch340.write(PING, deviceWriteCb);
-
-    local buffer = blob(10);
-    ch340.read(buffer, deviceReadCb);
-
+    if (str == PING) {
+        ch340.write(PONG, deviceWriteCb);
+        local buffer = blob(10);
+        ch340.read(buffer, deviceReadCb);
+    }
 }
 
 function deviceWriteCb(error, data, len) {
@@ -89,7 +88,6 @@ function usbEventListener(event, data) {
 
         local buffer = blob(10);
         ch340.read(buffer, deviceReadCb);
-
     }
 }
 
@@ -99,4 +97,4 @@ log("USB.Host setup complete");
 usbHost.setEventListener(usbEventListener);
 log("USB.Host setEventListener complete");
 
-log("Waiting for attach event");
+log("Waiting for a \"device connected\" event");
