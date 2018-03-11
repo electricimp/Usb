@@ -137,7 +137,13 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
         _bulkIn.read(data,  function(ep, error, data, length) {
             if (onComplete) {
                 if (error == USB_ERROR_FREE || error == USB_ERROR_IDLE) error = null;
-                onComplete(error, data, length);
+                if (length >= 3) {
+                    data.seek(2);
+                    length -= 2;
+                    onComplete(error, data, length);
+                } else {
+                    _error("Received too short packet");
+                }
             }
         }.bindenv(this));
     }
