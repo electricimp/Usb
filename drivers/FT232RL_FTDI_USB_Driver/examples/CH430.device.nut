@@ -29,8 +29,8 @@
 // Since CH340 differs from FT232RL  mostly by configuration protocol,
 // it is possible to use FT232RL driver for CH340 by changing VID/PID and block configuration call.
 
-@include "../../../../USB.device.lib.nut"
-@include "../../FT232RLFtdiUsbDriver.device.lib.nut"
+@include __PATH__ + "/../../../../USB.device.lib.nut"
+@include __PATH__ + "/../../FT232RLFtdiUsbDriver.device.lib.nut"
 
 log <- server.log.bindenv(server);
 
