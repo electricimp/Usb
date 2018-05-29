@@ -2,9 +2,16 @@
 
 This section is intended for those developers who is going to create new driver for a USB device.
 
+**Note**: Whenever you publish a driver, please supply it with an extensive and sufficient documentation
+that covers its limitations, requirements and examples with code snippets.
+
 ### Generic rules
 
-Each driver can be interpreted as special type of library that should follow  all rules about including of any libraries new driver may depends on. Particularly it is recommended to avoid use of `#include` or `@require` [Builder](https://electricimp.com/docs/tools/builder/) instruction to prevent code duplication at an application that may utilize the driver.
+Each driver can be interpreted as special type of library that should follow
+ ll rules about including of any libraries new driver may depends on. 
+ Particularly it is recommended to avoid use of `#include` or `@require` 
+ [Builder](https://electricimp.com/docs/tools/builder/) instruction to prevent 
+ code duplication at an application that may utilize the driver.
 
 ### Basic driver implementation
 

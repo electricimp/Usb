@@ -1,26 +1,31 @@
 # USB Drivers Framework
 
-USB Drivers Framework is intended to simplify and standardize USB driver creation, integration and usage in your IMP device code. It consists of several abstractions and can be used by two types of developers:
-- if you want to utilize the existing USB drivers in your application, see an [Application Development Guide](./docs/ApplicationDevelopmentGuide.md);
-- if you want to create and add a new USB driver, see [Driver Development Guide](./docs/DriverDevelopmentGuide.md) below.
+USB Drivers Framework is designed to simplify and standardize USB driver development, 
+integration with Electric Imp device code. It's primary target audience is:
 
-## Common introduction
+- Application developers who want to leverage existing drivers
+- New USB peripheral drivers developers
 
-ElectricImp platform provides base abstraction for a usb API over the native code see [hardware.usb](https://electricimp.com/docs/api/hardware/usb/). By default imp005 has USB port only but probably your are working on some custom board which also has USB port (or several USB ports).
-The `hardware.usb` api gives the direct access to the usb configurations, interfaces and endpoints and allow to perform usb operations like control or bulk transfer. Based on that api developer could create device library which could interact with concrete device and such library will be called as *DRIVER* in all documentation.
-The `hardware.usb` API does not provide any restrictions for a driver developers which could lead to vendor incompatible drivers and inability to use several drivers simultaneously in a single application, therefore it is not recommended to use `hardware.usb` directly for a driver creation.
+The USB driver framework is a wrapper over the `hardware.usb` Squirrel API and is intended to:
 
-For this purpose USB Drivers Framework is a pure squirrel library which wrap the native `hardware.usb` api, it was intended for standardization of the driver process creation and unify the application development. And of course the main features of the framework are multiple drivers support and runtime plug an unplug feasibility. USB Framework wraps all methods of the `hardware.usb`, which allow driver developer handle USB reset in common way for all drivers and do not care about `hardware.usb` methods call for an un-pluged device.
-The framework impose a constraints on driver development but they are minimal: first of all it is prohibited to access to the `hardware.usb` api directly and the second limitation is that each driver should implement `match()` and `release()` methods [see driver development guide](./docs/DriverDevelopmentGuide.md#usbdriver-class).
-There is no more limitations for the driver API therefore each driver could provide it's own custom API.
-It is important for an application developer to read driver API first (for each included driver) and for a driver developers it is important to provide detailed documentation on driver API.
+1. Unify driver initialization and release process
+2. Support multiple drivers used by a single application
+3. Provide plug/unplug events handlers on the application level application
+4. Address the driver compatibility issues with regards to device vendor, model, etc.
 
-USB Driver Framework make it possible to cooperate multiple drivers in a single application it means that application developer could simply include custom driver library without investigation of it's internals therefore. And driver developer should implement `match()` method very carefully to avoid matching to a wrong device see [multiple drivers support](./docs/ApplicationDevelopmentGuide.md#multiple-drivers-support) Application Development Guide and [match() method](./docs/DriverDevelopmentGuide.md#matchdeviceobject-interfaces) of the Driver Development Guide.
+**Note**: when using the framework or any drivers built on top of it, please never use the 
+`hardware.usb` API directly! 
+
+## Documentation Structure
+
+- [Application Development Guide](./docs/ApplicationDevelopmentGuide.md) - the documentation for application developers 
+- [Driver Development Guide](./docs/DriverDevelopmentGuide.md) - the guide for new USB driver developers
 
 
 ## Driver examples
 
-Either application or driver developer may be interesting in examples of concrete device drivers. The framework includes a set of such drivers:
+Either application or driver developer may be interesting in examples of 
+concrete device drivers. The framework includes a set of such drivers:
 - [Generic HID device](./docs/HID_Driver.md/)
 - [QL720NW printer](./examples/QL720NW_UART_USB_Driver/)
 - [FTDI usb-to-uart converter](./examples/FT232RL_FTDI_USB_Driver/)

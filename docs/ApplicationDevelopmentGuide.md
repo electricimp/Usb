@@ -1,6 +1,9 @@
 ## Application Development Guide
 
-This guide is intended for those developers who is going to integrate one or more of the existing USB drivers into their applications.
+This guide is intended for those developers who is going to integrate one or more of 
+the existing USB drivers into their applications.
+
+Before you use a driver, please carefully read it's documentation, limitaions and requirements.
 
 ### Include the framework and drivers
 
