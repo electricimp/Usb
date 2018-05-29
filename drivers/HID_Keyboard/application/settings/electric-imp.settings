@@ -1,0 +1,4 @@
+{
+    "agent-file": "src\\agent.nut", 
+    "device-file": "src\\device.nut"
+}
