@@ -425,12 +425,11 @@ class USB.Device extends USB.Logger {
     constructor(usb, speed, deviceDescriptor, deviceAddress, drivers) {
         _speed = speed;
 
-        _device = deviceDescriptor;
-        _configuration = deviceDescriptor.configurations[0];
-        _interfaces = _configuration.interfaces;
-
-        _address = deviceAddress;
         _usb = usb;
+        _device = deviceDescriptor;
+        _address = deviceAddress;
+        _interfaces = _configuration.interfaces;
+        _configuration = deviceDescriptor.configurations[0];
         _driverInstances = [];
 
         local ep0 = USB.ControlEndpoint(this, 0, _device["maxpacketsize0"]);
