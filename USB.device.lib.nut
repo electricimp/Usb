@@ -75,8 +75,9 @@ const USB_ERROR_FREE                        = 15;
 const USB_ERROR_IDLE                        = 16;
 const USB_ERROR_TIMEOUT                     = 19;
 
-const USB_DEVICE_DRIVER_STATE_STARTED       = "started";
-const USB_DEVICE_DRIVER_STATE_STOPPED       = "stopped";
+const USB_DRIVER_STATE_STARTED              = "started";
+const USB_DRIVER_STATE_STOPPED              = "stopped";
+
 const USB_DEVICE_STATE_CONNECTED            = "connected";
 const USB_DEVICE_STATE_DISCONNECTED         = "disconnected";
 
@@ -202,13 +203,13 @@ class USB.Host extends USB.Logger {
     // Assign listener about device and  driver status changes.
     // Parameters:
     //      listener  - null or the function that receives two parameters:
-    //                      eventType - USB_DEVICE_DRIVER_STATE_STARTED, USB_DEVICE_DRIVER_STATE_STOPPED,
+    //                      eventType - USB_DRIVER_STATE_STARTED, USB_DRIVER_STATE_STOPPED,
     //                                  USB_DEVICE_STATE_CONNECTED, USB_DEVICE_STATE_DISCONNECTED
     //                      eventObject - depending on event type it could be
     //                                    either USB.Device or USB.Driver instance
     function setEventListener(listener) {
         if (typeof listener != "function" && listener != null) {
-            throw "Invalid paramter";
+            throw "Invalid event listener parameter";
         }
 
         _listener = listener;
@@ -311,7 +312,7 @@ class USB.Host extends USB.Logger {
                 _log("Detach event for unregistered device: " + address);
             }
         } else {
-            _log("Detach event for unknown device");
+            _error("Detach event occurred for an unknown device");
         }
     }
 
@@ -338,7 +339,7 @@ class USB.Host extends USB.Logger {
                 _error("Device.transferEvent error: " + e);
             }
         } else {
-            _log("transfer event for unknown device: "+ address);
+            _error("transfer event for unknown device: " + address);
         }
     }
 
@@ -592,14 +593,10 @@ class USB.Device extends USB.Logger {
             try {
                 driver.release();
             } catch (e) {
-                _error("Driver.release exception: " + e);
+                _error("Exception occurred on driver release: " + e);
             }
 
-            try {
-                if (_listener) _listener(USB_DEVICE_DRIVER_STATE_STOPPED, driver);
-            } catch (e) {
-                _log("Error at user code: " + e);
-            }
+            if (_listener) _listener(USB_DRIVER_STATE_STOPPED, driver);
         }
 
         _usb = null;
@@ -685,17 +682,13 @@ class USB.Device extends USB.Logger {
                     matchResult = result;
                 }
             } catch (e) {
-                _log("Error driver initialization: " + e);
+                _error("Error driver initialization: " + e);
             }
 
-            try {
-                foreach (instance in matchResult) {
-                    if (_listener) {
-                        _listener(USB_DEVICE_DRIVER_STATE_STARTED, instance);
-                    }
+            foreach (instance in matchResult) {
+                if (_listener) {
+                    _listener(USB_DRIVER_STATE_STARTED, instance);
                 }
-            } catch(e) {
-                _log("User Listener code error: " + e);
             }
         }
     }
@@ -796,9 +789,7 @@ class USB.FunctionalEndpoint extends USB.Logger {
         return _address;
     }
 
-
     // --------------------- Private functions -----------------
-
 
     // Constructor
     // Parameters:
@@ -840,11 +831,7 @@ class USB.FunctionalEndpoint extends USB.Logger {
         );
 
         _transferCb = function (error, length) {
-            try {
-                if (onComplete != null) onComplete(this, error, data, length);
-            } catch (e) {
-                _log("User code exception: " + e);
-            }
+            onComplete && onComplete(this, error, data, length);
         };
 
         // Disable 5 seconds time limit for an interrupt endpoint
@@ -875,7 +862,6 @@ class USB.FunctionalEndpoint extends USB.Logger {
         _transferCb = null;
 
         cb(error, length);
-
     }
 
     // Auxillary function to handle transfer timeout state

@@ -98,7 +98,7 @@ class QL720Sanity extends ImpTestCase {
         return Promise(function(resolve, reject) {
             host.setEventListener(function(eventType, eventObject) {
 
-                if (eventType == USB_DEVICE_DRIVER_STATE_STARTED) {
+                if (eventType == USB_DRIVER_STATE_STARTED) {
                     if (typeof eventObject != "QL720NWUartUsbDriver") {
                         reject("Invalid event object: " + typeof eventObject);
                     } else {
@@ -106,7 +106,7 @@ class QL720Sanity extends ImpTestCase {
                     }
                 }
 
-                if (eventType == USB_DEVICE_DRIVER_STATE_STOPPED) {
+                if (eventType == USB_DRIVER_STATE_STOPPED) {
                     if (typeof eventObject == "QL720NWUartUsbDriver") {
                         resolve();
                     } else {
@@ -176,7 +176,7 @@ class QL720Sanity extends ImpTestCase {
         return Promise(function(resolve, reject) {
             _getUsbHost().setEventListener(function(eventType, eventObject) {
 
-                if (eventType == USB_DEVICE_DRIVER_STATE_STARTED &&
+                if (eventType == USB_DRIVER_STATE_STARTED &&
                     typeof eventObject == "QL720NWUartUsbDriver") {
                         resolve(eventObject);
                 }

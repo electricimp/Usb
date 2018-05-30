@@ -1,17 +1,21 @@
 ## Application Development Guide
 
-This guide is intended for those developers who is going to integrate one or more of 
+This guide is intended for those developers who is going to integrate one or more of
 the existing USB drivers into their applications.
 
-Before you use a driver, please carefully read it's documentation, limitaions and requirements.
+Before you use a driver, please carefully read it's documentation, limitations and requirements.
 
 ### Include the framework and drivers
 
-By default the base USB Drivers Framework itself does not provide any device drivers out of the box. So application developers should explicitely include and manage the drivers they need.
+By default the base USB Drivers Framework itself does not provide any device
+drivers out of the box. So application developers should explicitly include
+and manage the drivers they need.
 
-**To add the base USB Driver Framework library to your project, add** `#require "USB.device.lib.nut:1.0.0"` **to the top of your device code.**
+**Note:** to include the base USB Driver Framework library to your project,
+add `#require "USB.device.lib.nut:1.0.0"` to the top of your device code.
 
-After that, include into your device code the libraries with all USB drivers needed for your application.
+Include statements for dependent USB drivers and other libraries,
+as well as the rest of the application code should follow.
 
 In the example below FT232RL FTDI USB Device Driver is included into an application:
 
@@ -22,13 +26,25 @@ In the example below FT232RL FTDI USB Device Driver is included into an applicat
 
 ### Initializing the framework
 
-Once the necessary driver libraries are included in the application code, the USB frameworks should be configured to be using them.
+Once the necessary driver libraries are included in the application code,
+the USB frameworks should be configured to be using them.
 
-The main entrance point into the USB Drivers Framework is **[USB.Host](DriverDevelopmentGuide.md#usbhost-class)** class.
+The main entrance point into the USB Drivers Framework is
+**[USB.Host](DriverDevelopmentGuide.md#usbhost-class)** class.
 
-This class is responsible for driver registration, instantiation, device and driver event notification handling, driver lifecycle management.
+This class is responsible for driver registration, instantiation,
+device and driver event notification handling, driver lifecycle management.
 
-The below example shows typical steps of the framework initialization. In this example the application creates an instance of [USB.Host](DriverDevelopmentGuide.md#usbhost-class) class for an array of the pre-defined driver classes (an FT232RL FTDI USB driver in this example). To get notification when the required device is connected and the corresponding driver is started and ready to use, the application assigns a [callback function](DriverDevelopmentGuide.md#callbackeventtype-eventobject) that receives USB event type and event object. In simple case it is enough to listen for `USB_DEVICE_DRIVER_STATE_STARTED` and `USB_DEVICE_DRIVER_STATE_STOPPED` events, where event object is the driver instance.
+The below example shows typical steps of the framework initialization.
+In this example the application creates an instance of
+[USB.Host](DriverDevelopmentGuide.md#usbhost-class) class for an array of
+the pre-defined driver classes (an FT232RL FTDI USB driver in this example).
+To get notification when the required device is connected and the corresponding
+driver is started and ready to use, the application assigns a
+[callback function](DriverDevelopmentGuide.md#callbackeventtype-eventobject)
+that receives USB event type and event object. In simple case it is enough to
+listen for `USB_DRIVER_STATE_STARTED` and `USB_DRIVER_STATE_STOPPED`
+events, where event object is the driver instance.
 
 ```
 #require "USB.device.lib.nut:1.0.0"
@@ -37,14 +53,14 @@ The below example shows typical steps of the framework initialization. In this e
 ft232DriverInstance <- null;
 
 function driverStatusListener(eventType, eventObject) {
-    if (eventType == USB_DEVICE_DRIVER_STATE_STARTED) {
+    if (eventType == USB_DRIVER_STATE_STARTED) {
 
         if (typeof eventObject == "FT232RLFtdiUsbDriver")
             ft232DriverInstance = eventObject;
 
         // start work with FT232rl driver API here
 
-    } else if (eventType == USB_DEVICE_DRIVER_STATE_STOPPED) {
+    } else if (eventType == USB_DRIVER_STATE_STOPPED) {
 
         // immediately stop all interaction with FT232rl driver API
         // and reset driver reference
