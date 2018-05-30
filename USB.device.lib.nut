@@ -125,8 +125,13 @@ class USB.Host extends USB.Logger {
     // USB device pointer
     _usb = null;
 
-    // Listener for some USB events
-    _listener = null;
+    // USB Driver state listener
+    // This property is available for device instances, so it's public
+    driverListener = null;
+
+    // USB device state listener
+    // This property is available for device instances, so it's public
+    deviceListener = null;
 
     // ------------------------ public API -------------------
 
@@ -200,23 +205,33 @@ class USB.Host extends USB.Logger {
         return devs;
     }
 
-    // Assign listener about device and  driver status changes.
+    // Setter for the driver state listener
+    // Parameters:
+    //      listener  - null or the function that receives two parameters:
+    //                      eventType   - USB_DRIVER_STATE_STARTED - the driver is started
+    //                                    USB_DRIVER_STATE_STOPPED - the driver is stopped
+    //                      eventObject - instance of USB.Driver
+    function setDriverListener(listener) {
+        if (typeof listener != "function" && listener != null) {
+            throw "Invalid event listener parameter";
+        }
+        driverListener = listener;
+   }
+
+
+    // Setter for the device state listener
     // Parameters:
     //      listener  - null or the function that receives two parameters:
     //                      eventType - USB_DRIVER_STATE_STARTED, USB_DRIVER_STATE_STOPPED,
     //                                  USB_DEVICE_STATE_CONNECTED, USB_DEVICE_STATE_DISCONNECTED
     //                      eventObject - depending on event type it could be
     //                                    either USB.Device or USB.Driver instance
-    function setEventListener(listener) {
+    function setDeviceListener(listener) {
         if (typeof listener != "function" && listener != null) {
             throw "Invalid event listener parameter";
         }
 
-        _listener = listener;
-
-        foreach(device in _devices) {
-            device._setListener(_listener);
-        }
+        deviceListener = listener;
    }
 
     // ------------------------ private API -------------------
@@ -255,7 +270,7 @@ class USB.Host extends USB.Logger {
                 _onTransferComplete(eventDetails);
                 break;
             case USB_UNRECOVERABLE_ERROR:
-                _log("USB_UNRECOVERABLE_ERROR event");
+                _error("USB_UNRECOVERABLE_ERROR event");
                 _onError();
                 break;
         }
@@ -271,16 +286,13 @@ class USB.Host extends USB.Logger {
             local device = USB.Device(_usb, speed, descr, _address, _driverClasses);
 
             // a copy application callback
-            device._listener = _listener;
             _devices[_address] <- device;
             _log("New device detected: " + device + ". Assigned address: " + _address);
 
             // address for next device
             _address++;
 
-            if (null != _listener) {
-                _listener(USB_DEVICE_STATE_CONNECTED, device);
-            }
+            deviceListener && deviceListener(USB_DEVICE_STATE_CONNECTED, device);
         } catch (e) {
             _error("Error driver instantiation: " + e);
         }
@@ -290,6 +302,7 @@ class USB.Host extends USB.Logger {
     // Stops corresponding USB.Device instance, notifies application listener
     // with USB_DEVICE_STATE_DISCONNECTED event
     function _onDeviceDetached(eventDetails) {
+        // TODO: why do we need this check?
         if ("device" in eventDetails) {
             local address = eventDetails.device;
             if (address in _devices) {
@@ -303,13 +316,9 @@ class USB.Host extends USB.Logger {
                     _error("Error on device " + device + " release: " + e);
                 }
 
-                try {
-                    if (null != _listener) _listener(USB_DEVICE_STATE_DISCONNECTED, device);
-                } catch (e) {
-                    _log("Error at user code: " + e);
-                }
+                deviceListener && deviceListener(USB_DEVICE_STATE_DISCONNECTED, device);
             } else {
-                _log("Detach event for unregistered device: " + address);
+                _error("Detach event for unregistered device: " + address);
             }
         } else {
             _error("Detach event occurred for an unknown device");
@@ -366,7 +375,6 @@ class USB.Host extends USB.Logger {
                 _error("Error on device " + device + " release: " + e);
             }
         }
-
         imp.wakeup(0, reset.bindenv(this));
     }
 
@@ -407,9 +415,6 @@ class USB.Device extends USB.Logger {
 
     // USB interface
     _usb = null;
-
-    // Listener callback of USB events
-    _listener = null;
 
     // Constructs device peer.
     // Parameters:
@@ -518,9 +523,9 @@ class USB.Device extends USB.Logger {
         // Auxiliary function to search required endpoint
         find = function(type, dir) {
             foreach(ep in endpoints) {
-                if (ep.attributes == type &&
-                    (ep.address & USB_DIRECTION_MASK) == dir)
+                if (ep.attributes == type && (ep.address & USB_DIRECTION_MASK) == dir) {
                     return ep.get();
+                }
             }
         }
 
@@ -596,26 +601,16 @@ class USB.Device extends USB.Logger {
                 _error("Exception occurred on driver release: " + e);
             }
 
-            if (_listener) _listener(USB_DRIVER_STATE_STOPPED, driver);
+            local listener = driver.deviceListener;
+            listener && listener(USB_DRIVER_STATE_STOPPED, driver);
         }
 
         _usb = null;
         _device = null;
-        _listener = null;
         _endpoints = null;
         _interfaces = null;
         _configuration = null;
         _driverInstances = null;
-    }
-
-    // Notifies new listener about device current state
-    //
-    // Parameter:
-    //      listener  - null or the function that receives two parameters:
-    //                      eventType -   USB_DEVICE_STATE_CONNECTED, USB_DEVICE_STATE_DISCONNECTED
-    //                      eventObject - USB.Driver instance
-    function _setListener(listener) {
-        _listener = listener;
     }
 
     // Selects current device configuration by sending USB_REQUEST_SET_CONFIGURATION request through Endpoint Zero
@@ -686,9 +681,8 @@ class USB.Device extends USB.Logger {
             }
 
             foreach (instance in matchResult) {
-                if (_listener) {
-                    _listener(USB_DRIVER_STATE_STARTED, instance);
-                }
+                local listener = instance.driverListener;
+                listener && listener(USB_DRIVER_STATE_STARTED, instance);
             }
         }
     }
