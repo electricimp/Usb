@@ -83,52 +83,50 @@ const USB_DEVICE_STATE_DISCONNECTED         = "disconnected";
 
 // The class that introduces USB namespace and related constants.
 // Not intended to use by any developers.
-class USB {
+USB <- {
 
-    static VERSION = "1.0.0";
+    VERSION = "1.0.0",
 
-    Log = {
-        // Debug flag
-        debug = null,
+    // Debug flag
+    debug = true,
 
-        // Information level logger
-        l = function(txt) {
-            if (_debug) {
-                server.log("[USB]: " + txt);
-            }
+    // Information level logger
+    _log = function(txt) {
+        if (debug) {
+            server.log("[USB]: " + txt);
         }
+    }
 
-        // Error level logger
-        e = function(txt) {
-            server.error("[USB]: " + txt);
-        }
-    };
+    // Error level logger
+    _err = function(txt) {
+        server.error("[USB]: " + txt);
+    }
 
     //
     // The main interface to start working with USB devices.
     // Here an application registers drivers and assigns listeners
     // for important events like device connection/detachment.
-    Host = class {
+    Host = {
 
         // The list of registered driver classes
-        _driverClasses = null;
+        _driverClasses = null,
 
         // The list of connected devices
-        _devices = null;
+        _devices = null,
 
         // The address available to assign to next device
-        _address = 1;
+        _address = 1,
 
         // USB device pointer
-        _usb = null;
+        _usb = null,
 
         // USB Driver state listener
         // This property is available for device instances, so it's public
-        driverListener = null;
+        driverListener = null,
 
         // USB device state listener
         // This property is available for device instances, so it's public
-        deviceListener = null;
+        deviceListener = null,
 
         // ------------------------ public API -------------------
 
@@ -139,7 +137,10 @@ class USB {
         //      autoConfPins - flag to specify whether to configure pins for usb usage
         //                     (see https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb)
         //
-        constructor(driverList, autoConfPins = true) {
+        init = function(driverList, autoConfPins = true) {
+            _log <- USB._log.bindenv(USB);
+            _err <- USB._err.bindenv(USB);
+
             try {
                 _usb = hardware.usb;
             } catch(e) {
@@ -178,7 +179,7 @@ class USB {
         // Reset the USB BUS.
         // Can be used by driver or application in response to unrecoverable error
         // like unending bulk transfer or halt condition during control transfers
-        function reset() {
+        reset = function() {
             _usb.disable();
 
             // force disconnect for all attached devices
@@ -194,7 +195,7 @@ class USB {
         // Auxillary function to get list of attached devices.
         // Returns:
         //      an array of USB.Device instances
-        function getAttachedDevices() {
+        getAttachedDevices = function() {
             local devs = [];
 
             foreach(device in _devices)  devs.append(device);
@@ -208,12 +209,12 @@ class USB {
         //                      eventType   - USB_DRIVER_STATE_STARTED - the driver is started
         //                                    USB_DRIVER_STATE_STOPPED - the driver is stopped
         //                      eventObject - instance of USB.Driver
-        function setDriverListener(listener) {
+        setDriverListener = function(listener) {
             if (typeof listener != "function" && listener != null) {
                 throw "Invalid event listener parameter";
             }
             driverListener = listener;
-       }
+        }
 
 
         // Setter for the device state listener
@@ -223,7 +224,7 @@ class USB {
         //                                  USB_DEVICE_STATE_CONNECTED, USB_DEVICE_STATE_DISCONNECTED
         //                      eventObject - depending on event type it could be
         //                                    either USB.Device or USB.Driver instance
-        function setDeviceListener(listener) {
+        setDeviceListener = function(listener) {
             if (typeof listener != "function" && listener != null) {
                 throw "Invalid event listener parameter";
             }
@@ -235,7 +236,7 @@ class USB {
 
         // Checks if given parameter implement USB.Driver API,
         // filters duplicate and append to the driver list
-        function _checkAndAppend(driverClass) {
+        _checkAndAppend = function(driverClass) {
             if (typeof driverClass == "class" &&
                 "match"   in driverClass && typeof driverClass.match   == "function" &&
                 "release" in driverClass && typeof driverClass.release == "function")
@@ -252,7 +253,7 @@ class USB {
         // Parameters:
         //          eventType       - The type of event that triggered the event
         //          eventDetails    - Event-specific information
-        function _onUsbEvent(eventType, eventDetails) {
+        _onUsbEvent = function(eventType, eventDetails) {
             switch (eventType) {
                 case USB_DEVICE_CONNECTED:
                     _log("USB_DEVICE_CONNECTED event");
@@ -267,7 +268,7 @@ class USB {
                     _onTransferComplete(eventDetails);
                     break;
                 case USB_UNRECOVERABLELog.e:
-                    _error("USB_UNRECOVERABLELog.e event");
+                    _err("USB_UNRECOVERABLELog.e event");
                     _onError();
                     break;
             }
@@ -276,7 +277,7 @@ class USB {
         // New device processing function
         // Creates new USB.Device instance, notifies application listener
         // with USB_DEVICE_STATE_CONNECTED event
-        function _onDeviceConnected(eventDetails) {
+        _onDeviceConnected = function(eventDetails) {
             try {
                 local speed = eventDetails.speed;
                 local descr = eventDetails.descriptors;
@@ -293,14 +294,14 @@ class USB {
 
                 deviceListener && deviceListener(USB_DEVICE_STATE_CONNECTED, device);
             } catch (e) {
-                _error("Error driver instantiation: " + e);
+                _err("Error driver instantiation: " + e);
             }
         }
 
         // Device detach processing function.
         // Stops corresponding USB.Device instance, notifies application listener
         // with USB_DEVICE_STATE_DISCONNECTED event
-        function _onDeviceDetached(eventDetails) {
+        _onDeviceDetached = function(eventDetails) {
             // TODO: why do we need this check?
             if ("device" in eventDetails) {
                 local address = eventDetails.device;
@@ -312,29 +313,29 @@ class USB {
                         device._stop();
                         _log("Device " + device + " is removed");
                     } catch (e) {
-                        _error("Error on device " + device + " release: " + e);
+                        _err("Error on device " + device + " release: " + e);
                     }
 
                     deviceListener && deviceListener(USB_DEVICE_STATE_DISCONNECTED, device);
                 } else {
-                    _error("Detach event for unregistered device: " + address);
+                    _err("Detach event for unregistered device: " + address);
                 }
             } else {
-                _error("Detach event occurred for an unknown device");
+                _err("Detach event occurred for an unknown device");
             }
         }
 
         // Data transfer status processing function
         // Checks transfer status and either notify USB.Device about event or
         // schedules bus reset if status is critical error
-        function _onTransferComplete(eventDetails) {
+        _onTransferComplete = function(eventDetails) {
             local address = eventDetails.device;
             local error = eventDetails.state;
 
             // check for UNRECOVERABLE error
             if (_checkError(error)) {
                 // all this errors are critical
-                _error("Critical error received: " + error);
+                _err("Critical error received: " + error);
                 imp.wakeup(0, _onError.bindenv(this));
                 return;
             }
@@ -344,17 +345,17 @@ class USB {
                 try {
                     device._transferEvent(eventDetails);
                 } catch(e) {
-                    _error("Device.transferEvent error: " + e);
+                    _err("Device.transferEvent error: " + e);
                 }
             } else {
-                _error("transfer event for unknown device: " + address);
+                _err("transfer event for unknown device: " + address);
             }
         }
 
         // Checks error class
         // Returns  TRUE if error is critical and USB need to be reset
         //          FALSE otherwise
-        function _checkError(error) {
+        _checkError = function(error) {
             if ((error > 0  && error < 4)   ||
                 (error > 4  && error < 8)   ||
                 (error > 9  && error < 12)  ||
@@ -366,22 +367,22 @@ class USB {
 
         // USB critical error processing function.
         // Stops all registered USB.Devices and schedules bus reset
-        function _onError(eventDetails = null) {
+        _onError = function(eventDetails = null) {
             foreach(device in _devices) {
                 try {
                     device.stop();
                 } catch (e) {
-                    _error("Error on device " + device + " release: " + e);
+                    _err("Error on device " + device + " release: " + e);
                 }
             }
             imp.wakeup(0, reset.bindenv(this));
         }
 
         // Metafunction to return class name when typeof <instance> is run
-        function _typeof() {
+        _typeof = function() {
             return "USB.Host";
         }
-    };
+    } // Host
 
     // The class that represents attached device.
     // It manages its configuration, interfaces and endpoints.
@@ -411,16 +412,22 @@ class USB {
         // USB interface
         _usb = null;
 
+        // Log functions
+        _log = null;
+        _err = null;
+
         // Constructs device peer.
         // Parameters:
         //      speed            - supported device speed
         //      deviceDescriptor - new device descriptor as specified by ElectricImpl USB API
         //      deviceAddress    - device address reserved (but assigned) for new device
         constructor(usb, speed, deviceDescriptor, deviceAddress) {
-            _speed = speed;
+            _log = USB._log.bindenv(USB);
+            _err = USB._err.bindenv(USB);
 
             _usb = usb;
             _desc = deviceDescriptor;
+            _speed = speed;
             _address = deviceAddress;
             local conf = deviceDescriptor.configurations[0];
             _interfaces = conf.interfaces;
@@ -475,12 +482,14 @@ class USB {
                         matchResult = result;
                     }
                 } catch (e) {
-                    _error("Error driver initialization: " + e);
+                    _err("Error driver initialization: " + e);
                 }
 
-                foreach (instance in matchResult) {
-                    local listener = instance.driverListener;
-                    listener && listener(USB_DRIVER_STATE_STARTED, instance);
+                local listener = USB.Host.driverListener;
+                if (listener) {
+                    foreach (instance in matchResult) {
+                        listener(USB_DRIVER_STATE_STARTED, instance);
+                    }
                 }
             }
         }
@@ -623,14 +632,14 @@ class USB {
             }
 
             // Release all drivers now
+            local listener = USB.Host.deviceListener;
             foreach (driver in _driverInstances) {
                 try {
                     driver.release();
                 } catch (e) {
-                    _error("Exception occurred on driver release: " + e);
+                    _err("Exception occurred on driver release: " + e);
                 }
 
-                local listener = driver.deviceListener;
                 listener && listener(USB_DRIVER_STATE_STOPPED, driver);
             }
 
@@ -706,7 +715,7 @@ class USB {
         function _typeof() {
             return "USB.Device";
         }
-    }
+    } // Device
 
     // The class that represent all non-control endpoints, e.g. bulk, interrupt etc
     // This class is managed by USB.Device and should be acquired through USB.Device instance
@@ -735,6 +744,26 @@ class USB {
 
         // Watchdog timer
         _timer = null;
+
+        // Log functions
+        _log = null;
+        _err = null;
+
+        // Constructor
+        // Parameters:
+        //      device          - USB.Device instance, owner of this endpoint
+        //      epAddress       - unique endpoint address
+        //      epType          - endpoint type
+        //      maxPacketSize   - maximum packet size for this endpoint
+        constructor (device, epAddress, epType, maxPacketSize) {
+            _log = USB._log.bindenv(USB);
+            _err = USB._err.bindenv(USB);
+
+            _device = device;
+            _address = epAddress;
+            _maxPacketSize = maxPacketSize;
+            _type = epType;
+        }
 
         // Write data through this endpoint.
         // Throws if EP is closed, has incompatible type or already busy
@@ -779,19 +808,6 @@ class USB {
         }
 
         // --------------------- Private functions -----------------
-
-        // Constructor
-        // Parameters:
-        //      device          - USB.Device instance, owner of this endpoint
-        //      epAddress       - unique endpoint address
-        //      epType          - endpoint type
-        //      maxPacketSize   - maximum packet size for this endpoint
-        constructor (device, epAddress, epType, maxPacketSize) {
-            _device = device;
-            _address = epAddress;
-            _maxPacketSize = maxPacketSize;
-            _type = epType;
-        }
 
         // Mark this endpoint as closed. All further operation causes exception.
         function _close() {
@@ -842,7 +858,7 @@ class USB {
             }
 
             if (null == _transferCb) {
-                _error("Unexpected transfer event: there is no listener for it");
+                _err("Unexpected transfer event: there is no listener for it");
                 return;
             }
 
@@ -863,7 +879,7 @@ class USB {
         function _typeof() {
             return "USB.FunctionalEndpoint";
         }
-    }
+    } // FunctionalEndpoint
 
     // Represent control endpoints.
     // This class is required due to specific EI usb API
@@ -887,6 +903,16 @@ class USB {
         // Typically EP is closed when device is detached or configuration is changed
         _closed = false;
 
+        // Constructor
+        // Parameters:
+        //      device          - USB.Device instance, owner of this endpoint
+        //      epAddress       - unique endpoint address
+        //      maxPacketSize   - maximum packet size for this endpoint
+        constructor (device, epAddress, maxPacketSize) {
+            _device = device;
+            _address = epAddress;
+            _maxPacketSize = maxPacketSize;
+        }
 
         // Generic function for transferring data over control endpoint.
         // Note! Only vendor specific requires are allowed.
@@ -919,17 +945,6 @@ class USB {
 
 
         // --------------------- private API -------------------
-
-        // Constructor
-        // Parameters:
-        //      device          - USB.Device instance, owner of this endpoint
-        //      epAddress       - unique endpoint address
-        //      maxPacketSize   - maximum packet size for this endpoint
-        constructor (device, epAddress, maxPacketSize) {
-            _device = device;
-            _address = epAddress;
-            _maxPacketSize = maxPacketSize;
-        }
 
         // Mark as closed. All further operation causes exception.
         function _close() {
@@ -965,7 +980,7 @@ class USB {
         function _typeof() {
             return "USB.ControlEndpoint";
         }
-    }
+    } // ControlEndpoint
 
     // Interface class for all drivers.
     // Driver developer is not required to subclass it though.
@@ -983,12 +998,12 @@ class USB {
         // Notify that driver is going to be released
         // No endpoint operation should be performed at this function.
         function release() {
-            _log("Released");
+            USB._log("Released");
         }
 
         // Metafunction to return class name when typeof <instance> is run
         function _typeof() {
             return "UsbDriver";
         }
-    }
+    } // Driver
 }
