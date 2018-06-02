@@ -52,7 +52,7 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
     }
 
     function testPositive3() {
-        getInEp().getAddress();
+        getInEp().getEndpoint();
     }
 
     function testNegative1() {

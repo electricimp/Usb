@@ -25,14 +25,14 @@
 
 // This is an example of QL720NW driver usage that prints "Hello,World!" with Bold/Italic fonts.
 
-@include "../../../../USB.device.lib.nut"
-@include "../QL720NWUartUsbDriver.device.lib.nut"
+@include __PATH__ + "./../../../../USB.device.lib.nut"
+@include __PATH__ + "./../QL720NWUartUsbDriver.device.lib.nut"
 
 log <- server.log.bindenv(server);
 
 ql720 <- null;
 
-function usbEventListener(event, data) {
+function usbDriverListener(event, data) {
     log("USB event: " + event);
 
     if (event == "started") {
@@ -49,10 +49,11 @@ function usbEventListener(event, data) {
 }
 
 
-usbHost <- USB.Host([QL720NWUartUsbDriver]);
+usbHost <- USB.Host;
+usbHost.init([QL720NWUartUsbDriver]);
 log("USB.Host setup complete");
 
-usbHost.setEventListener(usbEventListener);
+usbHost.setDriverListener(usbDriverListener);
 log("USB.Host setEventListener complete");
 
 log("Waiting for a \"device connected\" event");

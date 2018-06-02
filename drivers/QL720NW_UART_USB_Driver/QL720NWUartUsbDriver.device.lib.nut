@@ -209,7 +209,6 @@ class QL720NWUartUsbDriver extends USB.Driver {
         }
 
         _buffer.writestring(beforeText + text + afterText);
-
         return this;
     }
 
@@ -374,7 +373,7 @@ class QL720NWUartUsbDriver extends USB.Driver {
     // Initialize printer
     function _initialize() {
         _write(CMD_ESCP_ENABLE); // Select ESC/P mode
-        _write(CMD_ESCP_INIT); // Initialize ESC/P mode
+        _write(CMD_ESCP_INIT);   // Initialize ESC/P mode
 
         return this;
     }
@@ -399,15 +398,15 @@ class QL720NWUartUsbDriver extends USB.Driver {
     // Action queue processor: pops next command string and sends to printer.
     function _actionHandler(user = false) {
         // there is no actions to perform
-        if (this._actions.len() == 0) return;
+        if (_actions.len() == 0) return;
 
         // Pop the next action
-        local action = this._actions.top();
+        local action = _actions.top();
 
         try {
             _sendToPrinter(action, _actionHandler.bindenv(this));
 
-            this._actions.remove(0);
+            _actions.pop();
         } catch (e) {
             if (null == e.find("Busy")) {
                 _actions = [];
@@ -442,10 +441,8 @@ class QL720NWUartUsbDriver extends USB.Driver {
             return;
         }
 
-        if (callback != null) {
-            local env = {"callback" : callback};
-            _bulkOut.write(data, _onComplete.bindenv(env));
-        }
+        local env = {"callback" : callback};
+        _bulkOut.write(_data, _onComplete.bindenv(env));
     }
 
     // USB transfer complete callback

@@ -8,9 +8,9 @@ that covers its limitations, requirements and examples with code snippets.
 ### Generic rules
 
 Each driver can be interpreted as special type of library that should follow
- ll rules about including of any libraries new driver may depends on. 
- Particularly it is recommended to avoid use of `#include` or `@require` 
- [Builder](https://electricimp.com/docs/tools/builder/) instruction to prevent 
+ ll rules about including of any libraries new driver may depends on.
+ Particularly it is recommended to avoid use of `#include` or `@require`
+ [Builder](https://electricimp.com/docs/tools/builder/) instruction to prevent
  code duplication at an application that may utilize the driver.
 
 ### Basic driver implementation
@@ -296,7 +296,7 @@ Generic method for transferring data over control endpoint.
 | *data* 		 | Blob 	 | null    | [optional] Optional storage for incoming or outgoing payload|
 
 
-#### getAddress()
+#### getEndpoint()
 
 Returns the endpoint address. Typical use case for this function is to get endpoint ID for some of device control operation performed over Endpoint 0.
 
@@ -390,7 +390,7 @@ class MyCustomDriver imptements USB.Driver {
 **NOTE** Not all error codes indicate actual error status. However the USB framework doesn't filter out such error code to provide full information for device driver. See more information [here](https://electricimp.com/docs/resources/usberrors/).
 
 
-#### getAddress()
+#### getEndpoint()
 
 Returns the endpoint address. Typical use case for this function is to get endpoint ID for some of device control operation performed over Endpoint 0.
 

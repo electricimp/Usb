@@ -99,7 +99,7 @@ USB <- {
 
     // Error level logger
     _err = function(txt) {
-        server.error("[USB]: " + txt);
+        server.error("[USB|ERROR]: " + txt);
     }
 
     //
@@ -278,24 +278,20 @@ USB <- {
         // Creates new USB.Device instance, notifies application listener
         // with USB_DEVICE_STATE_CONNECTED event
         _onDeviceConnected = function(eventDetails) {
-            try {
-                local speed = eventDetails.speed;
-                local descr = eventDetails.descriptors;
-                local device = USB.Device(_usb, speed, descr, _address);
+            local speed = eventDetails.speed;
+            local descr = eventDetails.descriptors;
+            local device = USB.Device(_usb, speed, descr, _address);
 
-                device.selectDrivers(_driverClasses);
+            device.selectDrivers(_driverClasses);
 
-                // a copy application callback
-                _devices[_address] <- device;
-                _log("New device detected: " + device + ". Assigned address: " + _address);
+            // a copy application callback
+            _devices[_address] <- device;
+            _log("New device detected: " + device + ". Assigned address: " + _address);
 
-                // address for next device
-                _address++;
+            // address for next device
+            _address++;
 
-                deviceListener && deviceListener(USB_DEVICE_STATE_CONNECTED, device);
-            } catch (e) {
-                _err("Error driver instantiation: " + e);
-            }
+            deviceListener && deviceListener(USB_DEVICE_STATE_CONNECTED, device);
         }
 
         // Device detach processing function.
@@ -468,21 +464,17 @@ USB <- {
 
             foreach (driver in  drivers) {
                 local matchResult = [];
-                try {
-                    // if a driver matches, the driver instance is created here
-                    local result = driver.match(this, _interfaces);
-                    if (null != result) {
-                        if (typeof result != "array") {
-                            result = [result];
-                        }
-
-                        foreach (instance in result) {
-                            _driverInstances.append(instance);
-                        }
-                        matchResult = result;
+                // if a driver matches, the driver instance is created here
+                local result = driver.match(this, _interfaces);
+                if (null != result) {
+                    if (typeof result != "array") {
+                        result = [result];
                     }
-                } catch (e) {
-                    _err("Error driver initialization: " + e);
+
+                    foreach (instance in result) {
+                        _driverInstances.append(instance);
+                    }
+                    matchResult = result;
                 }
 
                 local listener = USB.Host.driverListener;
@@ -596,11 +588,9 @@ USB <- {
                         local type = ep.attributes;
 
                         if (type == USB_ENDPOINT_INTERRUPT) {
-                            _usb.openendpoint(_speed, _address, ifs.interfacenumber,
-                                            type, maxSize, address, pollTime);
+                            _usb.openendpoint(_speed, _address, ifs.interfacenumber, type, maxSize, address, pollTime);
                         } else {
-                            _usb.openendpoint(_speed, _address, ifs.interfacenumber,
-                                type, maxSize, address);
+                            _usb.openendpoint(_speed, _address, ifs.interfacenumber, type, maxSize, address);
                         }
 
                         local newEp = (type == USB_ENDPOINT_CONTROL) ?
@@ -727,7 +717,7 @@ USB <- {
         _type = 0;
 
         // EP address
-        _address = 0;
+        _endpoint = 0;
 
         // Maximum packet size for this endpoint
         // Should be one from {8, 16, 32, 64} set
@@ -752,15 +742,15 @@ USB <- {
         // Constructor
         // Parameters:
         //      device          - USB.Device instance, owner of this endpoint
-        //      epAddress       - unique endpoint address
+        //      endpoint        - unique endpoint address
         //      epType          - endpoint type
         //      maxPacketSize   - maximum packet size for this endpoint
-        constructor (device, epAddress, epType, maxPacketSize) {
+        constructor (device, endpoint, epType, maxPacketSize) {
             _log = USB._log.bindenv(USB);
             _err = USB._err.bindenv(USB);
 
             _device = device;
-            _address = epAddress;
+            _endpoint = endpoint;
             _maxPacketSize = maxPacketSize;
             _type = epType;
         }
@@ -773,8 +763,8 @@ USB <- {
         //
         //  Returns nothing
         function write(data, onComplete) {
-            if (_address & USB_DIRECTION_MASK) {
-                throw "Invalid endpoint direction: " + _address;
+            if (_endpoint & USB_DIRECTION_MASK) {
+                throw "Invalid endpoint direction: " + _endpoint;
             } else {
                 _transfer(data, onComplete);
             }
@@ -788,10 +778,10 @@ USB <- {
         //
         //  Returns nothing
         function read(data, onComplete) {
-            if (_address & USB_DIRECTION_MASK) {
+            if (_endpoint & USB_DIRECTION_MASK) {
                 _transfer(data, onComplete);
             } else {
-                throw "Invalid endpoint direction: " + _address;
+                throw "Invalid endpoint direction: " + _endpoint;
             }
         }
 
@@ -803,8 +793,8 @@ USB <- {
         // Returns this endpoint address
         // Typical use case for this function is to get endpoint ID for some of device control operation,
         // performed over Endpoint 0
-        function getAddress() {
-            return _address;
+        function getEndpoint() {
+            return _endpoint;
         }
 
         // --------------------- Private functions -----------------
@@ -825,12 +815,11 @@ USB <- {
         //  Returns nothing
         function _transfer(data, onComplete) {
             if (_closed) throw "Closed";
-
             if (_transferCb) throw "Busy";
 
             _device._usb.generaltransfer(
                 _device._address,
-                _address,
+                _endpoint,
                 _type,
                 data
             );
@@ -872,7 +861,7 @@ USB <- {
         // Auxillary function to handle transfer timeout state
         function _onTimeout() {
             _timer = null;
-            _onTransferComplete(USBLog.e_TIMEOUT, 0);
+            _onTransferComplete(USB_ERROR_TIMEOUT, 0);
         }
 
         // Metafunction to return class name when typeof <instance> is run
@@ -893,7 +882,7 @@ USB <- {
         _device = null;
 
         // EP address
-        _address = 0;
+        _endpoint = 0;
 
         // Maximum packet size for this endpoint
         // Should be one from {8, 16, 32, 64} set
@@ -906,11 +895,11 @@ USB <- {
         // Constructor
         // Parameters:
         //      device          - USB.Device instance, owner of this endpoint
-        //      epAddress       - unique endpoint address
+        //      endpoint        - unique endpoint address
         //      maxPacketSize   - maximum packet size for this endpoint
-        constructor (device, epAddress, maxPacketSize) {
+        constructor (device, endpoint, maxPacketSize) {
             _device = device;
-            _address = epAddress;
+            _endpoint = endpoint;
             _maxPacketSize = maxPacketSize;
         }
 
@@ -939,8 +928,8 @@ USB <- {
         // Returns this endpoint address
         // Typical use case for this function is to get endpoint ID for some of device control operation,
         // performed over Endpoint 0
-        function getAddress() {
-            return _address;
+        function getEndpoint() {
+            return _endpoint;
         }
 
 
@@ -966,7 +955,7 @@ USB <- {
             _device._usb.controltransfer(
                 _device._speed,
                 _device._address,
-                _address,
+                _endpoint,
                 reqType,
                 req,
                 value,
