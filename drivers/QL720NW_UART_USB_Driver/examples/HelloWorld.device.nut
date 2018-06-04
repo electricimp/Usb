@@ -48,7 +48,6 @@ function usbDriverListener(event, data) {
     }
 }
 
-
 usbHost <- USB.Host;
 usbHost.init([QL720NWUartUsbDriver]);
 log("[App]: USB.Host setup initialized");
