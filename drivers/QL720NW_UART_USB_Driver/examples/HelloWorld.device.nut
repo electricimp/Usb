@@ -33,7 +33,7 @@ log <- server.log.bindenv(server);
 ql720 <- null;
 
 function usbDriverListener(event, data) {
-    log("USB event: " + event);
+    log("[App]: USB event: " + event);
 
     if (event == "started") {
         ql720 = data;
@@ -51,9 +51,9 @@ function usbDriverListener(event, data) {
 
 usbHost <- USB.Host;
 usbHost.init([QL720NWUartUsbDriver]);
-log("USB.Host setup complete");
+log("[App]: USB.Host setup initialized");
 
 usbHost.setDriverListener(usbDriverListener);
-log("USB.Host setEventListener complete");
+log("[App]: USB.Host setEventListener complete");
 
-log("Waiting for a \"device connected\" event");
+log("[App]: Waiting for a \"device connected\" event");
