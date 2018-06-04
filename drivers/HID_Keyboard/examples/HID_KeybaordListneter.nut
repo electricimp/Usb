@@ -35,23 +35,23 @@ log <- server.log.bindenv(server);
 kbdDrv <- null;
 
 function kdbEventListener(keys) {
-	local txt = "Keys received: ";
-	foreach (key in keys) {
-		txt += key.tochar() + " ";
-	}
+    local txt = "Keys received: ";
+    foreach (key in keys) {
+        txt += key.tochar() + " ";
+    }
 
-	log (txt);
+    log (txt);
 }
 
 function usbEventListener(event, data) {
-	log("USB event: " + event);
+    log("USB event: " + event);
 
-	if (event == "started") {
-		kbdDrv = data;
+    if (event == "started") {
+        kbdDrv = data;
 
-		log("Start polling");
-		kbdDrv.startPoll(0, kdbEventListener);
-	}
+        log("Start polling");
+        kbdDrv.startPoll(0, kdbEventListener);
+    }
 }
 
 usbHost <- USB.Host([HIDKeyboard]);
