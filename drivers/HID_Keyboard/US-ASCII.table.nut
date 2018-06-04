@@ -30,23 +30,28 @@ local ASCII_OUTPUT  = ['\n', '\t', ' ', '-', '=', '[', ']', '\\', ';', '\'', ','
 // Used with HIDKeyboard class if this file is included into application code
 // NOTE: this is just example function that doesn't process key modifier like CRTL or SHIFT
 local US_ASCII_LAYOUT = function (keys) {
-        local result = [];
-        local index = -1;
+    server.log("here");
+    local result = [];
+    local index = -1;
 
-        foreach (key in keys) {
-            if (key > 3 && key < 30) {
-                key =  'a' + (key - 4);
-            } else if ((key > 29 && key < 40) ) {
-                key = '1' + (key - 30);
-            } else if (-1 != (index = HID_INPUT.find(key))) {
-                key = ASCII_OUTPUT[index];
-            } else { //
-                // Zero means error
-                key = 0;
-            }
-
-            if (key != 0) result.append(key);
+    foreach (k in keys) {
+        local key = k;
+        if (key > 3 && key < 30) {
+            key =  'a' + (key - 4);
+        } else if ((key > 29 && key < 40) ) {
+            key = '1' + (key - 30);
+        } else if (typeof (index = HID_INPUT.find(key)) != "null") {
+            key = ASCII_OUTPUT[index];
+        } else { //
+            // Zero means error
+            key = 0;
         }
 
-        return result;
+        server.log("k  : " + k);
+        server.log("key: " + key);
+        server.log("ind: " + index);
+
+        if (key != 0) result.append(key);
+    }
+    return result;
 }

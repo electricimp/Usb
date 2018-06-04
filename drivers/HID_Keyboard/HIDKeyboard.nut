@@ -66,19 +66,16 @@ class HIDKeyboard extends HIDDriver {
 	//       the implementation expects to receive response from HIDReport.getAsync() immediately
 	//		 and will use timer to implement IDLE time functionality.
 	function startPoll(time_ms, cb) {
-
 		if (null == cb) return;
-
 		if (_getAsyncUserCb != null) throw "Poll is already started";
 
 		foreach( report in _reports ) {
 			try {
 				report.setIdleTime(time_ms);
-
-				_log("Idle time set to " + time_ms);
+				USB.log("Idle time set to " + time_ms);
 			} catch(e) {
 				if (e == USB_ERROR_STALL) {
-					_log("Set IDLE is not supported by device. Using poll timer");
+					USB.log("Set IDLE is not supported by device. Using poll timer");
 					_timerTick = time_ms;
 				} else {
 					throw "USB error " + e;
@@ -88,7 +85,6 @@ class HIDKeyboard extends HIDDriver {
 		}
 
 		getAsync(_getAsyncCb.bindenv(this));
-
 		_getAsyncUserCb = cb;
 	}
 
@@ -109,10 +105,8 @@ class HIDKeyboard extends HIDDriver {
 	function setLEDs(ledList) {
 		if (typeof ledList == "array") {
 			local toSend = [];
-
 			foreach (report in _reports) {
 				local found = false;
-
 				foreach(item in report.getOutputItems()) {
 					foreach (led in ledList) {
 						if (item.attributes.usagePage == USAGE_PAGE_LED &&
@@ -122,15 +116,18 @@ class HIDKeyboard extends HIDDriver {
 						}
 					}
 				}
-
-				if (found) toSend.append(report);
+				found && toSend.append(report);
 			}
 
-			foreach (report in toSend) report.send();
-
-			if (toSend.len() == 0) return "No LED found at the keyboard";
-
-		} else throw "The argument must be Integer array";
+			foreach (report in toSend) {
+				report.send();
+			}
+			if (toSend.len() == 0) {
+				return "No LED found at the keyboard";
+			}
+		} else {
+			throw "The argument must be Integer array";
+		}
 	}
 
     // Notify that driver is going to be released
@@ -160,7 +157,7 @@ class HIDKeyboard extends HIDDriver {
 			_layout = US_ASCII_LAYOUT;
 		} catch (e) {
 			// no default layout found or not included into the source
-			_log("Default keyboard layout not found: " + e);
+			USB.log("Default keyboard layout not found: " + e);
 		}
 	}
 
@@ -196,22 +193,18 @@ class HIDKeyboard extends HIDDriver {
 
 		if (null == error) {
 			local keys = [];
-			foreach( item in report.getInputItems()) {
+			foreach (item in report.getInputItems()) {
 				local val = item.get();
 				if (0 != val) {
 					keys.append(val);
 				}
 			}
 
-			try {
-				if (null != _layout) {
-					keys =  _layout(keys);
-				}
-
-				_getAsyncUserCb(keys);
-			} catch (e) {
-				_error("User code exception: " + e);
+			if (null != _layout) {
+				keys =  _layout(keys);
 			}
+
+			_getAsyncUserCb(keys);
 
 			if (_timerTick) {
 				imp.wakeup(_timerTick / 1000.0, _timerCb.bindenv(this));
@@ -219,8 +212,7 @@ class HIDKeyboard extends HIDDriver {
 				getAsync(_getAsyncCb.bindenv(this));
 			}
 		} else {
-			_error("Some HID driver issue: " + error);
-
+			USB.err("Some HID driver issue: " + error);
 			_getAsyncUserCb = null;
 		}
 	}

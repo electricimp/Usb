@@ -128,9 +128,7 @@ class HIDReport {
     // Returns: nothing.
     // Throws: if error happens during transfer or control endpoint is closed
     function request() {
-
         local buffer = blob(_totalInSize);
-
         local ep0 = _interface.getDevice().getEndpointZero();
 
         ep0.transfer(USB_SETUP_DEVICE_TO_HOST | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE,
@@ -147,15 +145,12 @@ class HIDReport {
     //
     // Throws: endpoint is closed or something happens during call to native USB API
     function send() {
-
-       local buffer = blob(_totalOutSize);
-
-       foreach (item in _outputItems) {
+        local buffer = blob(_totalOutSize);
+        foreach (item in _outputItems) {
             item._writeTo(buffer);
         }
 
         local ep0 = _interface.getDevice().getEndpointZero();
-
         ep0.transfer(USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE,
                     USB_HID_SET_REPORT_REQUEST,
                     (HID_REPORT_ITEM_OUT + 1) << 8 | _reportID,
@@ -283,9 +278,7 @@ class HIDReport.Item {
         local bitMask  = (1 << 0);
 
         _value = 0;
-
         buffer.seek(offset / 8, 'b');
-
         local data = buffer.readn('b');
 
         while (size-- > 0)
@@ -435,11 +428,29 @@ class HIDDriver extends USB.Driver {
     // User callback for async read
     _epReadUserCb     = null;
 
+    // Constructor.
+    // Parameters:
+    //      ep                  - instance of USB.ControlEndpoint for Endpoint 0
+    //      reports             - an array of HIDReport instances
+    //      interface           - USB device interface this driver assigned to.
+    constructor(reports, interface) {
+        _reports    = reports;
+
+        _interface  = interface;
+        try {
+            _epIn       = interface.find(USB_ENDPOINT_INTERRUPT, USB_SETUP_DEVICE_TO_HOST);
+        } catch (e) {
+            // we may face a limitation of native API when only one Interrupt In endpoint may be opened.
+            USB.err("Can't open Interrupt In endpoint:" + e);
+        }
+    }
+
     // Queried by USB.Host if this driver supports
     // given interface function of the device.
     // Should return new instance of the driver object if
     // driver matches
     function match(device, interfaces) {
+        local log = USB.log.bindenv(USB);
         local found = [];
 
         foreach(interface in interfaces) {
@@ -448,7 +459,7 @@ class HIDDriver extends USB.Driver {
             }
         }
 
-        _log("Driver matched " + found.len() + " interfaces");
+        log("Driver matched " + found.len() + " interfaces");
 
         if (found.len() > 0) {
             local ep0 = device.getEndpointZero();
@@ -458,16 +469,16 @@ class HIDDriver extends USB.Driver {
                 // estimate Hid Report Descriptor max size:
                 // read buffer size is no more than configuration descriptor size
                 local data = blob(USB_CONFIGURATION_DESCRIPTOR_LENGTH);
-                _log("getting configuration descriptor");
+                log("getting configuration descriptor");
                 ep0.transfer(USB_SETUP_DEVICE_TO_HOST | USB_SETUP_TYPE_STANDARD| USB_SETUP_RECIPIENT_DEVICE,
                              USB_REQUEST_GET_DESCRIPTOR,
                              USB_DESCRIPTOR_CONFIGURATION << 8, 0,
                             data);
                 wTotalLen = data.readn('w');
-                _log("done");
+                log("done");
             }
 
-            _log("start driver initialization");
+            log("start driver initialization");
             local drivers = [];
 
             foreach(interface in found) {
@@ -478,12 +489,12 @@ class HIDDriver extends USB.Driver {
                         local newDriver = _createInstance(hidReports, interface);
                         drivers.append(newDriver);
                     } else {
-                        _log("Empty Report is returned from parser");
+                        log("Empty Report is returned from parser");
                     }
                 }
             }
 
-            _log("initialization done");
+            log("initialization done");
             return drivers;
         }
         return null;
@@ -519,23 +530,6 @@ class HIDDriver extends USB.Driver {
 
     // --------------------------- private functions ---------------
 
-    // Constructor.
-    // Parameters:
-    //      ep                  - instance of USB.ControlEndpoint for Endpoint 0
-    //      reports             - an array of HIDReport instances
-    //      interface           - USB device interface this driver assigned to.
-    constructor(reports, interface) {
-        _reports    = reports;
-
-        _interface  = interface;
-        try {
-            _epIn       = interface.find(USB_ENDPOINT_INTERRUPT, USB_SETUP_DEVICE_TO_HOST);
-        } catch (e) {
-            // we may face a limitation of native API when only one Interrupt In endpoint may be opened.
-            _log("Can't open Interrupt In endpoint:" + e);
-        }
-    }
-
     // Try to get HID Report Descriptor of the given interface with "Get Report" command.
     //
     // Parameters:
@@ -543,10 +537,10 @@ class HIDDriver extends USB.Driver {
     //  interface   - interface descriptor
     //  maxLen      - maximum possible length for Report Descriptor.
     //
-    // Return null if hardware doesn't support the command or there was transfer _error.
+    // Return null if hardware doesn't support the command or there was a transfer error.
     function _getReportDescr(ep0, interface, maxLen) {
-
-        _log("getting hid descriptor for " + interface.interfacenumber + " interface");
+        local log = USB.log.bindenv(USB);
+        log("getting hid descriptor for " + interface.interfacenumber + " interface");
         // hid descriptor can't be more than config descriptor
         local data = blob(maxLen);
         try {
@@ -555,15 +549,11 @@ class HIDDriver extends USB.Driver {
                          USB_DESCRIPTOR_HID_REPORT << 8, interface.interfacenumber,
                          data);
         } catch (e) {
-
             // is it boot interface?
-            _error("device doesn't support Get_Descriptor Request: " + e);
-
+            USB.err(       "device doesn't support Get_Descriptor Request: " + e);
             return null;
         }
-
-        _log("done");
-
+        log("done");
         return data;
     }
 
@@ -597,23 +587,17 @@ class HIDDriver extends USB.Driver {
     //          data   -  blob with data
     //          len    - read data len
 	function _epReadCb(ep, error, data, len) {
-
 		if (null == _epReadUserCb) return;
-
         local cb = _epReadUserCb;
         _epReadUserCb = null; // prevent exception
 
-
 		if (null == error || error == USB_ERROR_FREE || error == USB_ERROR_IDLE) {
-
             local reportID = 0;
-
             if (_reports.len() > 1) {
                 data.seek(0, 'b');
                 reportID = data.readn('b');
             }
-
-            foreach( report in _reports) {
+            foreach (report in _reports) {
                 if (report._reportID == reportID) {
                     try {
                         report._parseInputData(data);
@@ -621,27 +605,16 @@ class HIDDriver extends USB.Driver {
                         cb("Report data parsing error: " + e, null);
                         return;
                     }
-                    try {
-                        cb(null, report);
-                    } catch(e) {
-                        _log("User code exception:" + e);
-                    }
-
+                    cb(null, report);
                     return;
                 }
             }
-
             // not found. possible, the driver is not interesting in this report
             // try to read next one
-            _log("Report " + reportID + " was read, but not found in watch list. Trying to read next one.");
+            USB.log("Report " + reportID + " was read, but not found in watch list. Trying to read next one.");
             getAsync(cb);
-
 		} else {
-            try {
-                cb("USB error: " + error, null);
-            } catch (e) {
-                _log("User code exception:" + e);
-            }
+            cb("USB error: " + error, null);
 		}
 	}
 
@@ -690,13 +663,11 @@ class HIDDriver extends USB.Driver {
         local usingReportID = false;
         local reports = [currReport];
 
-        while (!hidReportDescriptor.eos())
-        {
+        while (!hidReportDescriptor.eos()) {
             local  reportItem  = hidReportDescriptor.readn('b');
             local  reportItemData;
 
-            switch (reportItem & HID_RI_DATA_SIZE_MASK)
-            {
+            switch (reportItem & HID_RI_DATA_SIZE_MASK) {
                 case HID_RI_DATA_BITS_32:
                     reportItemData  = hidReportDescriptor.readn('i');
                     break;
@@ -706,7 +677,7 @@ class HIDDriver extends USB.Driver {
                     break;
 
                 case HID_RI_DATA_BITS_8:
-                    reportItemData  = hidReportDescriptor.readn('b');;
+                    reportItemData  = hidReportDescriptor.readn('b');
                     break;
 
                 default:
@@ -714,8 +685,7 @@ class HIDDriver extends USB.Driver {
                     break;
             }
 
-            switch (reportItem & (HID_RI_TYPE_MASK | HID_RI_TAG_MASK))
-            {
+            switch (reportItem & (HID_RI_TYPE_MASK | HID_RI_TAG_MASK)) {
                 case HID_RI_PUSH:
                     currStateTable = ParserState(currStateTable);
                     break;
@@ -765,23 +735,18 @@ class HIDDriver extends USB.Driver {
                 case HID_RI_REPORT_ID:
                     currStateTable.reportID = reportItemData;
 
-                    if (usingReportID)
-                    {
+                    if (usingReportID) {
                         currReport = null;
 
-                        foreach (report in reports)
-                        {
-                            if (report._reportID == currStateTable.reportID)
-                            {
+                        foreach (report in reports) {
+                            if (report._reportID == currStateTable.reportID) {
                                 currReport = report;
                                 break;
                             }
                         }
 
-                        if (currReport == null)
-                        {
+                        if (currReport == null) {
                             currReport = HIDReport(interface);
-
                             reports.append(currReport);
                         }
                     }
@@ -808,15 +773,11 @@ class HIDDriver extends USB.Driver {
                     currCollectionPath.type      = reportItemData;
                     currCollectionPath.usagePage = currStateTable.attributes.usagePage;
 
-                    if (usageList.len())
-                    {
+                    if (usageList.len()) {
                         currCollectionPath.usageUsage = usageList.remove(0);
-                    }
-                    else if (usageMinMax.Minimum <= usageMinMax.Maximum)
-                    {
+                    } else if (usageMinMax.Minimum <= usageMinMax.Maximum) {
                         currCollectionPath.usageUsage = usageMinMax.Minimum++;
                     }
-
                     break;
 
                 case HID_RI_END_COLLECTION:
@@ -828,16 +789,12 @@ class HIDDriver extends USB.Driver {
                 case HID_RI_FEATURE:
                     local reportCount = currStateTable.reportCount;
 
-                    while (reportCount--)
-                    {
+                    while (reportCount--) {
                         local newItem = HIDReport.Item(clone(currStateTable.attributes), reportItemData, currCollectionPath);
 
-                        if (usageList.len() > 0)
-                        {
+                        if (usageList.len() > 0) {
                             newItem.attributes.usageUsage = usageList.remove(0);
-                        }
-                        else if (usageMinMax.Minimum <= usageMinMax.Maximum)
-                        {
+                        } else if (usageMinMax.Minimum <= usageMinMax.Maximum) {
                             newItem.attributes.usageUsage = usageMinMax.Minimum++;
                         }
 
@@ -864,36 +821,31 @@ class HIDDriver extends USB.Driver {
                         if (!(reportItemData & HID_IOF_CONSTANT) && _filter(ItemTypeTag, newItem)) {
                             destArr.append(newItem);
                         }
-
                     }
-
                     break;
-
                 default:
                     break;
             }
 
-            if ((reportItem & HID_RI_TYPE_MASK) == HID_RI_TYPE_MAIN)
-            {
+            if ((reportItem & HID_RI_TYPE_MASK) == HID_RI_TYPE_MAIN) {
                 usageMinMax.Minimum = 0;
                 usageMinMax.Maximum = 0;
                 usageList = [];
             }
         }
 
-        {
-            reports = reports.filter(function(index, report) {
-                local len      =  report._featureItems.len() +
-                                  report._outputItems.len()  +
-                                  report._inputItems.len();
+        reports = reports.filter(
+            function(index, report) {
+                local len = report._featureItems.len() +
+                            report._outputItems .len() +
+                            report._inputItems  .len();
                 return len != 0;
-            });
+            }
+        );
 
-            // notify caller that the driver need no reports
-            // or reports are empty
-            if (reports.len() ==  0) reports = null;
-        }
-
+        // notify caller that the driver need no reports
+        // or reports are empty
+        if (reports.len() ==  0) reports = null;
         return reports;
     }
 

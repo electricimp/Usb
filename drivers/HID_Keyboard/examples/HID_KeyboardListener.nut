@@ -25,39 +25,39 @@
 
 // This is an example of keyboard control application
 
-@include "../../../../USB.device.lib.nut"
-@include "../../../../USB.HID.device.lib.nut"
-@include "../../US-ASCII.table.nut"
-@include "../../HIDKeyboard.nut"
+// TODO: the ASCII table definition should precede the HIDKeyboard driver implementation
+@include __PATH__ +  "/../US-ASCII.table.nut"
+
+@include __PATH__ +  "/../../../USB.device.lib.nut"
+@include __PATH__ +  "/../../../USB.HID.device.lib.nut"
+@include __PATH__ +  "/../HIDKeyboard.nut"
 
 log <- server.log.bindenv(server);
-
 kbdDrv <- null;
 
 function kdbEventListener(keys) {
-    local txt = "Keys received: ";
+    local txt = "[App]: Keys received: ";
     foreach (key in keys) {
         txt += key.tochar() + " ";
     }
-
-    log (txt);
+    log(txt);
 }
 
-function usbEventListener(event, data) {
-    log("USB event: " + event);
+function usbDriverListener(event, data) {
+    log("[App]: USB event: " + event);
 
     if (event == "started") {
         kbdDrv = data;
-
-        log("Start polling");
+        log("[App]: Start polling");
         kbdDrv.startPoll(0, kdbEventListener);
     }
 }
 
-usbHost <- USB.Host([HIDKeyboard]);
-log("USB.Host setup complete");
+usbHost <- USB.Host;
+usbHost.init([HIDKeyboard]);
+log("[App]: USB.Host initialized");
 
-usbHost.setEventListener(usbEventListener);
-log("USB.Host setEventListener complete");
+usbHost.setDriverListener(usbDriverListener);
+log("[App]: USB.Host setEventListener complete");
 
-log("Waiting for attach event");
+log("[App]: Waiting for attach event");

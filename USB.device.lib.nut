@@ -91,14 +91,14 @@ USB <- {
     debug = true,
 
     // Information level logger
-    _log = function(txt) {
+    log = function(txt) {
         if (debug) {
             server.log("[USB]: " + txt);
         }
     }
 
     // Error level logger
-    _err = function(txt) {
+    err = function(txt) {
         server.error("[USB|ERROR]: " + txt);
     }
 
@@ -138,8 +138,8 @@ USB <- {
         //                     (see https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb)
         //
         init = function(driverList, autoConfPins = true) {
-            _log <- USB._log.bindenv(USB);
-            _err <- USB._err.bindenv(USB);
+            _log <- USB.log.bindenv(USB);
+            _err <- USB.err.bindenv(USB);
 
             try {
                 _usb = hardware.usb;
@@ -338,11 +338,7 @@ USB <- {
 
             if (address in _devices) {
                 local device = _devices[address];
-                try {
-                    device._transferEvent(eventDetails);
-                } catch(e) {
-                    _err("Device.transferEvent error: " + e);
-                }
+                device._transferEvent(eventDetails);
             } else {
                 _err("transfer event for unknown device: " + address);
             }
@@ -620,7 +616,7 @@ USB <- {
                 try {
                     driver.release();
                 } catch (e) {
-                    USB._err("Exception occurred on driver release: " + e);
+                    USB.err("Exception occurred on driver release: " + e);
                 }
 
                 listener && listener(USB_DRIVER_STATE_STOPPED, driver);
@@ -690,7 +686,7 @@ USB <- {
                 ep._onTransferComplete(error, len);
 
             } else {
-                USB._log("Unexpected transfer for unknown endpoint: " + epAddress);
+                USB.log("Unexpected transfer for unknown endpoint: " + epAddress);
             }
         }
 
@@ -833,7 +829,7 @@ USB <- {
             }
 
             if (null == _transferCb) {
-                USB._err("Unexpected transfer event: there is no listener for it");
+                USB.err("Unexpected transfer event: there is no listener for it");
                 return;
             }
 
@@ -973,7 +969,7 @@ USB <- {
         // Notify that driver is going to be released
         // No endpoint operation should be performed at this function.
         function release() {
-            USB._log("Released");
+            USB.log("Released");
         }
 
         // Metafunction to return class name when typeof <instance> is run

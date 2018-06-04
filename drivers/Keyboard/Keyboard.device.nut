@@ -179,23 +179,11 @@ class KeyboardDriver extends USB.Driver {
     function _receiveCallback(ep, error, data, len) {
         if (error !=  USB_ERROR_FREE && error != USB_ERROR_IDLE) {
             if (null != _asyncCb) {
-                try {
-                    local result = {"error" : "USB error " + error};
-                    _asyncCb(error);
-                } catch (e) {
-                    server.log("User code exception: " + e);
-                }
+                local result = {"error" : "USB error " + error};
+                _asyncCb(error);
             }
         } else {
-            local res =  _generateReport(data, len);
-
-            try {
-                _asyncCb(res);
-            } catch (e) {
-                // oops, I did it again
-                server.log("User code exception: " + e);
-            }
-
+            _asyncCb(_generateReport(data, len));
         }
     }
 
