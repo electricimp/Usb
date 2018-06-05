@@ -208,7 +208,7 @@ class BootKeyboardDriver extends USB.Driver {
 
         if (data[2] == 1) {
             // special code ErrorRollOver
-            report["Error"] <- "ErrorRollOver";
+            report["error"] <- "Keyboard reported error: ErrorRollOver";
             return report;
         }
 
