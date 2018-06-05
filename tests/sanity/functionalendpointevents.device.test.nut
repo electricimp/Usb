@@ -87,7 +87,7 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
           _usb.triggerEvent(USB_TRANSFER_COMPLETED, {
                "device": _device._address,
                "state": 0,
-               "endpoint": ep._address,
+               "endpoint": ep._endpoint,
                "length": 3});
       }.bindenv(this));
     }
@@ -106,6 +106,7 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
 
     function test02ReadError() {
       local ep = bulkIn.get();
+      server.log("aa = " + _device._address);
       return Promise(function(resolve, reject) {
           ep.read(blob(5), function(epr, error, data, len) {
               assertEqual(ep, epr, "Unexpected endpoint value");
@@ -116,7 +117,7 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
           _usb.triggerEvent(USB_TRANSFER_COMPLETED, {
                "device": _device._address,
                "state": 4,
-               "endpoint": ep._address,
+               "endpoint": ep._endpoint,
                "length": 0});
       }.bindenv(this));
     }
