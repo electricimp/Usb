@@ -220,8 +220,8 @@ USB <- {
         // Setter for the device state listener
         // Parameters:
         //      listener  - null or the function that receives two parameters:
-        //                      eventType - USB_DRIVER_STATE_STARTED, USB_DRIVER_STATE_STOPPED,
-        //                                  USB_DEVICE_STATE_CONNECTED, USB_DEVICE_STATE_DISCONNECTED
+        //                      eventType - USB_DEVICE_STATE_CONNECTED      - the device was attached
+        //                                  USB_DEVICE_STATE_DISCONNECTED   - the device was detached
         //                      eventObject - depending on event type it could be
         //                                    either USB._Device or USB.Driver instance
         setDeviceListener = function(listener) {
@@ -282,8 +282,6 @@ USB <- {
             local descr = eventDetails.descriptors;
             local device = USB._Device(_usb, speed, descr, _address);
 
-            device.selectDrivers(_driverClasses);
-
             // a copy application callback
             _devices[_address] <- device;
             _log("New device detected: " + device + ". Assigned address: " + _address);
@@ -291,7 +289,10 @@ USB <- {
             // address for next device
             _address++;
 
+            // maintain event sending sequence
             deviceListener && deviceListener(USB_DEVICE_STATE_CONNECTED, device);
+
+            device.selectDrivers(_driverClasses);
         }
 
         // Device detach processing function.
@@ -362,7 +363,7 @@ USB <- {
         _onError = function(eventDetails = null) {
             foreach(device in _devices) {
                 try {
-                    device.stop();
+                    device._stop();
                 } catch (e) {
                     _err("Error on device " + device + " release: " + e);
                 }
@@ -611,7 +612,7 @@ USB <- {
             }
 
             // Release all drivers now
-            local listener = USB.Host.deviceListener;
+            local listener = USB.Host.driverListener;
             foreach (driver in _driverInstances) {
                 try {
                     driver.release();

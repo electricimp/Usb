@@ -22,6 +22,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+@include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__+"/../UsbMock.nut"
 @include __PATH__+"/../CorrectDriver.nut"
 
@@ -88,14 +89,14 @@ class UsbHostSanity extends ImpTestCase {
 
     function testSetListener() {
         local host = getValidHost();
-        host.setEventListener(getValidHost);
-        host.setEventListener(null);
+        host.setDriverListener(getValidHost);
+        host.setDriverListener(null);
     }
 
     function testSetListenerNegative() {
         local host = getValidHost();
         try {
-            host.setEventListener("");
+            host.setDriverListener("");
             assertTrue(false, "setEventListener must throw ex");
         } catch(e) {
             // OK
@@ -108,16 +109,19 @@ class UsbHostSanity extends ImpTestCase {
         hardware.usb <- _usb;
         // instantiate usb host with mock _usb
         if (autoConf == null) {
-            return USB.Host(drivers);
+            USB.Host.init(drivers);
+        } else {
+            USB.Host.init(drivers, autoConf);
         }
-        return USB.Host(drivers, autoConf);
+        return USB.Host;
     }
 
     function getValidHost() {
         // USB.Host is looking for hardware.usb and throw an exception otherwise
         local hardware = {};
         hardware.usb <- _usb;
+        USB.Host.init(_drivers, true);
         // instantiate usb host with mock _usb
-        return USB.Host(_drivers, true);
+        return USB.Host;
     }
 }

@@ -59,8 +59,10 @@ class UsbMock {
     // ------------- test API ----------------
 
     function triggerEvent(event, payload) {
-      if (_cb != null)
-          _cb(event, payload);
+        imp.wakeup(0, function() {
+            if (_cb != null)
+                _cb(event, payload);
+        }.bindenv(this));
     }
 
     // ------------- private API --------------
