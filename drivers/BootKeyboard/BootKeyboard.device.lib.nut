@@ -206,19 +206,27 @@ class BootKeyboardDriver extends USB.Driver {
 
         local report = {};
 
+        if (data[2] == 1) {
+            // special code ErrorRollOver
+            report["Error"] <- "ErrorRollOver";
+            return report;
+        }
+
         local modifiers = data[0];
-        report["LEFT_CTRL"]   <- (modifiers & LEFT_CTRL);
-        report["LEFT_SHIFT"]  <- (modifiers & LEFT_SHIFT);
-        report["LEFT_ALT"]    <- (modifiers & LEFT_ALT);
-        report["LEFT_GUI"]    <- (modifiers & LEFT_GUI);
-        report["RIGHT_CTRL"]  <- (modifiers & RIGHT_CTRL);
-        report["RIGHT_SHIFT"] <- (modifiers & RIGHT_SHIFT);
-        report["RIGHT_ALT"]   <- (modifiers & RIGHT_ALT);
-        report["RIGHT_GUI"]   <- (modifiers & RIGHT_GUI);
+        if (modifiers & LEFT_CTRL)      report["LEFT_CTRL"]   <- 1;
+        if (modifiers & LEFT_SHIFT)     report["LEFT_SHIFT"]  <- 1;
+        if (modifiers & LEFT_ALT)       report["LEFT_ALT"]    <- 1;
+        if (modifiers & LEFT_GUI)       report["LEFT_GUI"]    <- 1;
+        if (modifiers & RIGHT_CTRL)     report["RIGHT_CTRL"]  <- 1;
+        if (modifiers & RIGHT_SHIFT)    report["RIGHT_SHIFT"] <- 1;
+        if (modifiers & RIGHT_ALT)      report["RIGHT_ALT"]   <- 1;
+        if (modifiers & RIGHT_GUI)      report["RIGHT_GUI"]   <- 1;
 
         local i = 2;
         for (; i < len; i++) {
-            report["Key" + (i - 2)] <- data[i];
+            local key = data[i];
+
+            if (0 != key) report["Key" + (i - 2)] <- key;
         }
         return report;
     }
