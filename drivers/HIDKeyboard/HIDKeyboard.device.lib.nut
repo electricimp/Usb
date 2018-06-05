@@ -39,7 +39,7 @@ const HID_LED_SCROLLLOCK    = 3;
 // Example class that reduce generic HID API to simple keyset notification.
 class HIDKeyboard extends HIDDriver {
 
-    static VERSION = "1.0.0"
+    static VERSION = "0.1.0"
 
     _timerTick = null;
     _getAsyncUserCb    = null;

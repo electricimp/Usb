@@ -50,7 +50,7 @@ const FTDI_STOP_BIT_2               = 2;
 // Driver for FT232RL FTDI USB to TTL Serial Adapter Module
 class FT232RLFtdiUsbDriver extends USB.Driver {
     // the driver version
-    static VERSION = "1.0.0";
+    static VERSION = "0.1.0";
 
     // FTDI vid and pid
     static VID = 0x0403;

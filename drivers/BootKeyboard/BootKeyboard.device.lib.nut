@@ -29,6 +29,9 @@
 // (see http://www.usb.org/developers/hidpage/HID1_11.pdf for more details)
 class KeyboardDriver extends USB.Driver {
 
+    // the driver version
+    static VERSION = "0.1.0";
+
     // ---------------- private variables ---------------------------
     // Interrupt In endpoint
     _inEp = null;

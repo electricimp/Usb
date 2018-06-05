@@ -13,7 +13,7 @@ In the example below keyboard driver is included into an application:
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
-#require "Keyboard.nut:1.0.0"
+#require "BootKeyboard.device.nut:1.0.0"
 ```
 
 ### Complete example
