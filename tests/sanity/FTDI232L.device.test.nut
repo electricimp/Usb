@@ -22,8 +22,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+@include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__ + "/../UsbMock.nut"
-@include __PATH__ + "/../UsbHostWrapper.nut"
 @include __PATH__ + "/../../drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.lib.nut"
 
 // Below data is not real ftdi config, we only need VID/PID pair and interface with BulkOut
@@ -91,12 +91,15 @@ class FTDI232RLSanity extends ImpTestCase {
 
     function setUp() {
         _usb = UsbMock();
+        USB.Host.init(_drivers);
+        USB.Host._usb = _usb;
+        USB.Host.reset();
     }
 
     function test1Init() {
         local host = _getUsbHost();
         return Promise(function(resolve, reject) {
-            host.setEventListener(function(eventType, eventObject) {
+            host.setDriverListener(function(eventType, eventObject) {
 
                 if (eventType == USB_DRIVER_STATE_STARTED) {
                     if (typeof eventObject != "FT232RLFtdiUsbDriver") {
@@ -141,13 +144,13 @@ class FTDI232RLSanity extends ImpTestCase {
     }
 
     function _getUsbHost() {
-        return UsbHostWrapper(_usb, _drivers, false);
+        return USB.Host;
 
     }
 
     function _configureDriver() {
         return Promise(function(resolve, reject) {
-            _getUsbHost().setEventListener(function(eventType, eventObject) {
+            _getUsbHost().setDriverListener(function(eventType, eventObject) {
 
                 if (eventType == USB_DRIVER_STATE_STARTED &&
                     typeof eventObject == "FT232RLFtdiUsbDriver") {

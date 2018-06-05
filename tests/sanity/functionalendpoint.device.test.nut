@@ -23,6 +23,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 
+@include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__+"/../UsbMock.nut"
 @include __PATH__+"/../CorrectDriver.nut"
 @include __PATH__+"/../DescriptorMock.nut"
@@ -36,7 +37,7 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
     function setUp() {
         _usb = UsbMock();
         _usb.configure(function(evt, evd){});
-        _device = USB.Device(_usb, 1.5, correctDescriptor, 1, _drivers);
+        _device = USB._Device(_usb, 1.5, correctDescriptor, 1);
     }
 
     function testPositive1() {
@@ -131,11 +132,11 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
     }
 
     function getInEp() {
-        return USB.FunctionalEndpoint(_device, bulkIn.address, USB_ENDPOINT_BULK, 32);
+        return USB._FuncEndpoint(_device, bulkIn.address, USB_ENDPOINT_BULK, 32);
     }
 
     function getOutEp() {
-        return USB.FunctionalEndpoint(_device, bulkOut.address, USB_ENDPOINT_BULK, 32);
+        return USB._FuncEndpoint(_device, bulkOut.address, USB_ENDPOINT_BULK, 32);
     }
 
 }

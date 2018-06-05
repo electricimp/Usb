@@ -23,10 +23,10 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 
+@include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__+"/../UsbMock.nut"
 @include __PATH__+"/../CorrectDriver.nut"
 @include __PATH__+"/../DescriptorMock.nut"
-@include __PATH__+"/../UsbHostWrapper.nut"
 
 // Sanity test for USB.FunctionalEndpoint
 class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
@@ -38,9 +38,14 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
 
     function setUp() {
         _usb = UsbMock();
-        _usb.configure(function(evt, evd){});
+
         // instantiate usb host with mock _usb
-        _host = UsbHostWrapper(_usb, _drivers, false);
+        USB.Host.init(_drivers);
+        USB.Host._usb = _usb;
+        USB.Host.reset();
+
+
+        _host = USB.Host;
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 
@@ -48,7 +53,7 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
             imp.wakeup(0, function() {
                 local devices = _host.getAttachedDevices();
                 assertTrue(devices.len() == 1, "Expected one device item");
-                assertEqual("USB.Device", typeof(devices[0]), "Unexpected driver: " + typeof(devices[0]));
+                assertEqual("USB._Device", typeof(devices[0]), "Unexpected driver: " + typeof(devices[0]));
                 // cache current device
                 _device = devices[0];
                 resolve();
