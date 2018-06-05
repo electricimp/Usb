@@ -27,7 +27,7 @@ In the example below keyboard driver is included into an application:
 pp <- PrettyPrinter(null, false);
 print <- pp.print.bindenv(pp);
 
-kbrDrv < - null;
+kbrDrv <- null;
 
 function keyboardEventListener(error, status) {
     server.log("Keyboard event");

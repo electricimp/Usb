@@ -27,7 +27,7 @@
 // This is an example of Keyboard driver.
 // This driver matches only keyboards that support Boot Report Descriptor
 // (see http://www.usb.org/developers/hidpage/HID1_11.pdf for more details)
-class KeyboardDriver extends USB.Driver {
+class BootKeyboardDriver extends USB.Driver {
 
     // the driver version
     static VERSION = "0.1.0";
@@ -39,8 +39,25 @@ class KeyboardDriver extends USB.Driver {
     _ep0  = null;
     // Interface number this driver is bound with
     _ifs  = null;
+    // Callback for async uperations
+    _asyncCb = null;
 
     // ----------------  USB framework related functions  -------------
+
+    // Constructor accepts single Interrupt In for endpoint for receiving Input Report asynchronously,
+    // Ep0 for sending Output Report (change LED state) and synchronous Input Report,
+    // and change protocol
+    constructor(inEp, ep0, ifs) {
+        local HID_HOST_TO_DEVICE  = USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE;
+        const HID_SET_PROTOCOL = 0xB;
+
+        _inEp = inEp;
+        _ep0  = ep0;
+        _ifs  = ifs;
+
+        // force boot protocol
+        _ep0.transfer(HID_HOST_TO_DEVICE, HID_SET_PROTOCOL, 1, ifs);
+    }
 
     // The function searches for HID class interfaces with Boot Interface Subclass
     // and Keyboard protocol. We intentionally ignores Device class (that should be 0 by spec)
@@ -53,15 +70,15 @@ class KeyboardDriver extends USB.Driver {
             local iProtocol = interface.protocol;
             local number    = interface.interfacenumber;
 
-            if (    iClass     == 3 // HID
-                &&  iSubClass  == 1 // BOOT
-                &&  iProtocol  == 1 // Keyboard
-             ) {
+            if (   iClass     == 3 // HID
+                && iSubClass  == 1 // BOOT
+                && iProtocol  == 1 // Keyboard
+            ) {
                  local inEp = interface.find(USB_ENDPOINT_INTERRUPT, USB_DIRECTION_IN);
                  if (null != inEp) {
-                    return KeyboardDriver(inEp, device.getEndpointZero(), number);
-                 }
-             }
+                    return BootKeyboardDriver(inEp, device.getEndpointZero(), number);
+                }
+            }
         }
 
         // nothing found
@@ -93,9 +110,8 @@ class KeyboardDriver extends USB.Driver {
     //                                       }
     function getKeyStatusAsync(callback) {
         try {
-            local data = blob(8);
-            _inEp.read(blob, _receiveCallback.bindenv(this));
             _asyncCb = callback;
+            _inEp.read(blob(8), _receiveCallback.bindenv(this));
         } catch (e) {
             local st = {"error" : e};
             callback(st);
@@ -158,21 +174,6 @@ class KeyboardDriver extends USB.Driver {
 
     // ------------- private functions ------------------
 
-    // Constructor accepts single Interrupt In for endpoint for receiving Input Report asynchronously,
-    // Ep0 for sending Output Report (change LED state) and synchronous Input Report,
-    // and change protocol
-    constructor(inEp, ep0, ifs) {
-        local HID_HOST_TO_DEVICE  = USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE;
-        const HID_SET_PROTOCOL = 0xB;
-
-        _inEp = inEp;
-        _ep0 = ep0;
-        _ifs = ifs;
-
-        // force boot protocol
-        _ep0.transfer(HID_HOST_TO_DEVICE, HID_SET_PROTOCOL, 1, ifs);
-    }
-
     // Callback function to receive data from Interrupt In endpoint
     // Parameters:
     //      ep      - source endpoint
@@ -192,6 +193,17 @@ class KeyboardDriver extends USB.Driver {
 
     // Parses received data and generates report table
     function _generateReport(data, len) {
+
+        // TODO: update the constants
+        const LEFT_CTRL     = 1;
+        const LEFT_SHIFT    = 2;
+        const LEFT_ALT      = 4;
+        const LEFT_GUI      = 8;
+        const RIGHT_CTRL    = 16;
+        const RIGHT_SHIFT   = 32;
+        const RIGHT_ALT     = 64;
+        const RIGHT_GUI     = 128;
+
         local report = {};
 
         local modifiers = data[0];
@@ -208,7 +220,6 @@ class KeyboardDriver extends USB.Driver {
         for (; i < len; i++) {
             report["Key" + (i - 2)] <- data[i];
         }
-
         return report;
     }
 }

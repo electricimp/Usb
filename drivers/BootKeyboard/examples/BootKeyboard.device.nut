@@ -23,9 +23,51 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 
+#require "PrettyPrinter.class.nut:1.0.1"
+#require "JSONEncoder.class.nut:1.0.0"
+
 // This is an example of bookt keyboard control application
 
 @include __PATH__ +  "/../../../USB.device.lib.nut"
 @include __PATH__ +  "/../../../USB.HID.device.lib.nut"
 @include __PATH__ +  "/../BootKeyboard.device.lib.nut"
+
+
+pp <- PrettyPrinter(null, false);
+print <- pp.print.bindenv(pp);
+
+kbrDrv <- null;
+
+function keyboardEventListener(status) {
+    if (!kbrDrv) {
+        return;
+    }
+
+    server.log("Keyboard event");
+    local error = "error" in status ? status.error : null;
+
+    if (error == null) {
+        print(status);
+        kbrDrv.getKeyStatusAsync(keyboardEventListener);
+    } else {
+        server.error("Error received: " + error);
+    }
+}
+
+function usbDriverListener(event, driver) {
+    if (event == "started") {
+        server.log("BootKeyboardDriver started");
+        kbrDrv = driver;
+        // Receive new key state every second
+        kbrDrv.getKeyStatusAsync(keyboardEventListener);
+    }
+}
+
+usbHost <- USB.Host;
+usbHost.init([BootKeyboardDriver]);
+
+usbHost.setDriverListener(usbDriverListener);
+
+server.log("USB initialization complete");
+
 

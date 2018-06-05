@@ -54,7 +54,7 @@ function usbDriverListener(event, data) {
 }
 
 usbHost <- USB.Host;
-usbHost.init([HIDKeyboard]);
+usbHost.init([HIDKeyboardDriver]);
 log("[App]: USB.Host initialized");
 
 usbHost.setDriverListener(usbDriverListener);
