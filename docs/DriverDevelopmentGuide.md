@@ -16,7 +16,7 @@ If you are writing a USB driver that's going to be shared with the community,
 please follow requirements for the  third-party library submission 
 [guidelines](https://developer.electricimp.com/libraries/submissions).
 
-### Step-by-step Instruction
+### New Driver Step-by-Step Instruction
 
 #### 1. Extend the basic `USB.Driver` Class
 
@@ -91,9 +91,17 @@ Please refer to the HID Device Driver [Guide](./HIDDriverGuide.md) for the usb H
 arguments as it's being called by the driver's own method `match`. 
 
 #### 3. Release Driver Resources
+ 
+When device resources required for the driver functionality were gone, 
+USB framework calls drivers [release](#release) function to give it 
+a change to shutdown gracefully and release any resources were allocated during its lifetime.
 
-Implement an optional `release` method to free up any resource allocated for the driver,
- when the corresponding device is detached or USB is reset.
+Please note that all the framework resources should be considered as 
+closed by this moment and `MUST NOT` be used from [release](#release) function.
+
+The `release` function is optional, so implement it only if need to release any resources.
+
+Simple example shows a simple `release` function implementation:
 
 ```squirrel
 class MyCustomDriver extends USB.Driver {
@@ -114,6 +122,8 @@ class MyCustomDriver extends USB.Driver {
 ```
 
 #### 4. Implement the Driver Logic
+
+TODO: add references/description to setDriverListener/setDeviceListener to get access to Device and Driver APIs. 
 
 ##### Concurrent Access to Resources 
 
@@ -170,26 +180,15 @@ function that searches for endpoint with given attributes and return found first
     }
 ```
 
+#### 5. Misc
 
-#### 5. Misc 
-
-#### Native USB API limitation
+##### Native USB API Limitations
 
 Due to limits applied by native [USB API](https://electricimp.com/docs/api/hardware/usb/) 
 endpoints `get()` function may result in exception when a number of open 
 endpoint exceeds some limits, e.g. there can be only one open interrupt in endpoint.
 
-### Driver release procedure
-
-When device resources required for the driver functionality were gone, 
-USB framework call drivers [release](#release) function to give it 
-a change to shutdown gracefully and release any resources were allocated during its lifetime.
-
-Please note that all the framework resources should be considered as 
-closed and `MUST NOT` be used from [release](#release) function.
-
-
-### Example
+### Full Driver Example
 
 ```squirrel
 class MyUsbDriver extends USB.Driver {
@@ -247,7 +246,7 @@ The main interface to start working with USB devices and drivers.
 If you have more then one USB port on development board then you should create 
 USB.Host instance for each of them.
 
-#### USB.Host(drivers, [, autoConfigPins]*)
+#### USB.Host(usb, drivers, [, autoConfigPins]*)
 
 Instantiates the USB.Host class. USB.Host is an abstraction for USB port. It 
 should be instantiated only once per physical port for any application.
@@ -259,6 +258,7 @@ USB framework suppose that developer will not use [`hardware.usb`](https://elect
 
 | Parameter 	 | Data Type | Required/Default | Description |
 | -------------- | --------- | ------- | ----------- |
+| *usb*      | object | required  | The usb object represents a Universal Serial Bus (USB) interface |
 | *drivers*      | USB.Driver[] | required  | An array of the pre-defined driver classes |
 | *autoConfigPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps documentation](https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb). These pins must be configured for the usb to work on **imp005**. |
 
@@ -269,10 +269,50 @@ USB framework suppose that developer will not use [`hardware.usb`](https://elect
 #require "MyCustomDriver1.device.lib.nut:1.2.3"
 #require "MyCustomDriver2.device.lib.nut:1.0.0"
 
-usbHost <- USB.Host([MyCustomDriver1, MyCustomDriver2]);
+usbHost <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2]);
 ```
 
-#### setEventListener(*callback*)
+#### setDriverListener(*callback*)
+
+Sets listener for the driver events. Application can get notified if a driver was stopped or started. See the
+callback [definition](#callbackeventtype-driver) for more details.
+
+| Parameter   | Data Type | Required | Description |
+| ----------- | --------- | -------- | ----------- |
+| *callback*  | Function  | Yes      | Function to be called on event. See below. |
+
+Setting of *null* clears the previously assigned listener.
+
+##### callback(*eventType, driver*)
+
+This callback is happen on driver status change 
+therefore the second argument is an instance of [USB.Driver](#usbdriver-class).
+
+The following event types are supported:
+- driver `USB_DRIVER_STATE_STARTED` (`"started"`)
+- driver `USB_DRIVER_STATE_STOPPED` (`"stopped"`)
+
+| Parameter   | Data Type | Description |
+| ----------- | --------- | ----------- |
+| *eventType*  | String  |  Name of the event `USB_DRIVER_STATE_STARTED`, `USB_DRIVER_STATE_STOPPED` |
+| *object* | USB.Driver | Instance of the USB.Driver class. |
+
+##### Example (subscribe)
+
+```squirrel
+usbHost.setDriverListener(function (eventType, driver) {
+    switch (eventType) {
+        case USB_DRIVER_STATE_STARTED:
+            server.log("Driver found and started " + (typeof driver));
+            break;
+        case USB_DRIVER_STATE_STOPPED:
+            server.log("Driver stopped " + (typeof driver));
+            break;
+    }
+});
+```
+
+#### setDeviceListener(*callback*)
 
 Assign listener for runtime device and driver events. User could plug an 
 unplug device in runtime and application should get the corresponding events.
@@ -287,7 +327,7 @@ device only otherwise an application will get device related events only
 
 Setting of *null* clears the previously assigned listener.
 
-##### callback(*eventType, eventObject*)
+##### callback(*eventType, driver*)
 
 This callback is happen on the device or driver status change 
 therefore the second argument is variable and could be instance 
@@ -326,6 +366,7 @@ usbHost.setEventListener(function (eventType, eventObject) {
 });
 
 ```
+
 
 #### reset()
 

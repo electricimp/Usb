@@ -46,15 +46,14 @@ function kdbEventListener(keys) {
 function usbDriverListener(event, data) {
     log("[App]: USB event: " + event);
 
-    if (event == "started") {
+    if (event == USB_DRIVER_STATE_STARTED) {
         kbdDrv = data;
         log("[App]: Start polling");
         kbdDrv.startPoll(0, kdbEventListener);
     }
 }
 
-usbHost <- USB.Host;
-usbHost.init([HIDKeyboardDriver]);
+usbHost <- USB.Host(hardware.usb, [HIDKeyboardDriver]);
 log("[App]: USB.Host initialized");
 
 usbHost.setDriverListener(usbDriverListener);

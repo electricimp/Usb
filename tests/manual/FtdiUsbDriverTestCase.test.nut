@@ -62,7 +62,7 @@ class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
             _usbHost.setEventListener(function(eventName, eventDetails) {
 
                 // Check the device is an instance of FT232RLFtdiUsbDriver
-                if (eventName == "started") {
+                if (eventName == USB_DRIVER_STATE_STARTED) {
                     if (typeof eventDetails == "FT232RLFtdiUsbDriver") {
 
                         // Store the driver for the next test

@@ -108,20 +108,16 @@ class UsbHostSanity extends ImpTestCase {
         local hardware = {};
         hardware.usb <- _usb;
         // instantiate usb host with mock _usb
+        local usbHost = null;
         if (autoConf == null) {
-            USB.Host.init(drivers);
+            usbHost = USB.Host(_usb, drivers);
         } else {
-            USB.Host.init(drivers, autoConf);
+            usbHost = USB.Host(_usb, drivers, autoConf);
         }
-        return USB.Host;
+        return usbHost;
     }
 
     function getValidHost() {
-        // USB.Host is looking for hardware.usb and throw an exception otherwise
-        local hardware = {};
-        hardware.usb <- _usb;
-        USB.Host.init(_drivers, true);
-        // instantiate usb host with mock _usb
-        return USB.Host;
+        return USB.Host(_usb, _drivers, true);
     }
 }

@@ -25,7 +25,6 @@
 @include __PATH__ + "/../CorrectDriver.nut"
 @include __PATH__ + "/../DescriptorMock.nut"
 @include __PATH__ + "/../UsbMock.nut"
-@include __PATH__+"/../UsbHostWrapper.nut"
 
 // Sanity test for USB.Host
 class UsbHostEventsSanity extends ImpTestCase {
@@ -38,12 +37,8 @@ class UsbHostEventsSanity extends ImpTestCase {
         _usb = UsbMock();
     }
 
-    function getUsbHost(drivers, autoConf) {
-        return UsbHostWrapper(_usb, drivers, autoConf);
-    }
-
     function testGetAttachedOneDevice() {
-        local host = getUsbHost(_drivers, false);
+        local host = USB.Host(_usb, _drivers, false);
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 
@@ -56,7 +51,7 @@ class UsbHostEventsSanity extends ImpTestCase {
     }
 
     function testGetAttachedTwoDevices() {
-        local host = getUsbHost(_drivers, false);
+        local host = USB.Host(_usb, _drivers, false);
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);

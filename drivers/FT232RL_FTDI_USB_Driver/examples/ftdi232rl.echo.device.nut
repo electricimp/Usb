@@ -50,7 +50,7 @@ function deviceWriteCb(error, data, len) {
 function usbEventListener(event, data) {
     log("USB event: " + event);
 
-    if (event == "started") {
+    if (event == USB_DRIVER_STATE_STARTED) {
         ftdi = data;
 
         log("Starting reading");
@@ -60,7 +60,7 @@ function usbEventListener(event, data) {
     }
 }
 
-usbHost <- USB.Host([FT232RLFtdiUsbDriver]);
+usbHost <- USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
 log("USB.Host setup complete");
 
 usbHost.setEventListener(usbEventListener);

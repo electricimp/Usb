@@ -35,7 +35,7 @@ ql720 <- null;
 function usbDriverListener(event, data) {
     log("[App]: USB event: " + event);
 
-    if (event == "started") {
+    if (event == USB_DRIVER_STATE_STARTED) {
         ql720 = data;
 
         log("Printing \"Hello,World!\"");
@@ -48,8 +48,7 @@ function usbDriverListener(event, data) {
     }
 }
 
-usbHost <- USB.Host;
-usbHost.init([QL720NWUartUsbDriver]);
+usbHost <- USB.Host(hardware.usb, [QL720NWUartUsbDriver]);
 log("[App]: USB.Host setup initialized");
 
 usbHost.setDriverListener(usbDriverListener);

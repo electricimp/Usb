@@ -112,7 +112,7 @@ class HIDKeyboardTest extends ImpTestCase {
             });
 
             usbHost.setEventListener(function(event, data) {
-                if (event == "started") {
+                if (event == USB_DRIVER_STATE_STARTED) {
 
                     imp.cancelwakeup(timer);
 

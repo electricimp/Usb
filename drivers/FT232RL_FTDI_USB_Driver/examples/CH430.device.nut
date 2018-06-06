@@ -80,7 +80,7 @@ function deviceWriteCb(error, data, len) {
 function usbEventListener(event, data) {
     log("USB event: " + event);
 
-    if (event == "started") {
+    if (event == USB_DRIVER_STATE_STARTED) {
         ch340 = data;
 
         log("Starting ping-pong");
@@ -91,7 +91,7 @@ function usbEventListener(event, data) {
     }
 }
 
-usbHost <- USB.Host([CH340]);
+usbHost <- USB.Host(hardware.usb, [CH340]);
 log("USB.Host setup complete");
 
 usbHost.setEventListener(usbEventListener);

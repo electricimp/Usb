@@ -55,7 +55,7 @@ function keyboardEventListener(status) {
 }
 
 function usbDriverListener(event, driver) {
-    if (event == "started") {
+    if (event == USB_DRIVER_STATE_STARTED) {
         server.log("BootKeyboardDriver started");
         kbrDrv = driver;
         // Receive new key state every second
@@ -63,8 +63,7 @@ function usbDriverListener(event, driver) {
     }
 }
 
-usbHost <- USB.Host;
-usbHost.init([BootKeyboardDriver]);
+usbHost <- USB.Host(hardware.usb, [BootKeyboardDriver]);
 
 usbHost.setDriverListener(usbDriverListener);
 
