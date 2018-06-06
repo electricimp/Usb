@@ -193,7 +193,7 @@ USB <- {
 
         // Auxillary function to get list of attached devices.
         // Returns:
-        //      an array of USB._Device instances
+        //      an array of USB.Device instances
         getAttachedDevices = function() {
             local devs = [];
 
@@ -222,7 +222,7 @@ USB <- {
         //                      eventType - USB_DEVICE_STATE_CONNECTED      - the device was attached
         //                                  USB_DEVICE_STATE_DISCONNECTED   - the device was detached
         //                      eventObject - depending on event type it could be
-        //                                    either USB._Device or USB.Driver instance
+        //                                    either USB.Device or USB.Driver instance
         setDeviceListener = function(listener) {
             if (typeof listener != "function" && listener != null) {
                 throw "Invalid event listener parameter";
@@ -274,12 +274,12 @@ USB <- {
         }
 
         // New device processing function
-        // Creates new USB._Device instance, notifies application listener
+        // Creates new USB.Device instance, notifies application listener
         // with USB_DEVICE_STATE_CONNECTED event
         _onDeviceConnected = function(eventDetails) {
             local speed = eventDetails.speed;
             local descr = eventDetails.descriptors;
-            local device = USB._Device(_usb, this, speed, descr, _address);
+            local device = USB.Device(_usb, this, speed, descr, _address);
 
             // a copy application callback
             _devices[_address] <- device;
@@ -295,7 +295,7 @@ USB <- {
         }
 
         // Device detach processing function.
-        // Stops corresponding USB._Device instance, notifies application listener
+        // Stops corresponding USB.Device instance, notifies application listener
         // with USB_DEVICE_STATE_DISCONNECTED event
         _onDeviceDetached = function(eventDetails) {
             // TODO: why do we need this check?
@@ -322,7 +322,7 @@ USB <- {
         }
 
         // Data transfer status processing function
-        // Checks transfer status and either notify USB._Device about event or
+        // Checks transfer status and either notify USB.Device about event or
         // schedules bus reset if status is critical error
         _onTransferComplete = function(eventDetails) {
             local address = eventDetails.device;
@@ -380,7 +380,7 @@ USB <- {
     // It manages its configuration, interfaces and endpoints.
     // An application does not need such object normally.
     // It is usually used by drivers to acquire required endpoints
-    _Device = class {
+    Device = class {
 
         // Assigned device address
         _address = 0;
@@ -552,7 +552,7 @@ USB <- {
                 }
             }
 
-            // Returns USB._Device instance - owner of this interface
+            // Returns USB.Device instance - owner of this interface
             getDevice = function() {
                 return endpoints[0]._device;
             }
@@ -696,12 +696,12 @@ USB <- {
 
         // Metafunction to return class name when typeof <instance> is run
         function _typeof() {
-            return "USB._Device";
+            return "USB.Device";
         }
     } // Device
 
     // The class that represent all non-control endpoints, e.g. bulk, interrupt etc
-    // This class is managed by USB._Device and should be acquired through USB._Device instance
+    // This class is managed by USB.Device and should be acquired through USB.Device instance
     _FuncEndpoint = class {
         // Owner
         _device = null;
@@ -730,7 +730,7 @@ USB <- {
 
         // Constructor
         // Parameters:
-        //      device          - USB._Device instance, owner of this endpoint
+        //      device          - USB.Device instance, owner of this endpoint
         //      endpoint        - unique endpoint address
         //      epType          - endpoint type
         //      maxPacketSize   - maximum packet size for this endpoint
@@ -858,7 +858,7 @@ USB <- {
 
     // Represent control endpoints.
     // This class is required due to specific EI usb API
-    // This class is managed by USB._Device and should be acquired through USB._Device instance
+    // This class is managed by USB.Device and should be acquired through USB.Device instance
     _ControlEndpoint = class {
 
         // to keep consistency with functional endpoint
@@ -880,7 +880,7 @@ USB <- {
 
         // Constructor
         // Parameters:
-        //      device          - USB._Device instance, owner of this endpoint
+        //      device          - USB.Device instance, owner of this endpoint
         //      endpoint        - unique endpoint address
         //      maxPacketSize   - maximum packet size for this endpoint
         constructor (device, endpoint, maxPacketSize) {
@@ -891,7 +891,7 @@ USB <- {
 
         // Generic function for transferring data over control endpoint.
         // Note! Only vendor specific requires are allowed.
-        // For other control operation use USB._Device, USB._ControlEndpoint public API
+        // For other control operation use USB.Device, USB._ControlEndpoint public API
         //
         // Parameters:
         //      reqType     - USB request type

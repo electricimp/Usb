@@ -47,7 +47,7 @@ class UsbHostEventsSanity extends ImpTestCase {
             imp.wakeup(0, function() {
                 local devices = host.getAttachedDevices();
                 assertTrue(devices.len() == 1, "Expected one device item");
-                assertEqual("USB._Device", typeof(devices[0]), "Unexpected driver");
+                assertEqual("USB.Device", typeof(devices[0]), "Unexpected driver");
                 resolve();
             }.bindenv(this));
         }.bindenv(this));
@@ -63,8 +63,8 @@ class UsbHostEventsSanity extends ImpTestCase {
             imp.wakeup(0, function() {
                 local devices = host.getAttachedDevices();
                 assertTrue(devices.len() == 2, "Expected two device attached");
-                assertEqual("USB._Device", typeof(devices[0]), "Unexpected driver");
-                assertEqual("USB._Device", typeof(devices[1]), "Unexpected driver");
+                assertEqual("USB.Device", typeof(devices[0]), "Unexpected driver");
+                assertEqual("USB.Device", typeof(devices[1]), "Unexpected driver");
                 resolve();
             }.bindenv(this));
         }.bindenv(this));
@@ -83,7 +83,7 @@ class UsbHostEventsSanity extends ImpTestCase {
                         reject("Invalid event type: " + type);
                         return;
                 }
-                if ("USB._Device" !=  typeof payload) {
+                if ("USB.Device" !=  typeof payload) {
                     reject("Unexpected device type");
                     return;
                 }
@@ -159,7 +159,7 @@ class UsbHostEventsSanity extends ImpTestCase {
                         return;
                     }
                     // payload is description
-                    if ("USB._Device" !=  typeof payload) {
+                    if ("USB.Device" !=  typeof payload) {
                         reject("Unexpected device type: " + (typeof payload));
                         return;
                     }

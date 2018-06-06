@@ -394,7 +394,7 @@ The following event types are supported:
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
 | *eventType*  | String  |  Name of the event `USB_DEVICE_STATE_CONNECTED`, `USB_DEVICE_STATE_DISCONNECTED` |
-| *object* | USB._Device |  Instance of the USB._Device class. |
+| *object* | USB.Device |  Instance of the USB.Device class. |
 
 ##### Example (subscribe)
 
@@ -444,7 +444,7 @@ imp.wakeup(2, function() {
 #### getAttachedDevices()
 
 Auxiliary function to get list of attached devices. Returns an
-array of **[USB._Device](#usbdevice-class)** objects.
+array of **[USB.Device](#usbdevice-class)** objects.
 
 
 ## USB.Device class
