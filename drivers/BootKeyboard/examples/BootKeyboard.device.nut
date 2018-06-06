@@ -29,7 +29,6 @@
 // This is an example of bookt keyboard control application
 
 @include __PATH__ +  "/../../../USB.device.lib.nut"
-@include __PATH__ +  "/../../../USB.HID.device.lib.nut"
 @include __PATH__ +  "/../BootKeyboard.device.lib.nut"
 
 
@@ -38,28 +37,48 @@ print <- pp.print.bindenv(pp);
 
 kbrDrv <- null;
 
+leds <- KBD_NUM_LOCK;
+
+function blink() {
+    if (!kbrDrv) {
+        return;
+    }
+
+    kbrDrv.setLeds(leds);
+
+    leds = leds << 1;
+    if (leds > KBD_SCROLL_LOCK) leds = KBD_NUM_LOCK;
+
+    imp.wakeup(1, blink);
+}
+
 function keyboardEventListener(status) {
     if (!kbrDrv) {
         return;
     }
 
-    server.log("Keyboard event");
+    server.log("[App] Keyboard event");
     local error = "error" in status ? status.error : null;
 
     if (error == null) {
         print(status);
         kbrDrv.getKeyStatusAsync(keyboardEventListener);
     } else {
-        server.error("Error received: " + error);
+        server.error("[App] Error received: " + error);
     }
 }
 
 function usbDriverListener(event, driver) {
     if (event == USB_DRIVER_STATE_STARTED) {
-        server.log("BootKeyboardDriver started");
+        server.log("[App] BootKeyboardDriver started");
         kbrDrv = driver;
+        // Report only when key status is changed
+        kbrDrv.setIdleTime(0);
         // Receive new key state every second
         kbrDrv.getKeyStatusAsync(keyboardEventListener);
+
+        // start keyboard leds blinking
+        imp.wakeup(1, blink);
     }
 }
 
@@ -67,6 +86,6 @@ usbHost <- USB.Host(hardware.usb, [BootKeyboardDriver]);
 
 usbHost.setDriverListener(usbDriverListener);
 
-server.log("USB initialization complete");
+server.log("[App] USB initialization complete");
 
 

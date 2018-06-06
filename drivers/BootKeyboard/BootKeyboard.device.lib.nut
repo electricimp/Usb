@@ -24,6 +24,12 @@
 
 // ----------------------------------------------------------------------
 
+const KBD_NUM_LOCK      = 1;
+const KBD_CAPS_LOCK     = 2;
+const KBD_SCROLL_LOCK   = 4;
+const KBD_COMPOSE       = 8;
+const KBD_KANA          = 16;
+
 // This is an example of Keyboard driver.
 // This driver matches only keyboards that support Boot Report Descriptor
 // (see http://www.usb.org/developers/hidpage/HID1_11.pdf for more details)
@@ -48,15 +54,26 @@ class BootKeyboardDriver extends USB.Driver {
     // Ep0 for sending Output Report (change LED state) and synchronous Input Report,
     // and change protocol
     constructor(inEp, ep0, ifs) {
-        local HID_HOST_TO_DEVICE  = USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE;
-        const HID_SET_PROTOCOL = 0xB;
+        // USB_SETUP_DEVICE_TO_HOST | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE;
+        const HID_DEVICE_TO_HOST    = 161;
+        // USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE;
+        const HID_HOST_TO_DEVICE    = 33;
+        const HID_GET_REPORT_CMD    = 0x01;
+        const HID_SET_PROTOCOL_CMD  = 0x0B;
+        const HID_SET_REPORT_CMD    = 0x09;
+        const HID_SET_IDLE_CMD      = 0x0A;
+
+        // 2 << 8
+        const HID_REPORT_OUT        = 512;
+        // 1 << 8
+        const HID_REPORT_IN         = 256;
 
         _inEp = inEp;
         _ep0  = ep0;
         _ifs  = ifs;
 
         // force boot protocol
-        _ep0.transfer(HID_HOST_TO_DEVICE, HID_SET_PROTOCOL, 1, ifs);
+        _ep0.transfer(HID_HOST_TO_DEVICE, HID_SET_PROTOCOL_CMD, 0, ifs);
     }
 
     // The function searches for HID class interfaces with Boot Interface Subclass
@@ -140,12 +157,10 @@ class BootKeyboardDriver extends USB.Driver {
     //
     //  Note: in case of error no other fields are present
     function getKeyStatus() {
-        local HID_DEVICE_TO_HOST  = USB_SETUP_DEVICE_TO_HOST | USB_SETUP_TYPE_CLASS | USB_SETUP_RECIPIENT_INTERFACE;
-        const HID_GET_REPORT = 0x01;
         local data = blob(8);
 
         try {
-            _ep0.transfer(HID_DEVICE_TO_HOST, HID_GET_REPORT, 0, ifs, data);
+            _ep0.transfer(HID_DEVICE_TO_HOST, HID_GET_REPORT_CMD, HID_REPORT_IN, _ifs, data);
             return _generateReport(data, 8);
         } catch (e) {
             return {"error": "USB error: " + e};
@@ -162,15 +177,30 @@ class BootKeyboardDriver extends USB.Driver {
     //                   bit 4 - KANA
     // Returns: error description or NULL
     function setLeds(leds) {
-        const HID_SET_REPORT = 0x09;
         local data = blob(1);
         data.writen(leds, 'b');
         try {
-            _ep0.transfer(HID_HOST_TO_DEVICE, HID_SET_REPORT, 0, ifs, data);
+            _ep0.transfer(HID_HOST_TO_DEVICE, HID_SET_REPORT_CMD, HID_REPORT_OUT, _ifs, data);
         } catch (e) {
             return "USB error: " + e;
         }
     }
+
+
+    // This request is used to limit the reporting frequency.
+    // Parameters:
+    //  timeout - poll duration in milliseconds [0...1020]. Zero means the duration is indefinite.
+    //
+    // Returns: error description or null
+    function setIdleTime(timeout) {
+        local ticks = (timeout / 4) & 0xFF;
+        try {
+            _ep0.transfer(HID_HOST_TO_DEVICE, HID_SET_IDLE_CMD, ticks << 8, _ifs);
+        } catch (e) {
+            return "USB error: " + e;
+        }
+    }
+
 
     // ------------- private functions ------------------
 
@@ -229,5 +259,10 @@ class BootKeyboardDriver extends USB.Driver {
             if (0 != key) report["Key" + (i - 2)] <- key;
         }
         return report;
+    }
+
+    // Metafunction to return class name when typeof <instance> is run
+    function _typeof() {
+        return "BootKeyboardDriver";
     }
 }

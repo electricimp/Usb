@@ -19,41 +19,66 @@ In the example below keyboard driver is included into an application:
 ### Complete example
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
-#require "Keyboard.nut:1.0.0"
 #require "PrettyPrinter.class.nut:1.0.1"
 #require "JSONEncoder.class.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.0"
+#require "BootKeyboard.device.nut:1.0.0"
 
 pp <- PrettyPrinter(null, false);
 print <- pp.print.bindenv(pp);
 
 kbrDrv <- null;
 
-function keyboardEventListener(error, status) {
-    server.log("Keyboard event");
+leds <- KBD_NUM_LOCK;
 
-    if (null != null) {
+function blink() {
+    if (!kbrDrv) {
+        return;
+    }
+
+    kbrDrv.setLeds(leds);
+
+    leds = leds << 1;
+    if (leds > KBD_SCROLL_LOCK) leds = KBD_NUM_LOCK;
+
+    imp.wakeup(1, blink);
+}
+
+function keyboardEventListener(status) {
+    if (!kbrDrv) {
+        return;
+    }
+
+    server.log("[App] Keyboard event");
+    local error = "error" in status ? status.error : null;
+
+    if (error == null) {
         print(status);
         kbrDrv.getKeyStatusAsync(keyboardEventListener);
     } else {
-        server.error("Error received: " + error);
+        server.error("[App] Error received: " + error);
     }
 }
 
-function usbEventListener(event, data) {
-    if (event == "started") {
-        local kbrDrv = data;
-
+function usbDriverListener(event, driver) {
+    if (event == USB_DRIVER_STATE_STARTED) {
+        server.log("[App] BootKeyboardDriver started");
+        kbrDrv = driver;
+        // Report only when key status is changed
+        kbrDrv.setIdleTime(0);
         // Receive new key state every second
         kbrDrv.getKeyStatusAsync(keyboardEventListener);
+
+        // start keyboard leds blinking
+        imp.wakeup(1, blink);
     }
 }
 
-host <- USB.Host([Keyboard]);
+usbHost <- USB.Host(hardware.usb, [BootKeyboardDriver]);
 
-host.setEventListener(usbEventListener);
+usbHost.setDriverListener(usbDriverListener);
 
-server.log("USB initialization complete");
+server.log("[App] USB initialization complete");
 
 ```
 
@@ -88,6 +113,16 @@ The signature of callback function is following:
 Function read keyboard report  through control endpoint 0 and thus synchronously.
 
 It returns keyboard status [table](#keyboard-status-table) or throws if an error happens during transfer
+
+#### setIdleTime()
+
+This request is used to limit the reporting frequency.
+
+The function signature is following:
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| *timeout* | Integer | poll duration in milliseconds [0...1020]. Zero means the duration is indefinite.
 
 #### setLeds(leds)
 
