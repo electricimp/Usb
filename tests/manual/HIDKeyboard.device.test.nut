@@ -34,8 +34,10 @@
 // Tests
 // ---------------------------------------------------------------------
 
-@include "USB.HID.device.lib.nut"
-@include "examples/HID_Keyboard/HIDKeyboard.nut"
+
+@include __PATH__+"/../../USB.device.lib.nut"
+@include __PATH__+"/../../USB.HID.device.lib.nut"
+@include __PATH__+"/../../drivers/HIDKeyboard/HIDKeyboard.device.lib.nut"
 
 // HIDKeyboard driver test
 // NOTE: The keyboard MUST support IDLE time setting, e.g. generate reports periodically
@@ -46,7 +48,7 @@ class HIDKeyboardTest extends ImpTestCase {
 
 
     function setUp() {
-        _host = USB.Host([HIDKeyboard]);
+        _host = USB.Host(hardware.usb, [HIDKeyboardDriver]);
 
         return "USB setup complete";
     }
@@ -111,7 +113,7 @@ class HIDKeyboardTest extends ImpTestCase {
                 reject("No keyboard is attached");
             });
 
-            usbHost.setEventListener(function(event, data) {
+            usbHost.setDriverListener(function(event, data) {
                 if (event == USB_DRIVER_STATE_STARTED) {
 
                     imp.cancelwakeup(timer);
