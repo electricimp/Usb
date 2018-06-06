@@ -79,7 +79,7 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
     // -------------------- service functions ----------------
 
     function getEp() {
-        return USB._ControlEndpoint(_device, 0, 8);
+        return USB.ControlEndpoint(_device, 0, 8);
     }
 
 }

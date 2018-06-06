@@ -424,7 +424,7 @@ USB <- {
             _interfaces = conf.interfaces;
             _driverInstances = [];
 
-            local ep0 = USB._ControlEndpoint(this, 0, _desc["maxpacketsize0"]);
+            local ep0 = USB.ControlEndpoint(this, 0, _desc["maxpacketsize0"]);
             _endpoints[0] <- ep0;
 
             // When a device is first connected you can communicate with it at address 0x00.
@@ -565,7 +565,7 @@ USB <- {
         //      pollTime  - interval for polling endpoint for data transfers. For Interrupt/Isochronous only.
         //
         //  Returns:
-        //      an instance of USB._ControlEndpoint or USB.FunctionEndpoint, depending on type parameter,
+        //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint, depending on type parameter,
         //      or `null` if there is no required endpoint found in provided interface
         //
         // Throws exception if the device was detached
@@ -587,7 +587,7 @@ USB <- {
                         }
 
                         local newEp = (type == USB_ENDPOINT_CONTROL) ?
-                                        USB._ControlEndpoint(this, address, maxSize) :
+                                        USB.ControlEndpoint(this, address, maxSize) :
                                         USB.FuncEndpoint(this, address, type, maxSize);
 
                         _endpoints[address] <- newEp;
@@ -859,7 +859,7 @@ USB <- {
     // Represent control endpoints.
     // This class is required due to specific EI usb API
     // This class is managed by USB.Device and should be acquired through USB.Device instance
-    _ControlEndpoint = class {
+    ControlEndpoint = class {
 
         // to keep consistency with functional endpoint
         static _type = USB_ENDPOINT_CONTROL;
@@ -891,7 +891,7 @@ USB <- {
 
         // Generic function for transferring data over control endpoint.
         // Note! Only vendor specific requires are allowed.
-        // For other control operation use USB.Device, USB._ControlEndpoint public API
+        // For other control operation use USB.Device, USB.ControlEndpoint public API
         //
         // Parameters:
         //      reqType     - USB request type
@@ -953,9 +953,9 @@ USB <- {
 
         // Metafunction to return class name when typeof <instance> is run
         function _typeof() {
-            return "USB._ControlEndpoint";
+            return "USB.ControlEndpoint";
         }
-    } // _ControlEndpoint
+    } // ControlEndpoint
 
     // Interface class for all drivers.
     // Driver developer is not required to subclass it though.
