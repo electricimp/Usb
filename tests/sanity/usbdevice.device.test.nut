@@ -85,7 +85,7 @@ class UsbDeviceSanity extends ImpTestCase {
 
     function getValidDevice() {
         local host = USB.Host(_usb, _drivers);
-        return USB._Device(_usb, host, 1.5, correctDescriptor, 1);
+        return USB.Device(_usb, host, 1.5, correctDescriptor, 1);
     }
 
     function callback(eventType, eventDetails) {

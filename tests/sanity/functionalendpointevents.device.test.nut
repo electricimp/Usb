@@ -48,7 +48,7 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
             imp.wakeup(0, function() {
                 local devices = _host.getAttachedDevices();
                 assertTrue(devices.len() == 1, "Expected one device item");
-                assertEqual("USB._Device", typeof(devices[0]), "Unexpected driver: " + typeof(devices[0]));
+                assertEqual("USB.Device", typeof(devices[0]), "Unexpected driver: " + typeof(devices[0]));
                 // cache current device
                 _device = devices[0];
                 resolve();

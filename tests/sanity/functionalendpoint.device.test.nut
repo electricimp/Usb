@@ -37,7 +37,7 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
     function setUp() {
         _usb = UsbMock();
         local host = USB.Host(_usb, _drivers);
-        _device = USB._Device(_usb, host, 1.5, correctDescriptor, 1);
+        _device = USB.Device(_usb, host, 1.5, correctDescriptor, 1);
     }
 
     function testPositive1() {
@@ -132,11 +132,11 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
     }
 
     function getInEp() {
-        return USB._FuncEndpoint(_device, bulkIn.address, USB_ENDPOINT_BULK, 32);
+        return USB.FuncEndpoint(_device, bulkIn.address, USB_ENDPOINT_BULK, 32);
     }
 
     function getOutEp() {
-        return USB._FuncEndpoint(_device, bulkOut.address, USB_ENDPOINT_BULK, 32);
+        return USB.FuncEndpoint(_device, bulkOut.address, USB_ENDPOINT_BULK, 32);
     }
 
 }

@@ -37,7 +37,7 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
     function setUp() {
         _usb = UsbMock();
         local host = USB.Host(_usb, _drivers);
-        _device = USB._Device(_usb, host, 1.5, correctDescriptor, 1);
+        _device = USB.Device(_usb, host, 1.5, correctDescriptor, 1);
     }
 
     function testPositive1() {
@@ -79,7 +79,7 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
     // -------------------- service functions ----------------
 
     function getEp() {
-        return USB._ControlEndpoint(_device, 0, 8);
+        return USB.ControlEndpoint(_device, 0, 8);
     }
 
 }
