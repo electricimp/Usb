@@ -29,8 +29,8 @@
 // Since CH340 differs from FT232RL  mostly by configuration protocol,
 // it is possible to use FT232RL driver for CH340 by changing VID/PID and block configuration call.
 
-@include __PATH__ + "/../../../../USB.device.lib.nut"
-@include __PATH__ + "/../../FT232RLFtdiUsbDriver.device.lib.nut"
+@include __PATH__ + "/../../../USB.device.lib.nut"
+@include __PATH__ + "/../FT232RLFtdiUsbDriver.device.lib.nut"
 
 log <- server.log.bindenv(server);
 
@@ -44,7 +44,24 @@ class CH340 extends FT232RLFtdiUsbDriver {
     static VID = 0x1A86;
     static PID = 0x7523;
 
-    function configure(baud = 115200, databits = 8, parity = FTDI_PARITY_NONE, stopbits = FTDI_STOP_BIT_1)   {
+    function configure(baud = 115200, databits = 8, parity = FTDI_PARITY_NONE, stopbits = FTDI_STOP_BIT_1) {
+        // Do nothing
+    }
+
+    // Fill provided buffer with a data read from device
+    function read(data, onComplete) {
+
+        if (typeof data != "blob") {
+            throw "Read data must of type blob";
+        }
+
+        // Write data via bulk transfer
+        _bulkIn.read(data,  function(ep, error, data, length) {
+            if (onComplete) {
+                if (error == USB_ERROR_FREE || error == USB_ERROR_IDLE) error = null;
+                onComplete(error, data, length);
+            }
+        }.bindenv(this));
     }
 
     // The function that help to create the driver extentions
@@ -94,7 +111,7 @@ function usbEventListener(event, data) {
 usbHost <- USB.Host(hardware.usb, [CH340]);
 log("USB.Host setup complete");
 
-usbHost.setEventListener(usbEventListener);
+usbHost.setDriverListener(usbEventListener);
 log("USB.Host setEventListener complete");
 
 log("Waiting for a \"device connected\" event");

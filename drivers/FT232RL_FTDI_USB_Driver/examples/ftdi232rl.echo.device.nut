@@ -25,33 +25,46 @@
 
 // This is an example of FT232RL driver usage. The application echoes all read data back to sender.
 
-@include "../../../../USB.device.lib.nut"
-@include "../../FT232RLFtdiUsbDriver.device.lib.nut"
+@include __PATH__ + "/../../../USB.device.lib.nut"
+@include __PATH__ + "/../FT232RLFtdiUsbDriver.device.lib.nut"
 
-log <- server.log.bindenv(server);
-
+log  <- server.log.bindenv(server);
 ftdi <- null;
+
+const PING = "ping";
+const PONG = "pong";
 
 function deviceReadCb(error, data, len) {
     if (error != null) {
-        log("Read timeout!");
-    } else {
-        log("Received. Sending back..");
-        ftdi.write(data.readblob(len), deviceWriteCb);
+        log("Read timeout! Check loopback connection.");
+        return;
     }
 
-    ftdi.read(data, deviceReadCb);
+    local str = data.readstring(len);
+    local txt = "Data received: " + str;
+    log(txt);
+
+    if (str == PING) {
+        ftdi.write(PONG, deviceWriteCb);
+        local buffer = blob(10);
+        ftdi.read(buffer, deviceReadCb);
+    }
 }
 
 function deviceWriteCb(error, data, len) {
-    log("Data has been written");
+    data.seek(0, 'b');
+    local txt = "Data written: " + data.readstring(len);
+    log(txt);
 }
 
-function usbEventListener(event, data) {
+function usbDriverListener(event, driver) {
     log("USB event: " + event);
 
     if (event == USB_DRIVER_STATE_STARTED) {
-        ftdi = data;
+        ftdi = driver;
+
+        log("Starting ping-pong");
+        ftdi.write(PING, deviceWriteCb);
 
         log("Starting reading");
 
@@ -63,7 +76,7 @@ function usbEventListener(event, data) {
 usbHost <- USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
 log("USB.Host setup complete");
 
-usbHost.setEventListener(usbEventListener);
+usbHost.setDriverListener(usbDriverListener);
 log("USB.Host setEventListener complete");
 
 log("Waiting for a \"device connected\" event");
