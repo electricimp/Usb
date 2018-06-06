@@ -45,7 +45,7 @@ class QL720NWUartUsbDriverTestCase extends ImpTestCase {
     dataString = "";
     usbHost = null;
     loadPin = null;
-    _device = null;
+    _driver = null;
     getInfo = "/x1B/x69/x53";
 
     // Test connection of valid device instantiated driver
@@ -59,14 +59,14 @@ class QL720NWUartUsbDriverTestCase extends ImpTestCase {
             usbHost = USB.Host(hardware.usb, [QL720NWUartUsbDriver]);
 
             // Register cb for connection event
-            usbHost.setListener(function(event, obj) {
+            usbHost.setDriverListener(function(event, driver) {
 
                 if (event == USB_DRIVER_STATE_STARTED) {
                     // Check the device is an instance of QL720NWUartUsbDriver
-                    if (typeof device == "QL720NWUartUsbDriver") {
+                    if (typeof driver == "QL720NWUartUsbDriver") {
 
                         // Store the driver for the next test
-                        _device = device;
+                        _driver = driver;
 
                         return resolve("Device was a Uart over Usb device");
                     }
@@ -85,31 +85,29 @@ class QL720NWUartUsbDriverTestCase extends ImpTestCase {
         return Promise(function(resolve, reject) {
 
             // Check there is a valid device driver
-            if (_device != null) {
-
-                local printer = QL720NW(_device);
+            if (_driver != null) {
 
                 local testString = "I'm a Blob\n";
                 local dataString = "";
 
-                printer
-                    .setOrientation(QL720NW.LANDSCAPE)
-                    .setFont(QL720NW.FONT_SAN_DIEGO)
-                    .setFontSize(QL720NW.FONT_SIZE_48)
+                _driver
+                    .setOrientation(QL720NWUartUsbDriver.LANDSCAPE)
+                    .setFont(QL720NWUartUsbDriver.FONT_SAN_DIEGO)
+                    .setFontSize(QL720NWUartUsbDriver.FONT_SIZE_48)
                     .write("San Diego 48 ")
                     .print();
 
                 // Configure Barcode
                 local barcodeConfig = {
-                    "type": QL720NW.BARCODE_CODE39,
+                    "type": QL720NWUartUsbDriver.BARCODE_CODE39,
                     "charsBelowBarcode": true,
-                    "width": QL720NW.BARCODE_WIDTH_M,
+                    "width": QL720NWUartUsbDriver.BARCODE_WIDTH_M,
                     "height": 1,
-                    "ratio": QL720NW.BARCODE_RATIO_3_1
+                    "ratio": QL720NWUartUsbDriver.BARCODE_RATIO_3_1
                 };
 
                 // Print bacode of the imp's mac address
-                printer.writeBarcode(imp.getmacaddress(), barcodeConfig).print();
+                _driver.writeBarcode(imp.getmacaddress(), barcodeConfig).print();
 
                 // Requires manual validation
                 resolve("Printed data");
