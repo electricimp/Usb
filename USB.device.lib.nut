@@ -588,7 +588,7 @@ USB <- {
 
                         local newEp = (type == USB_ENDPOINT_CONTROL) ?
                                         USB._ControlEndpoint(this, address, maxSize) :
-                                        USB._FuncEndpoint(this, address, type, maxSize);
+                                        USB.FuncEndpoint(this, address, type, maxSize);
 
                         _endpoints[address] <- newEp;
 
@@ -702,7 +702,7 @@ USB <- {
 
     // The class that represent all non-control endpoints, e.g. bulk, interrupt etc
     // This class is managed by USB.Device and should be acquired through USB.Device instance
-    _FuncEndpoint = class {
+    FuncEndpoint = class {
         // Owner
         _device = null;
 
@@ -852,9 +852,9 @@ USB <- {
 
         // Metafunction to return class name when typeof <instance> is run
         function _typeof() {
-            return "USB._FuncEndpoint";
+            return "USB.FuncEndpoint";
         }
-    } // _FuncEndpoint
+    } // FuncEndpoint
 
     // Represent control endpoints.
     // This class is required due to specific EI usb API

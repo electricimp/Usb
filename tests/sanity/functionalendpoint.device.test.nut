@@ -132,11 +132,11 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
     }
 
     function getInEp() {
-        return USB._FuncEndpoint(_device, bulkIn.address, USB_ENDPOINT_BULK, 32);
+        return USB.FuncEndpoint(_device, bulkIn.address, USB_ENDPOINT_BULK, 32);
     }
 
     function getOutEp() {
-        return USB._FuncEndpoint(_device, bulkOut.address, USB_ENDPOINT_BULK, 32);
+        return USB.FuncEndpoint(_device, bulkOut.address, USB_ENDPOINT_BULK, 32);
     }
 
 }
