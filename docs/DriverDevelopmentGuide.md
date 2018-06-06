@@ -21,7 +21,7 @@ For developer convenience the USB framework comes with a
 basic [USB.Driver](#usbdriver-class) implementation.
 Make your new driver class extending it.
 
-**Example:**
+###### Example
 
 ```squirrel
 class MyCustomDriver extends USB.Driver {
@@ -44,7 +44,7 @@ probing of other drivers if there is any in the list.
 For example, if it is necessary to instantiate driver for a certain device with
 known product and vendor IDs:
 
-**Example 1:**
+###### Example 1
 ```squirrel
 class MyCustomDriver extends USB.Driver {
     static VENDOR_ID = 0x46D;
@@ -66,7 +66,7 @@ class MyCustomDriver extends USB.Driver {
 On the other hand it could be class of devices like keyboard or mouse which should
 not have vendor specific.
 
-**Example 2:**
+###### Example 2
 ```squirrel
 class MyCustomDriver extends USB.Driver {
 
@@ -104,7 +104,7 @@ The `release` function is optional, so implement it only if need to release any 
 
 The following example shows a simple `release` function implementation.
 
-**Example:**
+###### Example
 
 ```squirrel
 class MyCustomDriver extends USB.Driver {
@@ -133,7 +133,7 @@ TODO: add references/description to setDriverListener/setDeviceListener to get a
 Endpoint Zero is a special type of control endpoints that implicitly exists
 for every device see [USB.ControlEndpoint](#usbcontrolendpoint-class).
 
-**Example:**
+###### Example
 
 ```squirrel
 
@@ -189,7 +189,7 @@ is found, to retrieve the endpoint instance the driver needs to call `get()` fun
 endpoints `get()` function may result in exception when a number of open
 endpoint exceeds some limits, e.g. there can be only one open interrupt in endpoint.
 
-**Example 1:**
+###### Example 1
 
 ```
     function findEndpont(interfaces) {
@@ -210,7 +210,7 @@ endpoint exceeds some limits, e.g. there can be only one open interrupt in endpo
 To simplify new driver code every interface descriptor comes with [`find`](#find)
 function that searches for endpoint with given attributes and return found first.
 
-**Example 1:**
+###### Example 2
 ```
     function findEndpont(interfaces) {
         foreach(interface in interfaces) {
@@ -229,7 +229,7 @@ function that searches for endpoint with given attributes and return found first
 `_typeof` returns a unique identifier for the driver type.
 Can be used to identify driver in runtime for diagnostic/debug purposes.
 
-Example:
+###### Example
 
 ```squirrel
 class MyCustomDriver extends USB.Driver {
