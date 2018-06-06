@@ -266,8 +266,8 @@ USB <- {
                     USB.log("USB_TRANSFER_COMPLETED event");
                     _onTransferComplete(eventDetails);
                     break;
-                case USB_UNRECOVERABLELog.e:
-                    USB.err("USB_UNRECOVERABLELog.e event");
+                case USB_UNRECOVERABLE_ERROR:
+                    USB.err("USB_UNRECOVERABLE_ERROR event");
                     _onError();
                     break;
             }

@@ -22,6 +22,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+@include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__+"/../UsbMock.nut"
 @include __PATH__+"/../CorrectDriver.nut"
 @include __PATH__+"/../DescriptorMock.nut"
@@ -36,7 +37,6 @@ class UsbDeviceSanity extends ImpTestCase {
 
     function setUp() {
         _usb = UsbMock();
-        _usb.configure(callback);
     }
 
 
@@ -84,7 +84,8 @@ class UsbDeviceSanity extends ImpTestCase {
 
 
     function getValidDevice() {
-        return USB.Device(_usb, 1.5, correctDescriptor, 1, _drivers);
+        local host = USB.Host(_usb, _drivers);
+        return USB._Device(_usb, host, 1.5, correctDescriptor, 1);
     }
 
     function callback(eventType, eventDetails) {

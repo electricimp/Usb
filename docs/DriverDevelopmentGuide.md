@@ -95,7 +95,7 @@ arguments as it's being called by the driver's own method `match`.
 
 When device resources required for the driver functionality were gone,
 USB framework calls drivers [release](#release) function to give it
-a change to shutdown gracefully and release any resources were allocated during its lifetime.
+a chance to shutdown gracefully and release any resources were allocated during its lifetime.
 
 Please note that all the framework resources should be considered as
 closed by this moment and `MUST NOT` be used from [release](#release) function.
@@ -168,7 +168,7 @@ class MyCustomDriver {
 The framework doesn't prevent drivers from accessing to any
 interface resources the driver receives through the [match](#matchdeviceobject-interfaces)
 function. It is up to driver author to create it in safe way and to address
-situation when several drivers try to concurrently access the same device. 
+situation when several drivers try to concurrently access the same device.
 An example of such collision is an exception that may be thrown by
 [USB.FunctionalEndpoint.read()](#readdata-oncomplete) while another driver's
 call is still pending.
@@ -371,12 +371,9 @@ usbHost.setDriverListener(function (eventType, driver) {
 
 #### setDeviceListener(*callback*)
 
-Assign listener for runtime device and driver events. User could plug an
+Assign listener for runtime device events. User could plug an
 unplug device in runtime and application should get the corresponding events.
 
-Callback could provide driver related events if some driver match to the
-device only otherwise an application will get device related events only
-[see](#callbackeventtype-eventobject)
 
 | Parameter   | Data Type | Required | Description |
 | ----------- | --------- | -------- | ----------- |
@@ -391,33 +388,25 @@ therefore the second argument is variable and could be instance
 of the [USB.Device](#usbdevice-class) or [USB.Driver](#usbdriver-class).
 
 The following event types are supported:
-- device `"connected"`
-- device `"disconnected"`
-- driver `"started"`
-- driver `"stopped"`
+- device `USB_DEVICE_STATE_CONNECTED`       (`"connected"`)
+- device `USB_DEVICE_STATE_DISCONNECTED`    (`"disconnected"`)
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
-| *eventType*  | String  |  Name of the event `"connected"`, `"disconnected"`, `"started"`, `"stopped"` |
-| *object* | USB.Device or USB.Driver |  In case of `"connected"`/`"disconnected"` event is USB.Device instance. In case of `"started"`/`"stopped"` event is USB.Driver instance. |
+| *eventType*  | String  |  Name of the event `USB_DEVICE_STATE_CONNECTED`, `USB_DEVICE_STATE_DISCONNECTED` |
+| *object* | USB._Device |  Instance of the USB._Device class. |
 
 ##### Example (subscribe)
 
 ```squirrel
 // Subscribe to usb connection events
-usbHost.setEventListener(function (eventType, eventObject) {
+usbHost.setDeviceListener(function (eventType, eventObject) {
     switch (eventType) {
-        case "connected":
+        case USB_DEVICE_STATE_CONNECTED:
             server.log("New device found");
             break;
-        case "disconnected":
+        case USB_DEVICE_STATE_DISCONNECTED:
             server.log("Device detached");
-            break;
-        case "started":
-            server.log("Driver found and started " + (typeof eventObject));
-            break;
-        case "stopped":
-            server.log("Driver stopped " + (typeof eventObject));
             break;
     }
 });
@@ -441,8 +430,8 @@ All devices will have a new device object instances and different address.
 
 host <- USB.Host([MyCustomDriver]);
 
-host.setEventListener(function(eventName, eventDetails) {
-    if (eventName == "connected" && host.getAttachedDevices().len() != 1)
+host.setDeviceListener(function(eventName, eventDetails) {
+    if (eventName == USB_DEVICE_STATE_CONNECTED && host.getAttachedDevices().len() != 1)
         server.log("Only one device could be attached");
 });
 
@@ -455,7 +444,7 @@ imp.wakeup(2, function() {
 #### getAttachedDevices()
 
 Auxiliary function to get list of attached devices. Returns an
-array of **[USB.Device](#usbdevice-class)** objects.
+array of **[USB._Device](#usbdevice-class)** objects.
 
 
 ## USB.Device class

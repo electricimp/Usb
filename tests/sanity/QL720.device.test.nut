@@ -22,6 +22,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+@include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__ + "/../UsbMock.nut"
 @include __PATH__ + "/../../drivers/QL720NW_UART_USB_Driver/QL720NWUartUsbDriver.device.lib.nut"
 
@@ -95,7 +96,7 @@ class QL720Sanity extends ImpTestCase {
     function test1Init() {
         local host = _getUsbHost();
         return Promise(function(resolve, reject) {
-            host.setEventListener(function(eventType, eventObject) {
+            host.setDriverListener(function(eventType, eventObject) {
 
                 if (eventType == USB_DRIVER_STATE_STARTED) {
                     if (typeof eventObject != "QL720NWUartUsbDriver") {
@@ -173,11 +174,13 @@ class QL720Sanity extends ImpTestCase {
 
     function _configureDriver() {
         return Promise(function(resolve, reject) {
-            _getUsbHost().setEventListener(function(eventType, eventObject) {
+            _getUsbHost().setDriverListener(function(eventType, eventObject) {
 
                 if (eventType == USB_DRIVER_STATE_STARTED &&
                     typeof eventObject == "QL720NWUartUsbDriver") {
                         resolve(eventObject);
+                } else {
+                    reject("Unexpected event or object");
                 }
 
             });

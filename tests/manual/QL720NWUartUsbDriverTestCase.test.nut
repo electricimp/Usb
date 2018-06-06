@@ -36,6 +36,9 @@
 // Tests
 // ---------------------------------------------------------------------
 
+@include __PATH__+"/../../USB.device.lib.nut"
+@include __PATH__+"/../../drivers/QL720NW_UART_USB_Driver/QL720NWUartUsbDriver.device.lib.nut"
+
 class QL720NWUartUsbDriverTestCase extends ImpTestCase {
     // UART on imp005
     uart = null;

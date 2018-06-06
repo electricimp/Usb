@@ -34,7 +34,8 @@
 // Tests
 // ---------------------------------------------------------------------
 
-@include "USB.HID.device.lib.nut"
+@include __PATH__+"/../../USB.device.lib.nut"
+@include __PATH__+"/../../USB.HID.device.lib.nut"
 
 //
 class HIDDriverTest extends ImpTestCase {
@@ -44,7 +45,7 @@ class HIDDriverTest extends ImpTestCase {
     _keyboard = null;
 
     function setUp() {
-        _host = USB.Host([HIDDriver]);
+        _host = USB.Host(hardware.usb, [HIDDriver]);
         return "USB setup complete";
     }
 
@@ -113,7 +114,7 @@ class HIDDriverTest extends ImpTestCase {
         local usbHost = _host;
         local infoFunc = this.info.bindenv(this);
         return Promise(function(resolve, reject) {
-            usbHost.setEventListener(function(event, data) {
+            usbHost.setDriverListener(function(event, data) {
                 if (event == USB_DRIVER_STATE_STARTED) {
                     if (typeof data == "HIDDriver") {
                         if (data.getReports().len() == 0) {

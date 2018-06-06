@@ -176,7 +176,7 @@ class HIDKeyboardDriver extends HIDDriver {
     //      reports     - an array of HIDReport instances
     //      interface   - USB device interface this driver assigned to.
     function _createInstance(reports, interface) {
-        return HIDKeyboard(reports, interface);
+        return HIDKeyboardDriver(reports, interface);
     }
 
     // A callback function that receives notification from HIDReport

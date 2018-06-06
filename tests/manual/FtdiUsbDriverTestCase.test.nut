@@ -36,6 +36,9 @@
 // Tests
 // ---------------------------------------------------------------------
 
+@include __PATH__+"/../../USB.device.lib.nut"
+@include __PATH__+"/../../drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.lib.nut"
+
 class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
     // UART on imp005
     _uart = null;
@@ -44,7 +47,7 @@ class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
 
     function setUp() {
         // Initialize UART
-        uart = hardware.uart1;
+        _uart = hardware.uart1;
     }
 
     // Testing whether the connection event is emitted on device connection
@@ -59,7 +62,7 @@ class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
             _usbHost = USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
 
             // Listen for a connection event
-            _usbHost.setEventListener(function(eventName, eventDetails) {
+            _usbHost.setDriverListener(function(eventName, eventDetails) {
 
                 // Check the device is an instance of FT232RLFtdiUsbDriver
                 if (eventName == USB_DRIVER_STATE_STARTED) {
