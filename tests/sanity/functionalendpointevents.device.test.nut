@@ -40,12 +40,8 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
         _usb = UsbMock();
 
         // instantiate usb host with mock _usb
-        USB.Host.init(_drivers);
-        USB.Host._usb = _usb;
-        USB.Host.reset();
-
-
-        _host = USB.Host;
+        _host = USB.Host(_usb, _drivers);
+        _host.reset();
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 

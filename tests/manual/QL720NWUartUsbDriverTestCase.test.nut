@@ -58,7 +58,7 @@ class QL720NWUartUsbDriverTestCase extends ImpTestCase {
             // Register cb for connection event
             usbHost.setListener(function(event, obj) {
 
-                if (event == "started") {
+                if (event == USB_DRIVER_STATE_STARTED) {
                     // Check the device is an instance of QL720NWUartUsbDriver
                     if (typeof device == "QL720NWUartUsbDriver") {
 

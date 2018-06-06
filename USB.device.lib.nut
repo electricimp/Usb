@@ -106,43 +106,41 @@ USB <- {
     // The main interface to start working with USB devices.
     // Here an application registers drivers and assigns listeners
     // for important events like device connection/detachment.
-    Host = {
+    Host = class {
 
         // The list of registered driver classes
-        _driverClasses = null,
+        _driverClasses = null;
 
         // The list of connected devices
-        _devices = null,
+        _devices = null;
 
         // The address available to assign to next device
-        _address = 1,
+        _address = 1;
 
         // USB device pointer
-        _usb = null,
+        _usb = null;
 
         // USB Driver state listener
         // This property is available for device instances, so it's public
-        driverListener = null,
+        driverListener = null;
 
         // USB device state listener
         // This property is available for device instances, so it's public
-        deviceListener = null,
+        deviceListener = null;
 
         // ------------------------ public API -------------------
 
         //
         // Constructor
         // Parameters:
+        //      usb          -
         //      driverList   - a list of special classes that implement USB.Driver API.
         //      autoConfPins - flag to specify whether to configure pins for usb usage
         //                     (see https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb)
         //
-        init = function(driverList, autoConfPins = true) {
-            _log <- USB.log.bindenv(USB);
-            _err <- USB.err.bindenv(USB);
-
+        constructor(usb, driverList, autoConfPins = true) {
             try {
-                _usb = hardware.usb;
+                _usb = usb;
             } catch(e) {
                 throw "Expected `hardware.usb` interface is not available";
             }
@@ -183,13 +181,14 @@ USB <- {
             _usb.disable();
 
             // force disconnect for all attached devices
-            foreach (address, device in _devices)
+            foreach (address, device in _devices) {
                 _onDeviceDetached({"device" : address});
+            }
 
             // re-connect all devices
             _usb.configure(_onUsbEvent.bindenv(this));
 
-            _log("USB reset complete");
+            USB.log("USB reset complete");
         }
 
         // Auxillary function to get list of attached devices.
@@ -256,19 +255,19 @@ USB <- {
         _onUsbEvent = function(eventType, eventDetails) {
             switch (eventType) {
                 case USB_DEVICE_CONNECTED:
-                    _log("USB_DEVICE_CONNECTED event");
+                    USB.log("USB_DEVICE_CONNECTED event");
                     _onDeviceConnected(eventDetails);
                     break;
                 case USB_DEVICE_DISCONNECTED:
-                    _log("USB_DEVICE_DISCONNECTED event");
+                    USB.log("USB_DEVICE_DISCONNECTED event");
                     _onDeviceDetached(eventDetails);
                     break;
                 case USB_TRANSFER_COMPLETED:
-                    _log("USB_TRANSFER_COMPLETED event");
+                    USB.log("USB_TRANSFER_COMPLETED event");
                     _onTransferComplete(eventDetails);
                     break;
                 case USB_UNRECOVERABLELog.e:
-                    _err("USB_UNRECOVERABLELog.e event");
+                    USB.err("USB_UNRECOVERABLELog.e event");
                     _onError();
                     break;
             }
@@ -280,11 +279,11 @@ USB <- {
         _onDeviceConnected = function(eventDetails) {
             local speed = eventDetails.speed;
             local descr = eventDetails.descriptors;
-            local device = USB._Device(_usb, speed, descr, _address);
+            local device = USB._Device(_usb, this, speed, descr, _address);
 
             // a copy application callback
             _devices[_address] <- device;
-            _log("New device detected: " + device + ". Assigned address: " + _address);
+            USB.log("New device detected: " + device + ". Assigned address: " + _address);
 
             // address for next device
             _address++;
@@ -308,17 +307,17 @@ USB <- {
 
                     try {
                         device._stop();
-                        _log("Device " + device + " is removed");
+                        USB.log("Device " + device + " is removed");
                     } catch (e) {
-                        _err("Error on device " + device + " release: " + e);
+                        USB.err("Error on device " + device + " release: " + e);
                     }
 
                     deviceListener && deviceListener(USB_DEVICE_STATE_DISCONNECTED, device);
                 } else {
-                    _err("Detach event for unregistered device: " + address);
+                    USB.err("Detach event for unregistered device: " + address);
                 }
             } else {
-                _err("Detach event occurred for an unknown device");
+                USB.err("Detach event occurred for an unknown device");
             }
         }
 
@@ -332,7 +331,7 @@ USB <- {
             // check for UNRECOVERABLE error
             if (_checkError(error)) {
                 // all this errors are critical
-                _err("Critical error received: " + error);
+                USB.err("Critical error received: " + error);
                 imp.wakeup(0, _onError.bindenv(this));
                 return;
             }
@@ -341,7 +340,7 @@ USB <- {
                 local device = _devices[address];
                 device._transferEvent(eventDetails);
             } else {
-                _err("transfer event for unknown device: " + address);
+                USB.err("transfer event for unknown device: " + address);
             }
         }
 
@@ -365,7 +364,7 @@ USB <- {
                 try {
                     device._stop();
                 } catch (e) {
-                    _err("Error on device " + device + " release: " + e);
+                    USB.err("Error on device " + device + " release: " + e);
                 }
             }
             imp.wakeup(0, reset.bindenv(this));
@@ -405,13 +404,19 @@ USB <- {
         // USB interface
         _usb = null;
 
+        // Instance of the USB host
+        _host = null;
+
         // Constructs device peer.
         // Parameters:
+        //      usb              - the native USB interface object
+        //      host             - the instance of the usb host
         //      speed            - supported device speed
         //      deviceDescriptor - new device descriptor as specified by ElectricImpl USB API
         //      deviceAddress    - device address reserved (but assigned) for new device
-        constructor(usb, speed, deviceDescriptor, deviceAddress) {
+        constructor(usb, host, speed, deviceDescriptor, deviceAddress) {
             _usb = usb;
+            _host = host;
             _desc = deviceDescriptor;
             _speed = speed;
             _address = deviceAddress;
@@ -431,9 +436,7 @@ USB <- {
 
             // Delegate to bind native endpoint descriptor and the framework
             foreach(ifs in _interfaces) {
-
                 ifs.setdelegate(_ifsDelegate);
-
                 foreach (ep in ifs.endpoints) {
                     ep._device <- this;
                     ep.setdelegate(_epDelegate);
@@ -467,7 +470,7 @@ USB <- {
                     matchResult = result;
                 }
 
-                local listener = USB.Host.driverListener;
+                local listener = _host.driverListener;
                 if (listener) {
                     foreach (instance in matchResult) {
                         listener(USB_DRIVER_STATE_STARTED, instance);
@@ -493,7 +496,7 @@ USB <- {
         function getVendorId() {
             _checkStopped();
 
-            return _desc["vendorid"];
+            return "vendorid" in _desc ? _desc["vendorid"] : null;
         }
 
         // Returns device product ID
@@ -503,7 +506,7 @@ USB <- {
         function getProductId() {
             _checkStopped();
 
-            return _desc["productid"];
+            return "productid" in _desc ? _desc["productid"] : null;
         }
 
         // Returns an array of drivers for the attached device. Throws exception if the device is detached.
@@ -612,7 +615,7 @@ USB <- {
             }
 
             // Release all drivers now
-            local listener = USB.Host.driverListener;
+            local listener = _host.driverListener;
             foreach (driver in _driverInstances) {
                 try {
                     driver.release();

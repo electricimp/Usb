@@ -26,7 +26,6 @@
 @include __PATH__ + "/../DescriptorMock.nut"
 @include __PATH__ + "/../UsbMock.nut"
 @include __PATH__ + "/../StubbedDrivers.nut"
-@include __PATH__ + "/../UsbHostWrapper.nut"
 
 // Sanity test for USB.Host
 class UsbHostMultipleDriversSanity extends ImpTestCase {
@@ -40,7 +39,7 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
     }
 
     function testGetAttachedOneDevice() {
-        local host = UsbHostWrapper(_usb, _drivers, false);
+        local host = USB.Host(_usb, _drivers, false);
         local counter = {
             "connected": 0,
             "disconnected": 0,
@@ -97,7 +96,7 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
     }
 
     function testMultipleDriverForOneDevice() {
-        local host = UsbHostWrapper(_usb, [TestDriver4, TestDriver5], false);
+        local host = USB.Host(_usb, [TestDriver4, TestDriver5], false);
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, device4);
 

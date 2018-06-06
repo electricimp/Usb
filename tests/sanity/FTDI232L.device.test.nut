@@ -91,9 +91,8 @@ class FTDI232RLSanity extends ImpTestCase {
 
     function setUp() {
         _usb = UsbMock();
-        USB.Host.init(_drivers);
-        USB.Host._usb = _usb;
-        USB.Host.reset();
+        local usbHost = USB.Host(_usb, _drivers);
+        usbHost.reset();
     }
 
     function test1Init() {

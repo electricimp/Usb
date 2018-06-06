@@ -23,7 +23,6 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 @include __PATH__ + "/../UsbMock.nut"
-@include __PATH__ + "/../UsbHostWrapper.nut"
 @include __PATH__ + "/../../drivers/QL720NW_UART_USB_Driver/QL720NWUartUsbDriver.device.lib.nut"
 
 // Below data is not real printer config, we only need VID/PID pair and interface with BulkOut
@@ -168,7 +167,7 @@ class QL720Sanity extends ImpTestCase {
 
 
     function _getUsbHost() {
-        return UsbHostWrapper(_usb, _drivers, false);
+        return USB.Host(_usb, _drivers, false);
 
     }
 
