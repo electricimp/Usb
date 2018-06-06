@@ -1,15 +1,19 @@
-## introduction
+# USB Driver Developer Guide
 
-The purpose of this document is to explain step by step how to create a simple usb driver and provide an examples of the USB framework base primitives usage.
+## Introduction
 
-As a first experiment you could test the following code in the electricimp IDE:
+The purpose of this document is to guide you through the process of a simple 
+USB driver creation and provide some examples of the USB framework applications.
+
+As a first experiment you could test the following code in the Electric Imp 
+[impCentral IDE](https://impcentral.electricimp.com):
 
 ```squirrel
 // include the USB framework
 #require "USB.device.lib.nut:1.0.0"
 
 // Create custom diver
-class MyCustomDriver extend USB.Driver {
+class MyCustomDriver extends USB.Driver {
 
     function match(device, interfaces) {
         server.log("This line should be visible on a new device plug");
@@ -19,24 +23,32 @@ class MyCustomDriver extend USB.Driver {
 }
 
 // Initialize USB framework with a new driver
-host <- USB.Host([MyCustomDriver]);
-
+usbHost <- USB.Host;
+usbHost.init([MyCustomDriver]);
 ```
 
+This is a very simple driver, that demonstrates the driver matching routine. 
+The `match` is called to check if the driver matches 
+the device and instantiate it, which for demo purposes 
+is not happening in this case.
 
+## How to create a simple Driver Library
 
+If you are writing a USB driver that's going to be shared with the community,
+ please follow requirements for the  third-party library submission 
+ [guidelines](https://developer.electricimp.com/libraries/submissions).
 
-## How to create simple driver library
+Each driver class should implement [`match`](TBD provide a link to spec) 
+method which is responsible for the driver 
+class instantiation if it is applicable to the attached device. 
+Optionally it can implement the  [`release`](TBD provide a link to spec)
+method to clean up the driver resources.
 
-Each USB driver should be implemented as a standard squirrel library and follow to the
-device library development guide [REF on license and version](TBD)
-
-Each driver class should implement `match` method which is responsible for the driver class instantiation if it is applicable to the attached device.
-
-There is an example of driver library which will instantiate driver on device attach and release it on device unplug:
+There is an example of driver library which will instantiate driver on device attach 
+and release it on device unplug:
 
 ```squirrel
-class MyCustomDriver extend USB.Driver {
+class MyCustomDriver extends USB.Driver {
 
     // The driver version
     static VERSION = "1.0.0";
@@ -58,14 +70,15 @@ class MyCustomDriver extend USB.Driver {
         return "MyCustomDriver";
     }
 }
-
 ```
 
-The `release` method is called before driver instance destruction. And in the example above it is possible to see message in the log on each device unplug.
+The `release` method is called before driver instance destruction. 
+And in the example above it is possible to see message in the log on each device unplug.
 
 The driver library itself should not include USB Framework as dependency
 
-It is responsibility of the application developer to include framework and select the scope of the drivers
+It is responsibility of the application developer to include framework 
+and select the scope of the drivers
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
@@ -76,7 +89,8 @@ host <- USB.Host([MyCustomDriver]);
 
 ```
 
-It is possible to add restrictions or warning for the USB framework version compatibility in match method:
+It is possible to add restrictions or warning for the USB framework version 
+compatibility in match method:
 
 ```squirrel
 class MyCustomDriver {
@@ -98,14 +112,17 @@ but each driver class should implement several methods which described in the ne
 
 ## How to implement base methods of driver
 
-There are four method must be implemented: `constructor`, `match`,  `release` and `\_typeof`.
+There are four method must be implemented: `constructor`, `match`,  `release` and `_typeof`.
 
 ### match
-According to specification [`match()` method]](TBD) should return driver instance or null if driver is not compatible with attached device.
+According to specification [`match()` method]](TBD) should return driver instance or null if 
+driver is not compatible with attached device.
 
-There is no limitation for match method execution time but the major limitation is that driver class should be instantiated for a concrete device only or a concrete device class.
+There is no limitation for match method execution time but the major limitation is that driver class 
+should be instantiated for a concrete device only or a concrete device class.
 
-For example, if it is necessary to instantiate driver for a certain device with known product and vendor IDs:
+For example, if it is necessary to instantiate driver for a certain device with 
+known product and vendor IDs:
 
 ```squirrel
 class MyCustomDriver extends USB.Driver {
@@ -125,7 +142,8 @@ class MyCustomDriver extends USB.Driver {
 }
 ```
 
-For another hand it could be class of devices like keyboard or mouse which should not have vendor specific:
+For another hand it could be class of devices like keyboard or mouse which should 
+not have vendor specific:
 
 ```squirrel
 class MyCustomDriver extends USB.Driver {
@@ -214,7 +232,7 @@ class MyCustomDriver extends USB.Driver {
 }
 ```
 
-### \_typeof
+### _typeof
 Return unique identifier for the driver type. Uses to identify driver in runtime.
 
 
@@ -222,10 +240,10 @@ Return unique identifier for the driver type. Uses to identify driver in runtime
 
 Each driver should provide it's own API.
 
-
 ## Getting endpoint zero
 
-Endpoint Zero is a special type of control endpoints that implicitly exists for every device see [USB.ControlEndpoint](#usbcontrolendpoint-class)
+Endpoint Zero is a special type of control endpoints that implicitly exists 
+for every device see [USB.ControlEndpoint](#usbcontrolendpoint-class)
 
 ```squirrel
 
@@ -264,8 +282,8 @@ Synchronously
 ## Error handling
 
 ## Hot unplug
-it is recommended to set null all primitives on release and add null check for Asynchronously methods
-
+it is recommended to set null all primitives on release and add null 
+check for Asynchronously methods
 
 ## Advanced driver `match`
 

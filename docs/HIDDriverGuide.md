@@ -1,4 +1,4 @@
-## Generic HID driver
+## Generic HID Driver Implementation
 
 The generic HID driver implements basic functionality required to start using any device that exposes interfaces with HID functionality. It allows to discover, read and change state of any sensors, actuators, indicators and other physical parts of such devices.
 

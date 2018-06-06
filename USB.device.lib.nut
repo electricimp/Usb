@@ -183,8 +183,9 @@ USB <- {
             _usb.disable();
 
             // force disconnect for all attached devices
-            foreach (address, device in _devices)
+            foreach (address, device in _devices) {
                 _onDeviceDetached({"device" : address});
+            }
 
             // re-connect all devices
             _usb.configure(_onUsbEvent.bindenv(this));
@@ -493,7 +494,7 @@ USB <- {
         function getVendorId() {
             _checkStopped();
 
-            return _desc["vendorid"];
+            return "vendorid" in _desc ? _desc["vendorid"] : null;
         }
 
         // Returns device product ID
@@ -503,7 +504,7 @@ USB <- {
         function getProductId() {
             _checkStopped();
 
-            return _desc["productid"];
+            return "productid" in _desc ? _desc["productid"] : null;
         }
 
         // Returns an array of drivers for the attached device. Throws exception if the device is detached.
