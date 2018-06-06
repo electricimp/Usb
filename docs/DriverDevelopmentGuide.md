@@ -2,27 +2,26 @@
 
 This section is intended for those developers who is going to create new driver for a USB device.
 
-**Note**: if you create a driver, please supply it with an extensive and sufficient documentation
-that covers its limitations, requirements and examples with code snippets.
-
 ### Generic Recommendations
 
 Please avoid using `#include` or `@require`
-[Builder](https://electricimp.com/docs/tools/builder/) 
-statements in your driver code to prevent any compilation 
+[Builder](https://electricimp.com/docs/tools/builder/)
+statements in your driver code to prevent any compilation
 or loaded code duplication issues at runtime.
- 
+
 If you are writing a USB driver that's going to be shared with the community,
-please follow requirements for the  third-party library submission 
+please follow requirements for the  third-party library submission
 [guidelines](https://developer.electricimp.com/libraries/submissions).
 
 ### New Driver Step-by-Step Instruction
 
 #### 1. Extend the basic `USB.Driver` Class
 
-For developer convenience the USB framework comes with a 
-basic [USB.Driver](#usbdriver-class) implementation. 
-Make your new driver class extending it: 
+For developer convenience the USB framework comes with a
+basic [USB.Driver](#usbdriver-class) implementation.
+Make your new driver class extending it.
+
+**Example:**
 
 ```squirrel
 class MyCustomDriver extends USB.Driver {
@@ -32,19 +31,20 @@ class MyCustomDriver extends USB.Driver {
 
 #### 2. Implement the Device-Driver Matching Procedure
 
-Each driver class should implement [match](#matchdeviceobject-interfaces) 
-method which is responsible for the driver 
+Each driver class should implement [match](#matchdeviceobject-interfaces)
+method which is responsible for the driver
 class instantiation if it is applicable to the attached device.
 
-If the driver can work with this device and the interfaces, it should return 
-new instance of the driver class. The method can also return an array of instances 
-if the driver decides to work with each interface individually. 
-After that the USB framework keeps on 
+If the driver can work with this device and the interfaces, it should return
+new instance of the driver class. The method can also return an array of instances
+if the driver decides to work with each interface individually.
+After that the USB framework keeps on
 probing of other drivers if there is any in the list.
 
-For example, if it is necessary to instantiate driver for a certain device with 
+For example, if it is necessary to instantiate driver for a certain device with
 known product and vendor IDs:
 
+**Example 1:**
 ```squirrel
 class MyCustomDriver extends USB.Driver {
     static VENDOR_ID = 0x46D;
@@ -63,9 +63,10 @@ class MyCustomDriver extends USB.Driver {
 }
 ```
 
-On the other hand it could be class of devices like keyboard or mouse which should 
-not have vendor specific:
+On the other hand it could be class of devices like keyboard or mouse which should
+not have vendor specific.
 
+**Example 2:**
 ```squirrel
 class MyCustomDriver extends USB.Driver {
 
@@ -87,21 +88,23 @@ class MyCustomDriver extends USB.Driver {
 ```
 Please refer to the HID Device Driver [Guide](./HIDDriverGuide.md) for the usb HID driver implementation.
 
-**Note:** there are no limitation on the driver constructor 
-arguments as it's being called by the driver's own method `match`. 
+**Note:** there are no limitation on the driver constructor
+arguments as it's being called by the driver's own method `match`.
 
-#### 3. Release Driver Resources
- 
-When device resources required for the driver functionality were gone, 
-USB framework calls drivers [release](#release) function to give it 
+#### 3. (Optional) Release Driver Resources
+
+When device resources required for the driver functionality were gone,
+USB framework calls drivers [release](#release) function to give it
 a change to shutdown gracefully and release any resources were allocated during its lifetime.
 
-Please note that all the framework resources should be considered as 
+Please note that all the framework resources should be considered as
 closed by this moment and `MUST NOT` be used from [release](#release) function.
 
 The `release` function is optional, so implement it only if need to release any resources.
 
-Simple example shows a simple `release` function implementation:
+The following example shows a simple `release` function implementation.
+
+**Example:**
 
 ```squirrel
 class MyCustomDriver extends USB.Driver {
@@ -123,30 +126,70 @@ class MyCustomDriver extends USB.Driver {
 
 #### 4. Implement the Driver Logic
 
-TODO: add references/description to setDriverListener/setDeviceListener to get access to Device and Driver APIs. 
+TODO: add references/description to setDriverListener/setDeviceListener to get access to Device and Driver APIs.
 
-##### Concurrent Access to Resources 
+##### Working with Endpoint Zero
 
-The framework doesn't prevent drivers from accessing to any 
-interface resources the driver receives through the [match](#matchdeviceobject-interfaces) 
-function. 
+Endpoint Zero is a special type of control endpoints that implicitly exists
+for every device see [USB.ControlEndpoint](#usbcontrolendpoint-class).
 
-It is up to driver author to create it in safe way and to address 
+**Example:**
+
+```squirrel
+
+class MyCustomDriver {
+    _ep0 = null;
+
+    constructor(ep0) {
+        _ep0 = ep0;
+
+        // get usb descriptor
+        local data = blob(16);
+        _ep0.transfer(
+           USB_SETUP_DEVICE_TO_HOST | USB_SETUP_TYPE_STANDARD | USB_SETUP_RECIPIENT_DEVICE,
+           USB_REQUEST_GET_DESCRIPTOR,
+           0x01 << 8, 0, data);
+
+        // Handle data
+    }
+
+    function match(device, interfaces) {
+        return MyCustomDriver(device.getEndpointZero());
+    }
+
+    function release() {
+        _ep0 = null;
+    }
+}
+```
+
+##### Concurrent Access to Resources
+
+The framework doesn't prevent drivers from accessing to any
+interface resources the driver receives through the [match](#matchdeviceobject-interfaces)
+function.
+
+It is up to driver author to create it in safe way and to address
 situation when several drivers try to concurrently access the same device.
- 
-An example of such collision is an exception that may be thrown by 
-[USB.FunctionalEndpoint.read()](#readdata-oncomplete) while another driver's 
+
+An example of such collision is an exception that may be thrown by
+[USB.FunctionalEndpoint.read()](#readdata-oncomplete) while another driver's
 call is still pending.
 
-##### Getting access to device exposed interfaces
+##### Getting Access to exposed Device Interfaces
 
-Every driver receives [interfaces](#interface-descriptor) it may work 
-with at [match](#matchdeviceobject-interfaces) function. To start working with 
-this interface the driver need to get right endpoint by parsing information from 
-`endpoints` array of the interface descriptor. When necessary endpoint descriptor 
-is found, the driver need to call `get()` function provided by every 
+Every driver receives [interfaces](#interface-descriptor) it may work
+with at [match](#matchdeviceobject-interfaces) function. To start working with
+this interface the driver need to get right endpoint by parsing information from
+`endpoints` array of the interface descriptor. When necessary endpoint descriptor
+is found, to retrieve the endpoint instance the driver needs to call `get()` function provided by every
 [endpoint](#endpoint-descriptor) descriptor.
 
+**Note:** due to limits applied by native [USB API](https://electricimp.com/docs/api/hardware/usb/)
+endpoints `get()` function may result in exception when a number of open
+endpoint exceeds some limits, e.g. there can be only one open interrupt in endpoint.
+
+**Example 1:**
 
 ```
     function findEndpont(interfaces) {
@@ -164,8 +207,10 @@ is found, the driver need to call `get()` function provided by every
     }
 ```
 
-To simplify new driver code every interface descriptor comes with [`find`](#find) 
+To simplify new driver code every interface descriptor comes with [`find`](#find)
 function that searches for endpoint with given attributes and return found first.
+
+**Example 1:**
 ```
     function findEndpont(interfaces) {
         foreach(interface in interfaces) {
@@ -180,13 +225,28 @@ function that searches for endpoint with given attributes and return found first
     }
 ```
 
-#### 5. Misc
+#### 5. (Optional) Implement `_typeof` Metamethods
+`_typeof` returns a unique identifier for the driver type.
+Can be used to identify driver in runtime for diagnostic/debug purposes.
 
-##### Native USB API Limitations
+Example:
 
-Due to limits applied by native [USB API](https://electricimp.com/docs/api/hardware/usb/) 
-endpoints `get()` function may result in exception when a number of open 
-endpoint exceeds some limits, e.g. there can be only one open interrupt in endpoint.
+```squirrel
+class MyCustomDriver extends USB.Driver {
+
+    // Other driver code...
+
+    function _typeof() {
+        return "MyCustomDriver";
+    }
+}
+
+```
+
+#### 6. Export public Driver APIs
+
+Each driver should provide it's own API to applications. Please supply it with an extensive and sufficient documentation
+that covers its limitations, requirements and examples with code snippets.
 
 ### Full Driver Example
 
@@ -243,15 +303,15 @@ class MyUsbDriver extends USB.Driver {
 
 The main interface to start working with USB devices and drivers.
 
-If you have more then one USB port on development board then you should create 
+If you have more then one USB port on development board then you should create
 USB.Host instance for each of them.
 
 #### USB.Host(usb, drivers, [, autoConfigPins]*)
 
-Instantiates the USB.Host class. USB.Host is an abstraction for USB port. It 
+Instantiates the USB.Host class. USB.Host is an abstraction for USB port. It
 should be instantiated only once per physical port for any application.
 
-There are some imp boards which does not have usb port, therefore exception 
+There are some imp boards which does not have usb port, therefore exception
 will be thrown in that case.
 
 USB framework suppose that developer will not use [`hardware.usb`](https://electricimp.com/docs/api/hardware/usb/)  api in parallel.
@@ -285,7 +345,7 @@ Setting of *null* clears the previously assigned listener.
 
 ##### callback(*eventType, driver*)
 
-This callback is happen on driver status change 
+This callback is happen on driver status change
 therefore the second argument is an instance of [USB.Driver](#usbdriver-class).
 
 The following event types are supported:
@@ -314,11 +374,11 @@ usbHost.setDriverListener(function (eventType, driver) {
 
 #### setDeviceListener(*callback*)
 
-Assign listener for runtime device and driver events. User could plug an 
+Assign listener for runtime device and driver events. User could plug an
 unplug device in runtime and application should get the corresponding events.
 
-Callback could provide driver related events if some driver match to the 
-device only otherwise an application will get device related events only 
+Callback could provide driver related events if some driver match to the
+device only otherwise an application will get device related events only
 [see](#callbackeventtype-eventobject)
 
 | Parameter   | Data Type | Required | Description |
@@ -329,8 +389,8 @@ Setting of *null* clears the previously assigned listener.
 
 ##### callback(*eventType, driver*)
 
-This callback is happen on the device or driver status change 
-therefore the second argument is variable and could be instance 
+This callback is happen on the device or driver status change
+therefore the second argument is variable and could be instance
 of the [USB.Device](#usbdevice-class) or [USB.Driver](#usbdriver-class).
 
 The following event types are supported:
@@ -370,12 +430,12 @@ usbHost.setEventListener(function (eventType, eventObject) {
 
 #### reset()
 
-Resets the USB host. The effect of this action is analogous to 
-unplugging the device.  Can be used by driver or application in response 
+Resets the USB host. The effect of this action is analogous to
+unplugging the device.  Can be used by driver or application in response
 to unrecoverable error like unending bulk transfer or halt condition during control transfers.
 
-This method disable usb, clean up all drivers and devices with 
-corresponding event listener notifications and reconfigure usb from scratch. 
+This method disable usb, clean up all drivers and devices with
+corresponding event listener notifications and reconfigure usb from scratch.
 All devices will have a new device object instances and different address.
 
 ```squirrel
@@ -397,18 +457,18 @@ imp.wakeup(2, function() {
 
 #### getAttachedDevices()
 
-Auxiliary function to get list of attached devices. Returns an 
+Auxiliary function to get list of attached devices. Returns an
 array of **[USB.Device](#usbdevice-class)** objects.
 
 
 ## USB.Device class
 
-Represents an attached USB device. Please refer to 
+Represents an attached USB device. Please refer to
 [USB specification](http://www.usb.org/) for details of a USB device description.
 
-Normally, an application does not need to use a device object. 
+Normally, an application does not need to use a device object.
 It is usually used by drivers to acquire required endpoints.
-All management of USB device configurations, interfaces and 
+All management of USB device configurations, interfaces and
 endpoints **MUST** go through the device object.
 
 #### getDescriptor()
@@ -426,14 +486,14 @@ Returns the device product ID. Throws exception if the device is detached.
 #### getAssignedDrivers()
 
 Returns an array of drivers for the attached device. Throws exception if the device is detached.
-Each USB device could provide the number of interfaces which could be 
-supported by a single driver or by the number of different drives 
+Each USB device could provide the number of interfaces which could be
+supported by a single driver or by the number of different drives
 (For example keyboard with touch pad could have keyboard driver and a separate touch pad driver).
 
 #### getEndpointZero()
 
-Returns Control Endpoint 0 proxy for the device. EP0 is a special 
-type of endpoints that implicitly exists for every device. 
+Returns Control Endpoint 0 proxy for the device. EP0 is a special
+type of endpoints that implicitly exists for every device.
 Throws exception if the device is detached.
 
 Return type is [USB.ControlEndpoint](#usbcontrolendpoint-class)
@@ -470,7 +530,7 @@ Generic method for transferring data over control endpoint.
 
 #### getEndpoint()
 
-Returns the endpoint address. Typical use case for this function is to get 
+Returns the endpoint address. Typical use case for this function is to get
 endpoint ID for some of device control operation performed over Endpoint 0.
 
 ## USB.FunctionalEndpoint class
@@ -480,7 +540,7 @@ This class is managed by USB.Device and should be acquired through USB.Device in
 
 #### write(data, onComplete)
 
-Asynchronously writes data through the endpoint. Throws exception if the endpoint 
+Asynchronously writes data through the endpoint. Throws exception if the endpoint
 is closed or it doesn't support USB_DIRECTION_OUT.
 
 | Parameter 	 | Data Type | Default | Description |
@@ -518,17 +578,17 @@ class MyCustomDriver imptements USB.Driver {
 } // class
 ```
 
-**NOTE** Not all error codes indicate actual error status. However the USB 
-framework doesn't filter out such error code to provide full information for 
+**NOTE** Not all error codes indicate actual error status. However the USB
+framework doesn't filter out such error code to provide full information for
 device driver. See more information [here](https://electricimp.com/docs/resources/usberrors/).
 
 #### read(data, onComplete)
 
-Asynchronously reads data through the endpoint. Throws exception if the endpoint 
+Asynchronously reads data through the endpoint. Throws exception if the endpoint
 is closed, or has incompatible type, or already busy.
 
-The method set an upper limit of five seconds for any command to be processed 
-for the bulk endpoint according to the 
+The method set an upper limit of five seconds for any command to be processed
+for the bulk endpoint according to the
 [Electric Imp documentation](https://electricimp.com/docs/resources/usberrors/#stq=&stp=0).
 
 | Parameter 	 | Data Type | Default | Description |
@@ -566,26 +626,26 @@ class MyCustomDriver imptements USB.Driver {
 } // class
 ```
 
-**NOTE** Not all error codes indicate actual error status. However 
-the USB framework doesn't filter out such error code to provide full 
-information for device driver. See more information 
+**NOTE** Not all error codes indicate actual error status. However
+the USB framework doesn't filter out such error code to provide full
+information for device driver. See more information
 [here](https://electricimp.com/docs/resources/usberrors/).
 
 
 #### getEndpoint()
 
-Returns the endpoint address. Typical use case for this function is to get endpoint 
+Returns the endpoint address. Typical use case for this function is to get endpoint
 ID for some of device control operation performed over Endpoint 0.
 
 ## USB.Driver class
 
-This class is the base for all drivers that are developed for USB Drivers Framework. 
+This class is the base for all drivers that are developed for USB Drivers Framework.
 It contains three mandatory methods which must be implemented by every USB driver.
 
 ### match(*deviceObject, interfaces*)
 
-Checks if the driver can support all the specified interfaces for the specified device. 
-Returns the driver object (if it can support), array of driver objects 
+Checks if the driver can support all the specified interfaces for the specified device.
+Returns the driver object (if it can support), array of driver objects
 (if few interfaces are supported by this driver) or *null* (if it can not support).
 
 The method's implementation can be based on VID, PID, device class, subclass and interfaces.
@@ -599,19 +659,19 @@ The method's implementation can be based on VID, PID, device class, subclass and
 
 Releases all resources instantiated by the driver.
 
-It is called by USB Drivers Framework when USB device 
+It is called by USB Drivers Framework when USB device
 is detached and all resources should be released.
 
-It is important to note all device resources are released 
-prior to this function call and all Device/Endpoint methods 
-calls result in throwing of an exception. It means that it is 
-not possible to perform read, write or transfer for the detached 
-device and this method uses to release all driver related resources 
+It is important to note all device resources are released
+prior to this function call and all Device/Endpoint methods
+calls result in throwing of an exception. It means that it is
+not possible to perform read, write or transfer for the detached
+device and this method uses to release all driver related resources
 and free an external resource if necessary.
 
 ### _typeof()
 
-Meta-function to return class name when typeof <instance> is run. 
+Meta-function to return class name when typeof <instance> is run.
 Uses to identify the driver instance type in runtime.
 
 ```squirrel
@@ -644,16 +704,16 @@ A set of constants that may be useful for endpoint search functions.
 
 ### USB framework events structures
 
-USB framework uses a few special structures named `descriptors` and which 
-contain description of attached device, its interfaces and endpoint. 
-[Endpoint](#endpoint-descriptor) and [Interface](#interface-descriptor) 
-descriptors are used only at driver probing stage, while [Device](#device-descriptor) 
+USB framework uses a few special structures named `descriptors` and which
+contain description of attached device, its interfaces and endpoint.
+[Endpoint](#endpoint-descriptor) and [Interface](#interface-descriptor)
+descriptors are used only at driver probing stage, while [Device](#device-descriptor)
 descriptor could be acquired from [USB.Device](#usbdevice-class) instance.
 
 #### Device descriptor
 
-Device descriptor contains whole device specification in addition to 
-[Vendor ID](#getvendorid) and [Product ID](#getproductid) acquired through 
+Device descriptor contains whole device specification in addition to
+[Vendor ID](#getvendorid) and [Product ID](#getproductid) acquired through
 corresponding functions. The descriptor is a table with a set of fields:
 
 | Descriptor key | Type | Description |
@@ -673,8 +733,8 @@ corresponding functions. The descriptor is a table with a set of fields:
 
 #### Interface descriptor
 
-As it is described at driver selection section [match function](#matchdeviceobject-interfaces) 
-of probed driver receives two objects: [USB.Device](#usbdevice-class) instance and array of 
+As it is described at driver selection section [match function](#matchdeviceobject-interfaces)
+of probed driver receives two objects: [USB.Device](#usbdevice-class) instance and array of
 interfaces exposed by this device. Interface descriptor is a table with a set of fields:
 
 | Interface Key | Type | Description |
@@ -697,7 +757,7 @@ Interface descriptors `find` function signature is following:
 | Endpoint type | Integer | USB_ENDPOINT_CONTROL, USB_ENDPOINT_BULK, USB_ENDPOINT_INTERRUPT |
 | Endpoint direction | Integer | USB_DIRECTION_IN, USB_DIRECTION_OUT |
 
-This function returns an instance of either [ControlEndpoint](#usbcontrolendpoint-class) 
+This function returns an instance of either [ControlEndpoint](#usbcontrolendpoint-class)
 or [FunctionalEndpoint](#usbfunctionalendpoint-class) or null if no endpoints were found.
 
 
