@@ -167,11 +167,8 @@ class MyCustomDriver {
 
 The framework doesn't prevent drivers from accessing to any
 interface resources the driver receives through the [match](#matchdeviceobject-interfaces)
-function.
-
-It is up to driver author to create it in safe way and to address
-situation when several drivers try to concurrently access the same device.
-
+function. It is up to driver author to create it in safe way and to address
+situation when several drivers try to concurrently access the same device. 
 An example of such collision is an exception that may be thrown by
 [USB.FunctionalEndpoint.read()](#readdata-oncomplete) while another driver's
 call is still pending.
