@@ -22,6 +22,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+@include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__ + "/../CorrectDriver.nut"
 @include __PATH__ + "/../DescriptorMock.nut"
 @include __PATH__ + "/../UsbMock.nut"
@@ -38,60 +39,65 @@ class UsbHostEventsSanity extends ImpTestCase {
     }
 
     function testGetAttachedOneDevice() {
-        local host = USB.Host(_usb, _drivers, false);
+        local host = getUsbHost();
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 
         return Promise(function(resolve, reject) {
-            local devices = host.getAttachedDevices();
-            assertTrue(devices.len() == 1, "Expected one device item");
-            assertEqual("USB.Device", typeof(devices[0]), "Unexpected driver");
-            resolve();
+            imp.wakeup(0, function() {
+                local devices = host.getAttachedDevices();
+                assertTrue(devices.len() == 1, "Expected one device item");
+                assertEqual("USB._Device", typeof(devices[0]), "Unexpected driver");
+                resolve();
+            }.bindenv(this));
         }.bindenv(this));
     }
 
     function testGetAttachedTwoDevices() {
-        local host = USB.Host(_usb, _drivers, false);
+        local host = getUsbHost();
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
         _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 
         return Promise(function(resolve, reject) {
-            local devices = host.getAttachedDevices();
-            assertTrue(devices.len() == 2, "Expected two device attached");
-            assertEqual("USB.Device", typeof(devices[0]), "Unexpected driver");
-            assertEqual("USB.Device", typeof(devices[1]), "Unexpected driver");
-            resolve();
+            imp.wakeup(0, function() {
+                local devices = host.getAttachedDevices();
+                assertTrue(devices.len() == 2, "Expected two device attached");
+                assertEqual("USB._Device", typeof(devices[0]), "Unexpected driver");
+                assertEqual("USB._Device", typeof(devices[1]), "Unexpected driver");
+                resolve();
+            }.bindenv(this));
         }.bindenv(this));
     }
 
 
-    function testSetListenerOnConnect() {
+    function testSetDeviceListenerOnConnect() {
         return Promise(function(resolve, reject) {
-            local host = getUsbHost(_drivers, false);
+            local host = getUsbHost();
             local counter = 0;
-            host.setEventListener(function(type, payload) {
+            host.setDeviceListener(function(type, payload) {
                 counter++;
-                if (counter == 1) {
-                    assertEqual("connected", type, "Unexpected type of event.");
-                    // payload is description
-                    assertEqual("USB.Device", typeof payload, "Unexpected device type")
-                } else if (counter == 2) {
-                    assertEqual("started", type, "Unexpected type of event.");
-                    // payload is driver instance
-                    assertEqual("CorrectDriver", typeof payload, "Unexpected driver type")
-                } else {
-                    // no more events expected
-                    assertTrue(false, "Unexpected event.");
+
+                if (type != USB_DEVICE_STATE_CONNECTED &&
+                    type != USB_DEVICE_STATE_DISCONNECTED) {
+                        reject("Invalid event type: " + type);
+                        return;
                 }
+                if ("USB._Device" !=  typeof payload) {
+                    reject("Unexpected device type");
+                    return;
+                }
+
+                if (counter != 1) reject("Unexpected event.");
+
             }.bindenv(this));
 
             _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
 
             // reject this test on failure
-            imp.wakeup(1, function() {
-                host.setEventListener(null);
-                if (counter == 2)
+            imp.wakeup(2, function() {
+                host.setDeviceListener(null);
+                if (counter == 1)
                     resolve()
                 else
                     reject("Unexpected number of events received: " + counter);
@@ -100,41 +106,63 @@ class UsbHostEventsSanity extends ImpTestCase {
         }.bindenv(this));
     }
 
-    function testSetListenerDisconnect() {
+    function testSetDriverListenerOnConnect() {
+        return Promise(function(resolve, reject) {
+            local host = getUsbHost();
+            local counter = 0;
+            host.setDriverListener(function(type, payload) {
+                counter++;
+
+                if (type != USB_DRIVER_STATE_STARTED &&
+                    type != USB_DRIVER_STATE_STOPPED) {
+                        reject("Invalid event type: " + type);
+                        return;
+                }
+                if ("CorrectDriver" !=  typeof payload) {
+                    reject("Unexpected driver type: " + (typeof payload));
+                    return;
+                }
+
+                if (counter != 1) reject("Unexpected event.");
+
+            }.bindenv(this));
+
+            _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
+
+            // reject this test on failure
+            imp.wakeup(2, function() {
+                host.setDriverListener(null);
+                if (counter == 1)
+                    resolve()
+                else
+                    reject("Unexpected number of events received: " + counter);
+            }.bindenv(this));
+
+        }.bindenv(this));
+    }
+
+
+    function testSetDeviceListenerDisconnect() {
         local counter = 0;
-        local host = getUsbHost(_drivers, false);
+        local host = getUsbHost();
 
         return Promise.resolve(null)
         .then( function(prevRes) {
             _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
         }.bindenv(this)).then(function(prevRes) {
             return Promise(function(resolve, reject) {
-                host.setEventListener(function(type, payload) {
-                    if (counter == 1) {
-                        if("disconnected" != type) {
-                            reject("Unexpected type of event:" + type + ". Need disconnected") ;
-                            return;
-                        }
-                        // payload is description
-                        if ("USB.Device" !=  typeof payload) {
-                            reject("Unexpected device type");
-                            return;
-                        }
-                    } else if (counter == 0) {
-                        if ("stopped" != type) {
-                            reject("Unexpected type of event: " + type + ". Need stopped");
-                            return;
-                        }
-                        // payload is driver instance
-                        if ("CorrectDriver" != typeof payload) {
-                            reject("Unexpected driver type: " + (typeof payload));
-                            return;
-                        }
-                    } else {
-                        // no more events expected
-                        reject("Unexpected event:" + type);
-                    }
+                host.setDeviceListener(function(type, payload) {
                     counter++;
+
+                    if(USB_DEVICE_STATE_DISCONNECTED != type) {
+                        reject("Unexpected type of event:" + type + ". Need " + USB_DEVICE_STATE_DISCONNECTED) ;
+                        return;
+                    }
+                    // payload is description
+                    if ("USB._Device" !=  typeof payload) {
+                        reject("Unexpected device type: " + (typeof payload));
+                        return;
+                    }
                 }.bindenv(this));
 
                 // Trigger disconnect event
@@ -142,16 +170,62 @@ class UsbHostEventsSanity extends ImpTestCase {
                     "device": 1
                 });
 
-                resolve();
+                // wait a bit for unexpected events
+                imp.wakeup(2, function() {
+                    host.setDeviceListener(null);
+                    if (counter == 1)
+                        resolve()
+                    else
+                        reject("Unexpected number of events " + counter);
+                });
+
             }.bindenv(this));
+        }.bindenv(this));
+    }
+
+    function testDriverSetListenerDisconnect() {
+        local counter = 0;
+        local host = getUsbHost();
+
+        return Promise.resolve(null)
+        .then( function(prevRes) {
+            _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
         }.bindenv(this)).then(function(prevRes) {
-            return Promise(function(resolve, reject){
-                host.setEventListener(null);
-                if (counter == 2)
-                    resolve()
-                else
-                    reject("Unexpected number of events " + counter);
-            });
-        });
+            return Promise(function(resolve, reject) {
+                host.setDriverListener(function(type, payload) {
+                    counter++;
+
+                    if(USB_DRIVER_STATE_STOPPED != type) {
+                        reject("Unexpected type of event:" + type + ". Need " + USB_DRIVER_STATE_STOPPED) ;
+                        return;
+                    }
+                    // payload is description
+                    if ("CorrectDriver" !=  typeof payload) {
+                        reject("Unexpected device type: " + (typeof payload));
+                        return;
+                    }
+                }.bindenv(this));
+
+                // Trigger disconnect event
+                _usb.triggerEvent(USB_DEVICE_DISCONNECTED, {
+                    "device": 1
+                });
+
+                // wait a bit for unexpected events
+                imp.wakeup(2, function() {
+                    host.setDriverListener(null);
+                    if (counter == 1)
+                        resolve()
+                    else
+                        reject("Unexpected number of events " + counter);
+                });
+
+            }.bindenv(this));
+        }.bindenv(this));
+    }
+
+
+    function getUsbHost() {
+        return USB.Host(_usb, _drivers, false);
     }
 }

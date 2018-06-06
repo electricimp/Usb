@@ -22,6 +22,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+@include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__ + "/../CorrectDriver.nut"
 @include __PATH__ + "/../DescriptorMock.nut"
 @include __PATH__ + "/../UsbMock.nut"
@@ -47,18 +48,21 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
             "stopped": 0
         };
         // count all events
-        host.setEventListener(function(type, payload) {
+        host.setDeviceListener(function(type, payload) {
             counter[type]++;
-            if (type == "connected")
-                assertTrue(payload._address == counter[type], "Unexpected device address: " + payload._address)
         }.bindenv(this));
+
+        host.setDriverListener(function(type, payload) {
+            counter[type]++;
+        }.bindenv(this));
+
 
         _usb.triggerEvent(USB_DEVICE_CONNECTED, TestDriver1.device());
         _usb.triggerEvent(USB_DEVICE_CONNECTED, TestDriver2.device());
         _usb.triggerEvent(USB_DEVICE_CONNECTED, TestDriver3.device());
 
         return Promise(function(resolve, reject) {
-            imp.wakeup(0, function() {
+            imp.wakeup(1, function() {
                 local devices = host.getAttachedDevices();
                 assertTrue(devices.len() == 3, "Expected three device items");
                 assertDeepEqual({
@@ -79,7 +83,7 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
                     "device": 3
                 });
 
-                imp.wakeup(0, function() {
+                imp.wakeup(1, function() {
                     local devices = host.getAttachedDevices();
                     assertTrue(devices.len() == 0, "Expected three device items");
                     assertDeepEqual({
@@ -101,7 +105,7 @@ class UsbHostMultipleDriversSanity extends ImpTestCase {
         _usb.triggerEvent(USB_DEVICE_CONNECTED, device4);
 
         return Promise(function(resolve, reject) {
-            imp.wakeup(0, function() {
+            imp.wakeup(1, function() {
                 local devices = host.getAttachedDevices();
                 assertTrue(devices.len() == 1, "Expected one device items");
                 assertTrue(devices[0]._driverInstances.len() == 1, "Expected one driver instance");

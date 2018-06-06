@@ -36,8 +36,8 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
 
     function setUp() {
         _usb = UsbMock();
-        _usb.configure(function(evt, evd){});
-        _device = USB._Device(_usb, 1.5, correctDescriptor, 1);
+        local host = USB.Host(_usb, _drivers);
+        _device = USB._Device(_usb, host, 1.5, correctDescriptor, 1);
     }
 
     function testPositive1() {
