@@ -87,6 +87,8 @@ class HIDKeyboardTest extends ImpTestCase {
 
     function test2() {
 
+        info("Check if keyboard leds are on");
+
         local infoFunc = this.info.bindenv(this);
 
         return _setUpHost().then(function(kdbDrv) {
