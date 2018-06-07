@@ -424,6 +424,8 @@ This method disables USB, cleans up all drivers and devices with
 corresponding event listeners notifications and reconfigure usb from scratch.
 All devices will have a new device object instances and different address.
 
+##### Example
+
 ```squirrel
 #include "MyCustomDriver.device.lib.nut" // some custom driver library
 
@@ -470,10 +472,12 @@ Returns the device product ID. Throws exception if the device is detached.
 
 #### getAssignedDrivers()
 
-Returns an array of drivers for the attached device. Throws exception if the device is detached.
+Returns an array of drivers for the attached device. Throws exception if 
+the device is detached.
 Each USB device could provide the number of interfaces which could be
 supported by a single driver or by the number of different drives
-(For example keyboard with touch pad could have keyboard driver and a separate touch pad driver).
+(For example keyboard with touch pad could have keyboard driver and a 
+separate touch pad driver).
 
 #### getEndpointZero()
 
@@ -488,7 +492,9 @@ Return type is [USB.ControlEndpoint](#usbcontrolendpoint-class)
 Represents USB control endpoints.
 This class is managed by USB.Device and should be acquired through USB.Device instance.
 
-For exmaple: The following code is making reset of the functional endpoint via control endpoint
+The following code is making reset of the functional endpoint via a control endpoint:
+
+##### Example
 
 ``` squirrel
 device
@@ -506,8 +512,8 @@ Generic method for transferring data over control endpoint.
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *reqType*      | Number    | n/a 	   | USB request type [see](https://electricimp.com/docs/api/hardware/usb/controltransfer/) |
-| *req* 		 | Number 	 | n/a 	   | The specific USB request [see](https://electricimp.com/docs/api/hardware/usb/controltransfer/) |
+| *reqType*      | Number    | n/a 	   | USB request type, [see](https://developer.electricimp.com/api/hardware/usb/controltransfer) |
+| *req* 		 | Number 	 | n/a 	   | The specific USB request, [see](https://developer.electricimp.com/api/hardware/usb/controltransfer/) |
 | *value* 		 | Number 	 | n/a 	   | A value determined by the specific USB request|
 | *index* 		 | Number 	 | n/a 	   | An index value determined by the specific USB request |
 | *data* 		 | Blob 	 | null    | [optional] Optional storage for incoming or outgoing payload|
@@ -518,7 +524,7 @@ Generic method for transferring data over control endpoint.
 Returns the endpoint address. Typical use case for this function is to get
 endpoint ID for some of device control operation performed over Endpoint 0.
 
-## USB.FunctionalEndpoint class
+## USB.FunctionalEndpoint Class
 
 Represents all non-control endpoints, e.g. bulk, interrupt and isochronous.
 This class is managed by USB.Device and should be acquired through USB.Device instance.
@@ -537,16 +543,20 @@ Callback **onComplete(error, len)**:
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
+| *ep*        | Endpoint  | the instance of the endpoint [descriptor](#endpoint-descriptor) |
 | *error*     | Number    | the usb error type |
+| *data*      | Blob      | the payload data being sent |
 | *len*       | Number    | length of the written payload data |
 
+##### Example
+
 ```squirrel
-class MyCustomDriver imptements USB.Driver {
+class MyCustomDriver extends USB.Driver {
   constructor(device, interfaces) {
     try {
         local payload = blob(16);
         local ep = interfaces[0].endpoints[1].get();
-        ep.write(payload, function(error, len) {
+        ep.write(payload, function(ep, error, data, len) {
             if (len > 0) {
                 server.log("Payload: " + len);
             }
@@ -560,7 +570,7 @@ class MyCustomDriver imptements USB.Driver {
   function match(device, interfaces) {
       return MyCustomDriver(device, interfaces);
   }
-} // class
+}
 ```
 
 **NOTE** Not all error codes indicate actual error status. However the USB
