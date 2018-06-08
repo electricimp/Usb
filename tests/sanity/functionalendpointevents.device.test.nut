@@ -82,7 +82,7 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
           _usb.triggerEvent(USB_TRANSFER_COMPLETED, {
                "device": _device._address,
                "state": 0,
-               "endpoint": ep._endpoint,
+               "endpoint": ep._epAddr,
                "length": 3});
       }.bindenv(this));
     }
@@ -112,7 +112,7 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
           _usb.triggerEvent(USB_TRANSFER_COMPLETED, {
                "device": _device._address,
                "state": 4,
-               "endpoint": ep._endpoint,
+               "endpoint": ep._epAddr,
                "length": 0});
       }.bindenv(this));
     }

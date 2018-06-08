@@ -710,7 +710,7 @@ USB <- {
         _type = 0;
 
         // EP address
-        _endpoint = 0;
+        _epAddr = 0;
 
         // Maximum packet size for this endpoint
         // Should be one from {8, 16, 32, 64} set
@@ -736,7 +736,7 @@ USB <- {
         //      maxPacketSize   - maximum packet size for this endpoint
         constructor (device, endpoint, epType, maxPacketSize) {
             _device = device;
-            _endpoint = endpoint;
+            _epAddr = endpoint;
             _maxPacketSize = maxPacketSize;
             _type = epType;
         }
@@ -749,8 +749,8 @@ USB <- {
         //
         //  Returns nothing
         function write(data, onComplete) {
-            if (_endpoint & USB_DIRECTION_MASK) {
-                throw "Invalid endpoint direction: " + _endpoint;
+            if (_epAddr & USB_DIRECTION_MASK) {
+                throw "Invalid endpoint direction: " + _epAddr;
             } else {
                 _transfer(data, onComplete);
             }
@@ -764,10 +764,10 @@ USB <- {
         //
         //  Returns nothing
         function read(data, onComplete) {
-            if (_endpoint & USB_DIRECTION_MASK) {
+            if (_epAddr & USB_DIRECTION_MASK) {
                 _transfer(data, onComplete);
             } else {
-                throw "Invalid endpoint direction: " + _endpoint;
+                throw "Invalid endpoint direction: " + _epAddr;
             }
         }
 
@@ -780,7 +780,7 @@ USB <- {
         // Typical use case for this function is to get endpoint ID for some of device control operation,
         // performed over Endpoint 0
         function getEndpointAddr() {
-            return _endpoint;
+            return _epAddr;
         }
 
         // --------------------- Private functions -----------------
@@ -805,7 +805,7 @@ USB <- {
 
             _device._usb.generaltransfer(
                 _device._address,
-                _endpoint,
+                _epAddr,
                 _type,
                 data
             );
@@ -868,7 +868,7 @@ USB <- {
         _device = null;
 
         // EP address
-        _endpoint = 0;
+        _epAddr = 0;
 
         // Maximum packet size for this endpoint
         // Should be one from {8, 16, 32, 64} set
@@ -885,7 +885,7 @@ USB <- {
         //      maxPacketSize   - maximum packet size for this endpoint
         constructor (device, endpoint, maxPacketSize) {
             _device = device;
-            _endpoint = endpoint;
+            _epAddr = endpoint;
             _maxPacketSize = maxPacketSize;
         }
 
@@ -915,7 +915,7 @@ USB <- {
         // Typical use case for this function is to get endpoint ID for some of device control operation,
         // performed over Endpoint 0
         function getEndpointAddr() {
-            return _endpoint;
+            return _epAddr;
         }
 
 
@@ -941,7 +941,7 @@ USB <- {
             _device._usb.controltransfer(
                 _device._speed,
                 _device._address,
-                _endpoint,
+                _epAddr,
                 reqType,
                 req,
                 value,
