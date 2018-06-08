@@ -28,7 +28,7 @@
 @include __PATH__+"/../CorrectDriver.nut"
 @include __PATH__+"/../DescriptorMock.nut"
 
-// Sanity test for USB.FunctionalEndpoint
+// Sanity test for USB.FuncEndpoint
 class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
     _host = null;
     _usb = null;

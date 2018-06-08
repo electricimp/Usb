@@ -149,7 +149,7 @@ interface resources the driver receives through the
 function. It is up to driver author to create it in safe way and to address
 situation when several drivers try to concurrently access the same device.
 An example of such collision is an exception that may be thrown by
-[USB.FunctionalEndpoint.read()](#readdata-oncomplete) while another driver's
+[USB.FuncEndpoint.read()](#readdata-oncomplete) while another driver's
 call is still pending.
 
 #### 3. (Optional) Release Driver Resources
@@ -493,8 +493,8 @@ touchpad drivers assigned.
 
 #### getEndpointZero()
 
-Returns a procy for the Control Endpoint 0 (EP0) for the device.
-EP0 is a special type of endpoints that implicitly exists
+Returns a procy for the Control Endpoint 0 for the device.
+The endpoint 0 is a special type of endpoints that implicitly exists
 for every device.
 Throws exception if the device is not connected.
 
@@ -536,9 +536,9 @@ Generic method for transferring data over a control endpoint.
 #### getEndpointAddr()
 
 Returns the endpoint address. Typical use case for this function is to get
-endpoint address for some of device control operation performed over EP0.
+endpoint address, which is required by a of device control operation performed over the endpoint 0.
 
-## USB.FunctionalEndpoint Class
+## USB.FuncEndpoint Class
 
 Represents all non-control endpoints, e.g. bulk, interrupt and isochronous.
 This class is managed by USB.Device and should be acquired through USB.Device instance.
@@ -557,7 +557,7 @@ Callback **onComplete(error, len)**:
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
-| *ep*        | Endpoint  | instance of the endpoint [FunctionalEndpoint](#usbfunctionalendpoint-class) |
+| *ep*        | Endpoint  | instance of the endpoint [FuncEndpoint](#usbfunctionalendpoint-class) |
 | *error*     | Number    | usb error type |
 | *data*      | Blob      | the payload data being sent |
 | *len*       | Number    | length of the written payload data |
@@ -596,9 +596,9 @@ device driver. See more information [here](https://electricimp.com/docs/resource
 Asynchronously reads data through the endpoint. Throws exception if the endpoint
 is closed, or has incompatible type, or already busy.
 
-The method set an upper limit of five seconds for any command to be processed
+The method sets an upper limit of five seconds for any command to be processed
 for the bulk endpoint according to the
-[Electric Imp documentation](https://electricimp.com/docs/resources/usberrors/#stq=&stp=0).
+Electric Imp [documentation](https://electricimp.com/docs/resources/usberrors/#stq=&stp=0).
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
@@ -609,8 +609,15 @@ Callback **onComplete(error, len)**:
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
-| *error*     | Number    | the usb error number |
+| *ep*        | Endpoint  | instance of the endpoint [FuncEndpoint](#usbfunctionalendpoint-class) |
+| *error*     | Number    | usb error type |
+| *data*      | Blob      | the payload data read |
 | *len*       | Number    | length of the read data  |
+
+
+##### Example
+
+**TODO:** test the example
 
 ```squirrel
 class MyCustomDriver imptements USB.Driver {
@@ -618,7 +625,7 @@ class MyCustomDriver imptements USB.Driver {
     try {
         local payload = blob(16);
         local ep = interfaces[0].endpoints[1].get();
-        ep.read(payload, function(error, len) {
+        ep.read(payload, function(ep, error, payload, len) {
             if (len > 0) {
                 server.log("Payload: " + payload);
             }
@@ -767,7 +774,7 @@ Interface descriptors `find` function signature is following:
 | Endpoint direction | Integer | USB_DIRECTION_IN, USB_DIRECTION_OUT |
 
 This function returns an instance of either [ControlEndpoint](#usbcontrolendpoint-class)
-or [FunctionalEndpoint](#usbfunctionalendpoint-class) or null if no endpoints were found.
+or [FuncEndpoint](#usbfunctionalendpoint-class) or null if no endpoints were found.
 
 
 #### Endpoint descriptor
@@ -780,7 +787,7 @@ Each endpoints table contains the following keys:
 | attributes | Integer bitfield | D0-1 — Transfer type:<br />00: control<br />01: isochronous<br />10: bulk<br />11: interrupt |
 | maxpacketsize | Integer | The maximum size of packet this endpoint can send or receive |
 | interval | Integer | Only relevant for Interrupt In endpoints |
-| get | function | The function that returns instance of either [USB.FunctionalEndpoint](#usbfunctionalendpoint-class) or [USB.ControlEndpoint](#usbcontrolendpoint-class) depending on information stored at `attributes` and `address` fields. |
+| get | function | The function that returns instance of either [USB.FuncEndpoint](#usbfunctionalendpoint-class) or [USB.ControlEndpoint](#usbcontrolendpoint-class) depending on information stored at `attributes` and `address` fields. |
 
 -------------------
 
