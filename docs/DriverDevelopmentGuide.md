@@ -462,9 +462,8 @@ All management of USB device configurations, interfaces and
 endpoints **MUST** go through the device object rather than
 via the platform native `hardware.usb` object.
 
-**NOTE:** neither applications nor drivers need to explicitly instantiate
-device objects. They are created by the USB framework for you
-behind the scenes.
+**NOTE:** neither applications nor drivers should explicitly create
+`USB.Device` objects. They are instantiated by the USB framework automatically.
 
 #### getDescriptor()
 
@@ -509,6 +508,9 @@ by calling `USB.Device.getEndpointZero()`.
 The following code is making reset of the functional
 endpoint via a control endpoint:
 
+**NOTE:** neither applications nor drivers should explicitly create
+`USB.ControlEndpoint` objects. They are instantiated by the USB framework automatically.
+
 ##### Example
 
 ``` squirrel
@@ -542,6 +544,9 @@ endpoint address, which is required by a of device control operation performed o
 
 Represents all non-control endpoints, e.g. bulk, interrupt and isochronous.
 This class is managed by USB.Device and should be acquired through USB.Device instance.
+
+**NOTE:** neither applications nor drivers should explicitly create
+`USB.FuncEndpoint` objects. They are instantiated by the USB framework automatically.
 
 #### write(data, onComplete)
 
@@ -647,7 +652,6 @@ the USB framework doesn't filter out such error code to provide full
 information for device driver. See more information
 [here](https://electricimp.com/docs/resources/usberrors/).
 
-
 #### getEndpointAddr()
 
 Returns the endpoint address. Typical use case for this function is to get endpoint
@@ -655,8 +659,11 @@ ID for some of device control operation performed over Endpoint 0.
 
 ## USB.Driver class
 
-This class is the base for all drivers that are developed for USB Drivers Framework.
-It contains three mandatory methods which must be implemented by every USB driver.
+This class is the base for all drivers that are developed for the USB Drivers Framework.
+It contains three methods to be implemented by every USB driver.
+
+**NOTE:** applications should not explicitly create
+`USB.Driver` objects. They are instantiated by the USB framework automatically.
 
 ### match(*deviceObject, interfaces*)
 
