@@ -779,7 +779,7 @@ USB <- {
         // Returns this endpoint address
         // Typical use case for this function is to get endpoint ID for some of device control operation,
         // performed over Endpoint 0
-        function getEndpoint() {
+        function getEndpointAddr() {
             return _endpoint;
         }
 
@@ -914,7 +914,7 @@ USB <- {
         // Returns this endpoint address
         // Typical use case for this function is to get endpoint ID for some of device control operation,
         // performed over Endpoint 0
-        function getEndpoint() {
+        function getEndpointAddr() {
             return _endpoint;
         }
 

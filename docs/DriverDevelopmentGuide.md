@@ -533,7 +533,7 @@ Generic method for transferring data over a control endpoint.
 | *index* 		 | Number 	 | n/a 	   | An index value determined by the specific USB request |
 | *data* 		 | Blob 	 | null    | [optional] Optional storage for incoming or outgoing payload|
 
-#### getEndpoint()
+#### getEndpointAddr()
 
 Returns the endpoint address. Typical use case for this function is to get
 endpoint address for some of device control operation performed over EP0.
@@ -641,7 +641,7 @@ information for device driver. See more information
 [here](https://electricimp.com/docs/resources/usberrors/).
 
 
-#### getEndpoint()
+#### getEndpointAddr()
 
 Returns the endpoint address. Typical use case for this function is to get endpoint
 ID for some of device control operation performed over Endpoint 0.
