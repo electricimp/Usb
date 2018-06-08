@@ -451,7 +451,7 @@ This is a helper function to get list of attached devices. Returns an
 array of **[USB.Device](#usbdevice-class)** objects.
 
 
-## USB.Device class
+## USB.Device Class
 
 Represents attached USB devices. Please refer to
 [USB specification](http://www.usb.org/) for details on USB devices description.
@@ -499,7 +499,7 @@ Throws exception if the device is not connected.
 
 Return type is [USB.ControlEndpoint](#usbcontrolendpoint-class)
 
-## USB.ControlEndpoint class
+## USB.ControlEndpoint Class
 
 Represents USB control endpoints.
 This class is managed by USB.Device and should be acquired
@@ -657,7 +657,7 @@ information for device driver. See more information
 Returns the endpoint address. Typical use case for this function is to get endpoint
 ID for some of device control operation performed over Endpoint 0.
 
-## USB.Driver class
+## USB.Driver Class
 
 This class is the base for all drivers that are developed for the USB Drivers Framework.
 It contains three methods to be implemented by every USB driver.
@@ -667,15 +667,13 @@ It contains three methods to be implemented by every USB driver.
 
 ### match(*deviceObject, interfaces*)
 
-Checks if the driver can support all the specified interfaces for the specified device.
-Returns the driver object (if it can support), array of driver objects
-(if few interfaces are supported by this driver) or *null* (if it can not support).
+Checks if the driver can support the specified device and its interfaces exposed. If the driver can support the device, the method should return the new driver instance object, array of driver objects (in case of multiple interfaces supported and driver instances created for each of them) or *null*, if the driver doesn't support the device.
 
-The method's implementation can be based on VID, PID, device class, subclass and interfaces.
+The driver-device matching procedure can be based on checking, VID, PID, device class, subclass and interfaces.
 
 | Parameter 	 | Data Type | Required/Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *deviceObject* 		 | USB.Device 	 | required  | an instance of the USB.Device for the attached device |
+| *device* 		 | USB.Device 	 | required  | an instance of the USB.Device for the attached device |
 | *interfaces*      | Array of tables | required  | An array of tables which describe [interfaces](#interface-descriptor) for the attached device |
 
 ### release()
@@ -686,16 +684,20 @@ It is called by USB Drivers Framework when USB device
 is detached and all resources should be released.
 
 It is important to note all device resources are released
-prior to this function call and all Device/Endpoint methods
-calls result in throwing of an exception. It means that it is
-not possible to perform read, write or transfer for the detached
-device and this method uses to release all driver related resources
-and free an external resource if necessary.
+prior to this function call and attempts to access Device or Endpoint members
+may result in an exception being thrown.
+
+The methos should be used by the drivers to clean up the driver related resources and free an external resource if necessary.
 
 ### _typeof()
 
-Meta-function to return class name when typeof <instance> is run.
-Uses to identify the driver instance type in runtime.
+Meta-function to return class name when `typeof <instance>` is invoked.
+Uses to identify the driver instance type in runtime 
+(for example, for debugging purposes).
+
+##### Example
+
+**TODO:** test the example
 
 ```squirrel
 
@@ -710,7 +712,7 @@ host.setEventListener(function(eventName, eventDetails) {
 
 ```
 
-## USB framework constants.
+## USB Framework Structures
 
 A set of constants that may be useful for endpoint search functions.
 
@@ -784,7 +786,7 @@ This function returns an instance of either [ControlEndpoint](#usbcontrolendpoin
 or [FuncEndpoint](#usbfunctionalendpoint-class) or null if no endpoints were found.
 
 
-#### Endpoint descriptor
+#### Endpoint Descriptor
 
 Each endpoints table contains the following keys:
 
