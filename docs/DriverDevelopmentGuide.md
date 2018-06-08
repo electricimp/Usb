@@ -305,12 +305,14 @@ USB.Host instance for each of them.
 
 #### USB.Host(usb, drivers, [, autoConfigPins]*)
 
-Instantiates the `USB.Host` class. `USB.Host` is an abstraction for USB port. It
-should be instantiated only once per physical port for any application.
-There are some imp boards which do not have a usb port, therefore a exception
-will be thrown on an attempt to instantiate `USB.Host` in that case.
+Instantiates the `USB.Host` class. `USB.Host` is an abstraction over
+the native USB port platform implementation.
 
-**NOTE:** USB framework assumes that developer will not use 
+It should be instantiated only once per physical port for any application.
+There are some Electric Imp boards which do not have a usb port, therefore a exception
+will be thrown on an attempt to instantiate `USB.Host` in such case.
+
+**NOTE:** when using the USB framework you shouldn't access the
 [`hardware.usb`](https://electricimp.com/docs/api/hardware/usb/) directly.
 
 | Parameter 	 | Data Type | Required/Default | Description |
@@ -331,7 +333,7 @@ usbHost <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2]);
 
 #### setDriverListener(*callback*)
 
-Sets listener for the driver events. Application can get notified if a driver was stopped or started. See the
+Sets listener for driver events. Application can get notified if a driver was stopped or started. See the
 callback [definition](#callbackeventtype-driver) for more details.
 
 | Parameter   | Data Type | Required | Description |
@@ -349,10 +351,10 @@ The following event types are supported:
 - driver `USB_DRIVER_STATE_STARTED` (`"started"`)
 - driver `USB_DRIVER_STATE_STOPPED` (`"stopped"`)
 
-| Parameter   | Data Type | Description |
-| ----------- | --------- | ----------- |
-| *eventType*  | String  |  Name of the event `USB_DRIVER_STATE_STARTED`, `USB_DRIVER_STATE_STOPPED` |
-| *object* | USB.Driver | Instance of the USB.Driver class. |
+| Parameter   | Data Type  | Description |
+| ----------- | -----------| ----------- |
+| *eventType* | String     | Driver event type: `USB_DRIVER_STATE_STARTED` or `USB_DRIVER_STATE_STOPPED` |
+| *driver*    | USB.Driver | Instance of the USB.Driver class. |
 
 ##### Example (subscribe)
 
@@ -374,14 +376,13 @@ usbHost.setDriverListener(function (eventType, driver) {
 Assign listener for runtime device events. User could plug an
 unplug device in runtime and application should get the corresponding events.
 
-
 | Parameter   | Data Type | Required | Description |
 | ----------- | --------- | -------- | ----------- |
 | *callback*  | Function  | Yes      | Function to be called on event. See below. |
 
 Setting of *null* clears the previously assigned listener.
 
-##### callback(*eventType, driver*)
+##### callback(*eventType, device*)
 
 This callback is happen on the device or driver status change
 therefore the second argument is variable and could be instance
@@ -391,16 +392,16 @@ The following event types are supported:
 - device `USB_DEVICE_STATE_CONNECTED`       (`"connected"`)
 - device `USB_DEVICE_STATE_DISCONNECTED`    (`"disconnected"`)
 
-| Parameter   | Data Type | Description |
-| ----------- | --------- | ----------- |
-| *eventType*  | String  |  Name of the event `USB_DEVICE_STATE_CONNECTED`, `USB_DEVICE_STATE_DISCONNECTED` |
-| *object* | USB.Device |  Instance of the USB.Device class. |
+| Parameter   | Data Type  | Description |
+| ----------- | ---------- | ----------- |
+| *eventType* | String     |  Name of the event `USB_DEVICE_STATE_CONNECTED`, `USB_DEVICE_STATE_DISCONNECTED` |
+| *device*    | USB.Device |  Instance of the USB.Device class. |
 
 ##### Example (subscribe)
 
 ```squirrel
 // Subscribe to usb connection events
-usbHost.setDeviceListener(function (eventType, eventObject) {
+usbHost.setDeviceListener(function (eventType, device) {
     switch (eventType) {
         case USB_DEVICE_STATE_CONNECTED:
             server.log("New device found");
@@ -415,14 +416,16 @@ usbHost.setDeviceListener(function (eventType, eventObject) {
 
 #### reset()
 
-Resets the USB host. The effect of this action is analogous to
-unplugging the device.  Can be used by driver or application in response
-to unrecoverable error like unending bulk transfer or halt condition 
+Resets the USB host. The effect of this action is similar to
+physical reconnection of all the devices.
+Can be used by a driver or application in response
+to unrecoverable error like a timeing out bulk transfer or a halt condition
 during control transfers.
 
-This method disables USB, cleans up all drivers and devices with
-corresponding event listeners notifications and reconfigure usb from scratch.
-All devices will have a new device object instances and different address.
+`reset` method disables USB, cleans up all drivers and devices, which results
+in execution of the corresponding driver and device listeners.
+All devices will have a new device object instances and different addresses
+after `reset`.
 
 ##### Example
 
@@ -444,55 +447,67 @@ imp.wakeup(2, function() {
 
 #### getAttachedDevices()
 
-Auxiliary function to get list of attached devices. Returns an
+This is a helper function to get list of attached devices. Returns an
 array of **[USB.Device](#usbdevice-class)** objects.
 
 
 ## USB.Device class
 
-Represents an attached USB device. Please refer to
-[USB specification](http://www.usb.org/) for details of a USB device description.
+Represents attached USB devices. Please refer to
+[USB specification](http://www.usb.org/) for details on USB devices description.
 
-Normally, an application does not need to use a device object.
-It is usually used by drivers to acquire required endpoints.
+Normally, applications don't need to use a device object directly.
+It is mostly utilized by drivers to acquire required endpoints.
 All management of USB device configurations, interfaces and
-endpoints **MUST** go through the device object.
+endpoints **MUST** go through the device object rather than
+via the platform native `hardware.usb` object.
+
+**NOTE:** neither applications nor drivers need to explicitly instantiate
+device objects. They are created by the USB framework for you
+behind the scenes.
 
 #### getDescriptor()
 
-Returns the device descriptor. Throws exception if the device is detached.
+Returns the device descriptor. Throws exception if the device is
+not attached at this moment.
 
 #### getVendorId()
 
-Returns the device vendor ID. Throws exception if the device is detached.
+Returns the device vendor id. Throws exception if the device
+is not attached at this moment.
 
 #### getProductId()
 
-Returns the device product ID. Throws exception if the device is detached.
+Returns the device product id. Throws exception if the device
+is not attached at this moment.
 
 #### getAssignedDrivers()
 
-Returns an array of drivers for the attached device. Throws exception if 
-the device is detached.
-Each USB device could provide the number of interfaces which could be
-supported by a single driver or by the number of different drives
-(For example keyboard with touch pad could have keyboard driver and a 
-separate touch pad driver).
+Returns an array of drivers for the attached device. Throws exception if
+the device is not attached.
+
+Each USB device could provide a number of interfaces which could be
+supported by a one or more drivers.
+For example, keyboard with touchpad could have a keyboard and a
+touchpad drivers assigned.
 
 #### getEndpointZero()
 
-Returns Control Endpoint 0 proxy for the device. EP0 is a special
-type of endpoints that implicitly exists for every device.
-Throws exception if the device is detached.
+Returns a procy for the Control Endpoint 0 (EP0) for the device.
+EP0 is a special type of endpoints that implicitly exists
+for every device.
+Throws exception if the device is not connected.
 
 Return type is [USB.ControlEndpoint](#usbcontrolendpoint-class)
 
 ## USB.ControlEndpoint class
 
 Represents USB control endpoints.
-This class is managed by USB.Device and should be acquired through USB.Device instance.
+This class is managed by USB.Device and should be acquired
+by calling `USB.Device.getEndpointZero()`.
 
-The following code is making reset of the functional endpoint via a control endpoint:
+The following code is making reset of the functional
+endpoint via a control endpoint:
 
 ##### Example
 
@@ -506,23 +521,22 @@ device
         endpointAddress);
 ```
 
-#### transfer(reqType, type, value, index, data = null)
+#### transfer(reqType, req, value, index, data = null)
 
-Generic method for transferring data over control endpoint.
+Generic method for transferring data over a control endpoint.
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *reqType*      | Number    | n/a 	   | USB request type, [see](https://developer.electricimp.com/api/hardware/usb/controltransfer) |
-| *req* 		 | Number 	 | n/a 	   | The specific USB request, [see](https://developer.electricimp.com/api/hardware/usb/controltransfer/) |
+| *reqType*      | Number    | n/a 	   | USB request type, see the [documentation](https://developer.electricimp.com/api/hardware/usb/controltransfer) for more details |
+| *req* 		 | Number 	 | n/a 	   | The specific USB request, see the [documentation](https://developer.electricimp.com/api/hardware/usb/controltransfer/) for more details |
 | *value* 		 | Number 	 | n/a 	   | A value determined by the specific USB request|
 | *index* 		 | Number 	 | n/a 	   | An index value determined by the specific USB request |
 | *data* 		 | Blob 	 | null    | [optional] Optional storage for incoming or outgoing payload|
 
-
 #### getEndpoint()
 
 Returns the endpoint address. Typical use case for this function is to get
-endpoint ID for some of device control operation performed over Endpoint 0.
+endpoint address for some of device control operation performed over EP0.
 
 ## USB.FunctionalEndpoint Class
 
@@ -543,8 +557,8 @@ Callback **onComplete(error, len)**:
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
-| *ep*        | Endpoint  | the instance of the endpoint [descriptor](#endpoint-descriptor) |
-| *error*     | Number    | the usb error type |
+| *ep*        | Endpoint  | instance of the endpoint [FunctionalEndpoint](#usbfunctionalendpoint-class) |
+| *error*     | Number    | usb error type |
 | *data*      | Blob      | the payload data being sent |
 | *len*       | Number    | length of the written payload data |
 
