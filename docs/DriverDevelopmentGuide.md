@@ -595,7 +595,7 @@ class MyCustomDriver extends USB.Driver {
 }
 ```
 
-**NOTE** Not all error codes indicate actual error status. However the USB
+**NOTE:** Not all error codes indicate actual error status. However the USB
 framework doesn't filter out such error code to provide full information for
 device driver. See more information [here](https://electricimp.com/docs/resources/usberrors/).
 
@@ -650,7 +650,7 @@ class MyCustomDriver imptements USB.Driver {
 } // class
 ```
 
-**NOTE** Not all error codes indicate actual error status. However
+**NOTE:** Not all error codes indicate actual error status. However
 the USB framework doesn't filter out such error code to provide full
 information for device driver. See more information
 [here](https://electricimp.com/docs/resources/usberrors/).
