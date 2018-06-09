@@ -447,7 +447,7 @@ class QL720NWUartUsbDriver extends USB.Driver {
 
     // USB transfer complete callback
     function _onComplete(ep, error, data, len) {
-        if (error == USB_ERROR_FREE || error == USB_ERROR_IDLE) error = null;
+        if (error == USB_TYPE_FREE || error == USB_TYPE_IDLE) error = null;
         if (callback) callback();
 
     }

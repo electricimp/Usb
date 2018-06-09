@@ -58,7 +58,7 @@ class CH340 extends FT232RLFtdiUsbDriver {
         // Write data via bulk transfer
         _bulkIn.read(data,  function(ep, error, data, length) {
             if (onComplete) {
-                if (error == USB_ERROR_FREE || error == USB_ERROR_IDLE) error = null;
+                if (error == USB_TYPE_FREE || error == USB_TYPE_IDLE) error = null;
                 onComplete(error, data, length);
             }
         }.bindenv(this));

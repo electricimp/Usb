@@ -120,7 +120,7 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
         // Write data via bulk transfer
         _bulkOut.write(_data, function(ep, error, data, length) {
             if (onComplete) {
-                if (error == USB_ERROR_FREE || error == USB_ERROR_IDLE) error = null;
+                if (error == USB_TYPE_FREE || error == USB_TYPE_IDLE) error = null;
                 onComplete(error, data, length);
             }
         }.bindenv(this));
@@ -136,7 +136,7 @@ class FT232RLFtdiUsbDriver extends USB.Driver {
         // Write data via bulk transfer
         _bulkIn.read(data,  function(ep, error, data, length) {
             if (onComplete) {
-                if (error == USB_ERROR_FREE || error == USB_ERROR_IDLE) error = null;
+                if (error == USB_TYPE_FREE || error == USB_TYPE_IDLE) error = null;
                 if (length >= 3) {
                     data.seek(2);
                     length -= 2;

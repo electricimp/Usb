@@ -71,9 +71,9 @@ const USB_DIRECTION_IN                      = 0x80;
 const USB_DIRECTION_MASK                    = 0x80;
 
 const USB_TYPE_STALL_ERROR                  = 4;
-const USB_ERROR_FREE                        = 15;
-const USB_ERROR_IDLE                        = 16;
-const USB_ERROR_TIMEOUT                     = 19;
+const USB_TYPE_FREE                         = 15;
+const USB_TYPE_IDLE                         = 16;
+const USB_TYPE_TIMEOUT                      = 19;
 
 const USB_DRIVER_STATE_STARTED              = "started";
 const USB_DRIVER_STATE_STOPPED              = "stopped";
@@ -847,7 +847,7 @@ USB <- {
         // Auxillary function to handle transfer timeout state
         function _onTimeout() {
             _timer = null;
-            _onTransferComplete(USB_ERROR_TIMEOUT, 0);
+            _onTransferComplete(USB_TYPE_TIMEOUT, 0);
         }
 
         // Metafunction to return class name when typeof <instance> is run

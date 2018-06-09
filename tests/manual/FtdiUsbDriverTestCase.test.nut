@@ -145,7 +145,7 @@ class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
     //                 inData.seek(0);
     //                 // Check the data received matches the sent string
     //                 local s = inData.readstring(testString.len());
-    //                 if ((error == USB_ERROR_IDLE || error == USB_ERROR_FREE) && s == testString) {
+    //                 if ((error == USB_TYPE_IDLE || error == USB_TYPE_FREE) && s == testString) {
     //                     resolve("Recieved data on Usb from Uart");
     //                 } else {
     //                     reject("Invalid data was received on Usb from Uart")

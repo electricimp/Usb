@@ -211,7 +211,7 @@ class BootKeyboardDriver extends USB.Driver {
     //      data    - data blob
     //      len     - a nu,ber of read bytes
     function _receiveCallback(ep, error, data, len) {
-        if (error !=  USB_ERROR_FREE && error != USB_ERROR_IDLE) {
+        if (error !=  USB_TYPE_FREE && error != USB_TYPE_IDLE) {
             if (null != _asyncCb) {
                 local result = {"error" : "USB error " + error};
                 _asyncCb(error);

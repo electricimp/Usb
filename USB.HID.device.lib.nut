@@ -591,7 +591,7 @@ class HIDDriver extends USB.Driver {
         local cb = _epReadUserCb;
         _epReadUserCb = null; // prevent exception
 
-		if (null == error || error == USB_ERROR_FREE || error == USB_ERROR_IDLE) {
+		if (null == error || error == USB_TYPE_FREE || error == USB_TYPE_IDLE) {
             local reportID = 0;
             if (_reports.len() > 1) {
                 data.seek(0, 'b');
