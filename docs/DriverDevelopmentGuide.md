@@ -799,12 +799,13 @@ interfaces exposed by this device. Interface descriptor is a table with a set of
 | ------------- | ---- | ----------- |
 | interfacenumber | Integer | The number representing this interface |
 | altsetting | Integer | The alternative setting of this interface |
-| class | Integer | The interface class. |
+| class | Integer | The interface class |
 | subclass | Integer | The interface subclass |
 | protocol | Integer | The interface class protocol |
 | interface | Integer | The index of the string descriptor describing this interface |
 | endpoints | Array of table |The endpoint [descriptors](#endpoint-descriptor) |
 | find | function | Auxiliary function to search endpoint with required attributes |
+| getDevice | function | Returns USB.Device instance - owner of this interface |
 
 ##### find
 
