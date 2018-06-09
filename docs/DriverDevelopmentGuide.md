@@ -529,11 +529,14 @@ Generic method for transferring data over a control endpoint.
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *reqType*      | Number    | n/a 	   | USB request type, see the [documentation](https://developer.electricimp.com/api/hardware/usb/controltransfer) for more details |
-| *req* 		 | Number 	 | n/a 	   | The specific USB request, see the [documentation](https://developer.electricimp.com/api/hardware/usb/controltransfer/) for more details |
+| *reqType*      | Number    | n/a 	   | USB request type. See Control Endpoint Request Type [definitions](#control-endpoint-request-types) for more details |
+| *req* 		 | Number 	 | n/a 	   | The specific USB request. See the [Control Endpoint Request [constants](#control-endpoint-requests) |
 | *value* 		 | Number 	 | n/a 	   | A value determined by the specific USB request|
 | *index* 		 | Number 	 | n/a 	   | An index value determined by the specific USB request |
 | *data* 		 | Blob 	 | null    | [optional] Optional storage for incoming or outgoing payload|
+
+Please see Control Endpoint Request [Types](#control-endpoint-request-types) and
+Control Endpoint [Request](#control-endpoint-requests) constants definitions.
 
 #### getEndpointAddr()
 
@@ -714,18 +717,54 @@ host.setEventListener(function(eventName, eventDetails) {
 
 ## USB Framework Structures
 
-A set of constants that may be useful for endpoint search functions.
+### Endpoint Constants
+
+Constants that may be useful for endpoint search functions.
 
 | Constant name | Value | Description |
 | ------------- | ----- | ----------- |
-| USB_ENDPOINT_CONTROL | 0 | Control Endpoint type value |
-| USB_ENDPOINT_ISOCHRONOUS | 1 | Isochronous Endpoint type value |
-| USB_ENDPOINT_BULK | 2 | Bulk Endpoint type value |
-| USB_ENDPOINT_INTERRUPT | 3 | Interrupt Endpoint type value |
-| USB_ENDPOINT_TYPE_MASK | 3 | A mask value that covers all endpoint types|
-| USB_DIRECTION_OUT | 0 | A bit value that indicates OUTPUT endpoint direction|
+| USB_ENDPOINT_CONTROL | 0x00 | Control Endpoint type value |
+| USB_ENDPOINT_ISOCHRONOUS | 0x01 | Isochronous Endpoint type value |
+| USB_ENDPOINT_BULK | 0x02 | Bulk Endpoint type value |
+| USB_ENDPOINT_INTERRUPT | 0x03 | Interrupt Endpoint type value |
+| USB_ENDPOINT_TYPE_MASK | 0x03 | A mask value that covers all endpoint types|
+| USB_DIRECTION_OUT | 0x00 | A bit value that indicates OUTPUT endpoint direction|
 | USB_DIRECTION_IN | 0x80 | A bit value that indicates INPUT endpoint direction |
 | USB_DIRECTION_MASK | 0x80 | A mask to extract endpoint direction from endpoint address |
+
+### Control Endpoint Request Types
+
+Possible `reqType` values of the `ControlEndpoint.transfer` method’s parameter are as follows:
+
+| Constant name                   | Value | Description |
+| ------------------------------- | ----- | ----------- |
+| USB_SETUP_HOST_TO_DEVICE        | 0x00  | Transfer direction: host to device |
+| USB_SETUP_DEVICE_TO_HOST        | 0x80  | Transfer direction: device to host |
+| USB_SETUP_TYPE_STANDARD         | 0x00  | Type: standard |
+| USB_SETUP_TYPE_CLASS            | 0x20  | Type: class |
+| USB_SETUP_TYPE_VENDOR           | 0x40  | Type: vendor |
+| USB_SETUP_RECIPIENT_DEVICE      | 0x00  | Recipient: device |
+| USB_SETUP_RECIPIENT_INTERFACE   | 0x01  | Recipient: interface |
+| USB_SETUP_RECIPIENT_ENDPOINT    | 0x02  | Recipient: endpoint |
+| USB_SETUP_RECIPIENT_OTHER       | 0x03  | Recipient: other |
+
+### Control Endpoint Requests
+
+Possible values of the request parameter are as follows.
+
+| Constant name                 | Value | Description        |
+| ----------------------------- | ----- | ------------------ |
+| USB_REQUEST_GET_STATUS        |   0   | Get status         |
+| USB_REQUEST_CLEAR_FEATURE     |   1   | Clear feature      |
+| USB_REQUEST_SET_FEATURE       |   3   | Set feature        |
+| USB_REQUEST_SET_ADDRESS       |   5   | Set address        |
+| USB_REQUEST_GET_DESCRIPTOR    |   6   | Get descriptor     |
+| USB_REQUEST_SET_DESCRIPTOR    |   7   | Set descriptor     |
+| USB_REQUEST_GET_CONFIGURATION |   8   | Get configuration  |
+| USB_REQUEST_SET_CONFIGURATION |   9   | Set configuration  |
+| USB_REQUEST_GET_INTERFACE     |   10  | Get interface      |
+| USB_REQUEST_SET_INTERFACE     |   11  | Set interface      |
+| USB_REQUEST_SYNCH_FRAME       |   12  | Sync frame         |
 
 ### USB framework events structures
 
@@ -807,3 +846,4 @@ Each endpoints table contains the following keys:
 - [FTDI usb-to-uart converter](./examples/FT232RL_FTDI_USB_Driver/)
 - [Keyboard with HID protocol](./examples/HID_Keyboard/)
 - [Keyboard with boot protocol](./examples/Keyboard/)
+ |
