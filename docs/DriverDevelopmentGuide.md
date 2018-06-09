@@ -760,7 +760,7 @@ Possible values of the request parameter are as follows.
 | USB_REQUEST_SET_INTERFACE     |   11  | Set interface      |
 | USB_REQUEST_SYNCH_FRAME       |   12  | Sync frame         |
 
-### USB framework events structures
+### USB Framework Event Structures
 
 USB framework uses a few special structures named `descriptors` and which
 contain description of attached device, its interfaces and endpoint.
@@ -768,10 +768,10 @@ contain description of attached device, its interfaces and endpoint.
 descriptors are used only at driver probing stage, while [Device](#device-descriptor)
 descriptor could be acquired from [USB.Device](#usbdevice-class) instance.
 
-#### Device descriptor
+#### Device Descriptor
 
 Device descriptor contains whole device specification in addition to
-[Vendor ID](#getvendorid) and [Product ID](#getproductid) acquired through
+[Vendor ID](#getvendorid) and [Product Id](#getproductid) acquired through
 corresponding functions. The descriptor is a table with a set of fields:
 
 | Descriptor key | Type | Description |
@@ -789,7 +789,7 @@ corresponding functions. The descriptor is a table with a set of fields:
 | numofconfigurations |Integer | The number of possible configurations |
 
 
-#### Interface descriptor
+#### Interface Descriptor
 
 As it is described at driver selection section [match function](#matchdeviceobject-interfaces)
 of probed driver receives two objects: [USB.Device](#usbdevice-class) instance and array of
