@@ -25,7 +25,7 @@ Make your new driver class extending it.
 
 ```squirrel
 class MyCustomDriver extends USB.Driver {
-    // TODO: the driver code goes here
+    // Driver code goes here
 }
 ```
 
@@ -625,14 +625,12 @@ Callback **onComplete(error, len)**:
 
 ##### Example
 
-**TODO:** test the example
-
 ```squirrel
-class MyCustomDriver imptements USB.Driver {
+class MyCustomDriver extends USB.Driver {
   constructor(device, interfaces) {
     try {
         local payload = blob(16);
-        local ep = interfaces[0].endpoints[1].get();
+        local ep = interfaces[0].endpoints[0].get();
         ep.read(payload, function(ep, error, payload, len) {
             if (len > 0) {
                 server.log("Payload: " + payload);
@@ -700,17 +698,13 @@ Uses to identify the driver instance type in runtime
 
 ##### Example
 
-**TODO:** test the example
-
 ```squirrel
+local usbHost = USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2]);
 
-// For example:
-
-host <- USB.Host(["MyCustomDriver1", "MyCustomDriver2", "FT232RLFtdiUsbDriver"]);
-
-host.setEventListener(function(eventName, eventDetails) {
-    if (eventName == "started" && typeof eventDetails == "FT232RLFtdiUsbDriver")
-        server.log("FT232RLFtdiUsbDriver initialized");
+usbHost.setDriverListener(function(eventName, eventDetails) {
+    if (eventName == "started" && typeof eventDetails == "MyCustomDriver2") {
+        server.log("MyCustomDriver2 initialized");
+    }
 });
 
 ```
