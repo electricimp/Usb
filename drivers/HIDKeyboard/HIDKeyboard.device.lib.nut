@@ -74,7 +74,7 @@ class HIDKeyboardDriver extends HIDDriver {
                 report.setIdleTime(time_ms);
                 USB.log("Idle time set to " + time_ms);
             } catch(e) {
-                if (e == USB_ERROR_STALL) {
+                if (e == USB_TYPE_STALL_ERROR) {
                     USB.log("Set IDLE is not supported by device. Using poll timer");
                     _timerTick = time_ms;
                 } else {
