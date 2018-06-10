@@ -73,9 +73,9 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
     function test02ReadPositive() {
       local ep = bulkIn.get();
       return Promise(function(resolve, reject) {
-          ep.read(blob(5), function(epr, error, data, len) {
+          ep.read(blob(5), function(epr, state, data, len) {
               assertEqual(ep, epr, "Unexpected endpoint value");
-              assertTrue(null == error, "Unexpected error");
+              assertEqual(state, OK, "Unexpected error: " + state);
               assertEqual(3, len, "Unexpected length of data");
               resolve();
           }.bindenv(this));
@@ -90,9 +90,9 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
     function test02ReadTimeout() {
       local ep = bulkIn.get();
       return Promise(function(resolve, reject) {
-          ep.read(blob(5), function(epr, error, data, len) {
+          ep.read(blob(5), function(epr, state, data, len) {
               assertEqual(ep, epr, "Unexpected endpoint value");
-              assertTrue(error > 0, "Unexpected error");
+              assertTrue(state != OK, "Unexpected error: " + state);
               assertEqual(0, len, "Unexpected length of data");
               resolve();
           }.bindenv(this));
@@ -103,9 +103,9 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
       local ep = bulkIn.get();
       server.log("aa = " + _device._address);
       return Promise(function(resolve, reject) {
-          ep.read(blob(5), function(epr, error, data, len) {
+          ep.read(blob(5), function(epr, state, data, len) {
               assertEqual(ep, epr, "Unexpected endpoint value");
-              assertTrue(error > 0, "Unexpected error");
+              assertTrue(state != OK, "Unexpected error: " + state);
               assertEqual(0, len, "Unexpected length of data");
               resolve();
           }.bindenv(this));

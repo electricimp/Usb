@@ -704,7 +704,7 @@ USB <- {
                 local state = eventDetails.state;
                 local len   = eventDetails.length;
 
-                ep._onTransferComplete(error, len);
+                ep._onTransferEvent(state, len);
 
             } else {
                 USB.log("Unexpected transfer for unknown endpoint: " + epAddress);
@@ -827,8 +827,8 @@ USB <- {
                 data
             );
 
-            _transferCb = function (error, length) {
-                onComplete && onComplete(this, error, data, length);
+            _transferCb = function (state, length) {
+                onComplete && onComplete(this, state, data, length);
             };
 
             // Disable 5 seconds time limit for an interrupt endpoint
@@ -842,7 +842,7 @@ USB <- {
         // Parameters:
         //  state  - transfer status code
         //  length - the length of data was transmitted
-        function _onTransferComplete(state, length) {
+        function _onTransferEvent(state, length) {
             // Cancel timer because callback happened
             if (_timer) {
                 imp.cancelwakeup(_timer);
@@ -864,7 +864,7 @@ USB <- {
         // Auxillary function to handle transfer timeout state
         function _onTimeout() {
             _timer = null;
-            _onTransferComplete(USB_TYPE_TIMEOUT, 0);
+            _onTransferEvent(USB_TYPE_TIMEOUT, 0);
         }
 
         // Metafunction to return class name when typeof <instance> is run
