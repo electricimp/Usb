@@ -566,7 +566,7 @@ Callback **onComplete(error, len)**:
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
 | *ep*        | Endpoint  | instance of the endpoint [FuncEndpoint](#usbfunctionalendpoint-class) |
-| *error*     | Number    | usb error type |
+| *state*     | Number    | USB transfer state, see Transfer States [table](#usb-transfer-states) for more details |
 | *data*      | Blob      | the payload data being sent |
 | *len*       | Number    | length of the written payload data |
 
@@ -618,7 +618,7 @@ Callback **onComplete(error, len)**:
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
 | *ep*        | Endpoint  | instance of the endpoint [FuncEndpoint](#usbfunctionalendpoint-class) |
-| *error*     | Number    | usb error type |
+| *state*     | Number    | USB transfer state, see Transfer States [table](#usb-transfer-states) for more details |
 | *data*      | Blob      | the payload data read |
 | *len*       | Number    | length of the read data  |
 
@@ -715,7 +715,7 @@ usbHost.setDriverListener(function(eventName, eventDetails) {
 
 Constants that may be useful for endpoint search functions.
 
-| Constant name | Value | Description |
+| Constant Name | Value | Description |
 | ------------- | ----- | ----------- |
 | USB_ENDPOINT_CONTROL | 0x00 | Control Endpoint type value |
 | USB_ENDPOINT_ISOCHRONOUS | 0x01 | Isochronous Endpoint type value |
@@ -730,7 +730,7 @@ Constants that may be useful for endpoint search functions.
 
 Possible `reqType` values of the `ControlEndpoint.transfer` method’s parameter are as follows:
 
-| Constant name                   | Value | Description |
+| Constant Name                   | Value | Description |
 | ------------------------------- | ----- | ----------- |
 | USB_SETUP_HOST_TO_DEVICE        | 0x00  | Transfer direction: host to device |
 | USB_SETUP_DEVICE_TO_HOST        | 0x80  | Transfer direction: device to host |
@@ -746,7 +746,7 @@ Possible `reqType` values of the `ControlEndpoint.transfer` method’s parameter
 
 Possible values of the request parameter are as follows.
 
-| Constant name                 | Value | Description        |
+| Constant Name                 | Value | Description        |
 | ----------------------------- | ----- | ------------------ |
 | USB_REQUEST_GET_STATUS        |   0   | Get status         |
 | USB_REQUEST_CLEAR_FEATURE     |   1   | Clear feature      |
@@ -759,6 +759,35 @@ Possible values of the request parameter are as follows.
 | USB_REQUEST_GET_INTERFACE     |   10  | Get interface      |
 | USB_REQUEST_SET_INTERFACE     |   11  | Set interface      |
 | USB_REQUEST_SYNCH_FRAME       |   12  | Sync frame         |
+
+###  USB Transfer States
+
+The following table lists the meaning of the possible values
+to which `state` may be set.
+
+| Constant Name                 | Value |
+| ----------------------------- | ----- |
+| OK | 0 |
+| USB_TYPE_CRC_ERROR | 1 |
+| USB_TYPE_BIT_STUFFING_ERROR | 2 |
+| USB_TYPE_DATA_TOGGLE_MISMATCH_ERROR | 3 |
+| USB_TYPE_STALL_ERROR | 4 |
+| USB_TYPE_DEVICE_NOT_RESPONDING_ERROR | 5 |
+| USB_TYPE_PID_CHECK_FAILURE_ERROR | 6 |
+| USB_TYPE_UNEXPECTED_PID_ERROR | 7 |
+| USB_TYPE_DATA_OVERRUN_ERROR | 8 |
+| USB_TYPE_DATA_UNDERRUN_ERROR | 9 |
+| USB_TYPE_UNKNOWN_ERROR | 10 |
+| USB_TYPE_UNKNOWN_ERROR | 11 |
+| USB_TYPE_BUFFER_OVERRUN_ERROR | 12 |
+| USB_TYPE_BUFFER_UNDERRUN_ERROR | 13 |
+| USB_TYPE_DISCONNECTED | 14 |
+| USB_TYPE_FREE | 15 |
+| USB_TYPE_IDLE | 16 |
+| USB_TYPE_BUSY | 17 |
+| USB_TYPE_INVALID_ENDPOINT | 18 |
+| USB_TYPE_TIMEOUT | 19 |
+| USB_TYPE_INTERNAL_ERROR | 20 |
 
 ### USB Framework Event Structures
 

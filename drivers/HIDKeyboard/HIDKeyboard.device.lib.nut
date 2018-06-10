@@ -69,7 +69,7 @@ class HIDKeyboardDriver extends HIDDriver {
         if (null == cb) return;
         if (_getAsyncUserCb != null) throw "Poll is already started";
 
-        foreach( report in _reports ) {
+        foreach (report in _reports) {
             try {
                 report.setIdleTime(time_ms);
                 USB.log("Idle time set to " + time_ms);

@@ -70,10 +70,27 @@ const USB_DIRECTION_OUT                     = 0x0;
 const USB_DIRECTION_IN                      = 0x80;
 const USB_DIRECTION_MASK                    = 0x80;
 
+const OK                                    = 0;
+const USB_TYPE_CRC_ERROR                    = 1;
+const USB_TYPE_BIT_STUFFING_ERROR           = 2;
+const USB_TYPE_DATA_TOGGLE_MISMATCH_ERROR   = 3;
 const USB_TYPE_STALL_ERROR                  = 4;
+const USB_TYPE_DEVICE_NOT_RESPONDING_ERROR  = 5;
+const USB_TYPE_PID_CHECK_FAILURE_ERROR      = 6;
+const USB_TYPE_UNEXPECTED_PID_ERROR         = 7;
+const USB_TYPE_DATA_OVERRUN_ERROR           = 8;
+const USB_TYPE_DATA_UNDERRUN_ERROR          = 9;
+const USB_TYPE_UNKNOWN_ERROR                = 10;
+const USB_TYPE_UNKNOWN_ERROR                = 11;
+const USB_TYPE_BUFFER_OVERRUN_ERROR         = 12;
+const USB_TYPE_BUFFER_UNDERRUN_ERROR        = 13;
+const USB_TYPE_DISCONNECTED                 = 14;
 const USB_TYPE_FREE                         = 15;
 const USB_TYPE_IDLE                         = 16;
+const USB_TYPE_BUSY                         = 17;
+const USB_TYPE_INVALID_ENDPOINT             = 18;
 const USB_TYPE_TIMEOUT                      = 19;
+const USB_TYPE_INTERNAL_ERROR               = 20;
 
 const USB_DRIVER_STATE_STARTED              = "started";
 const USB_DRIVER_STATE_STOPPED              = "stopped";
@@ -326,12 +343,12 @@ USB <- {
         // schedules bus reset if status is critical error
         _onTransferComplete = function(eventDetails) {
             local address = eventDetails.device;
-            local error = eventDetails.state;
+            local state = eventDetails.state;
 
             // check for UNRECOVERABLE error
-            if (_checkError(error)) {
+            if (_checkError(state)) {
                 // all this errors are critical
-                USB.err("Critical error received: " + error);
+                USB.err("Critical error received: " + state);
                 imp.wakeup(0, _onError.bindenv(this));
                 return;
             }
@@ -683,9 +700,9 @@ USB <- {
 
             local epAddress = eventDetails.endpoint;
             if (epAddress in _endpoints) {
-                local ep = _endpoints[epAddress];
-                local error = (eventDetails.state != 0) ? eventDetails.state : null;
-                local len = eventDetails.length;
+                local ep    = _endpoints[epAddress];
+                local state = eventDetails.state;
+                local len   = eventDetails.length;
 
                 ep._onTransferComplete(error, len);
 
@@ -823,9 +840,9 @@ USB <- {
 
         // Notifies application about data transfer status
         // Parameters:
-        //  error  - transfer status code
+        //  state  - transfer status code
         //  length - the length of data was transmitted
-        function _onTransferComplete(error, length) {
+        function _onTransferComplete(state, length) {
             // Cancel timer because callback happened
             if (_timer) {
                 imp.cancelwakeup(_timer);
@@ -841,7 +858,7 @@ USB <- {
             // ready for next request
             _transferCb = null;
 
-            cb(error, length);
+            cb(state, length);
         }
 
         // Auxillary function to handle transfer timeout state
