@@ -578,7 +578,7 @@ class MyCustomDriver extends USB.Driver {
     try {
         local payload = blob(16);
         local ep = interfaces[0].endpoints[1].get();
-        ep.write(payload, function(ep, error, data, len) {
+        ep.write(payload, function(ep, state, data, len) {
             if (len > 0) {
                 server.log("Payload: " + len);
             }
@@ -594,10 +594,6 @@ class MyCustomDriver extends USB.Driver {
   }
 }
 ```
-
-**NOTE:** Not all error codes indicate actual error status. However the USB
-framework doesn't filter out such error code to provide full information for
-device driver. See more information [here](https://electricimp.com/docs/resources/usberrors/).
 
 #### read(data, onComplete)
 
@@ -622,7 +618,6 @@ Callback **onComplete(error, len)**:
 | *data*      | Blob      | the payload data read |
 | *len*       | Number    | length of the read data  |
 
-
 ##### Example
 
 ```squirrel
@@ -631,7 +626,7 @@ class MyCustomDriver extends USB.Driver {
     try {
         local payload = blob(16);
         local ep = interfaces[0].endpoints[0].get();
-        ep.read(payload, function(ep, error, payload, len) {
+        ep.read(payload, function(ep, state, payload, len) {
             if (len > 0) {
                 server.log("Payload: " + payload);
             }
@@ -647,11 +642,6 @@ class MyCustomDriver extends USB.Driver {
   }
 } // class
 ```
-
-**NOTE:** Not all error codes indicate actual error status. However
-the USB framework doesn't filter out such error code to provide full
-information for device driver. See more information
-[here](https://electricimp.com/docs/resources/usberrors/).
 
 #### getEndpointAddr()
 
@@ -788,6 +778,10 @@ to which `state` may be set.
 | USB_TYPE_INVALID_ENDPOINT | 18 |
 | USB_TYPE_TIMEOUT | 19 |
 | USB_TYPE_INTERNAL_ERROR | 20 |
+
+Not all of the non-zero state values indicate errors. For example, USB_TYPE_FREE (15) and USB_TYPE_IDLE (16) are not errors. The range of possible error values you may encounter will depend on which type of USB device you are connecting.
+
+Please see the [article](https://developer.electricimp.com/api/hardware/usb/configure) for more details.
 
 ### USB Framework Event Structures
 
