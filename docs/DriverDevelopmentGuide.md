@@ -864,4 +864,3 @@ Each endpoints table contains the following keys:
 - [FTDI usb-to-uart converter](./examples/FT232RL_FTDI_USB_Driver/)
 - [Keyboard with HID protocol](./examples/HID_Keyboard/)
 - [Keyboard with boot protocol](./examples/Keyboard/)
- |
