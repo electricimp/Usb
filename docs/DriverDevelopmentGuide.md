@@ -530,7 +530,7 @@ Generic method for transferring data over a control endpoint.
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
 | *reqType*      | Number    | n/a 	   | USB request type. See Control Endpoint Request Type [definitions](#control-endpoint-request-types) for more details |
-| *req* 		 | Number 	 | n/a 	   | The specific USB request. See the [Control Endpoint Request [constants](#control-endpoint-requests) |
+| *req* 		 | Number 	 | n/a 	   | The specific USB request. See the Control Endpoint Request [constants](#control-endpoint-requests) |
 | *value* 		 | Number 	 | n/a 	   | A value determined by the specific USB request|
 | *index* 		 | Number 	 | n/a 	   | An index value determined by the specific USB request |
 | *data* 		 | Blob 	 | null    | [optional] Optional storage for incoming or outgoing payload|
