@@ -39,7 +39,7 @@ If the driver can work with this device and the interfaces, it should return
 new instance of the driver class. The method can also return an array of instances
 if the driver decides to work with each interface individually.
 After that the USB framework keeps on
-probing of other drivers if there is any in the list.
+probing of other drivers if there is any on the list.
 
 For example, if it is necessary to instantiate driver for a certain device with
 known product and vendor IDs:
@@ -64,7 +64,7 @@ class MyCustomDriver extends USB.Driver {
 ```
 
 On the other hand it could be class of devices like keyboard or mouse which should
-not have vendor specific.
+not have vendor specific attributes. The following examples shows how to match all the HID and Boot keyboards.
 
 ###### Example 2
 ```squirrel
@@ -86,7 +86,7 @@ class MyCustomDriver extends USB.Driver {
     }
 }
 ```
-Please refer to the HID Device Driver [Guide](./HIDDriverGuide.md) for the usb HID driver implementation.
+Please refer to the HID Device Driver [Guide](./HIDDriverGuide.md) for the USB HID driver implementation.
 
 **NOTE:** there are no limitation on the driver constructor
 arguments as it's being called by the driver's own method `match`.
@@ -199,7 +199,7 @@ class MyCustomDriver {
     constructor(ep0) {
         _ep0 = ep0;
 
-        // get usb descriptor
+        // get USB descriptor
         local data = blob(16);
         _ep0.transfer(
            USB_SETUP_DEVICE_TO_HOST | USB_SETUP_TYPE_STANDARD | USB_SETUP_RECIPIENT_DEVICE,
@@ -309,7 +309,7 @@ Instantiates the `USB.Host` class. `USB.Host` is an abstraction over
 the native USB port platform implementation.
 
 It should be instantiated only once per physical port for any application.
-There are some Electric Imp boards which do not have a usb port, therefore a exception
+There are some Electric Imp boards which do not have a USB port, therefore a exception
 will be thrown on an attempt to instantiate `USB.Host` in such case.
 
 **NOTE:** when using the USB framework you shouldn't access the
@@ -317,9 +317,9 @@ will be thrown on an attempt to instantiate `USB.Host` in such case.
 
 | Parameter 	 | Data Type | Required/Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *usb*      | object | required  | The usb object represents a Universal Serial Bus (USB) interface |
+| *usb*      | object | required  | The native platform `usb` object representing a Universal Serial Bus (USB) interface |
 | *drivers*      | USB.Driver[] | required  | An array of the pre-defined driver classes |
-| *autoConfigPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps documentation](https://developer.electricimp.com/hardware/imp/imp005pinmux#usb). These pins must be configured for the usb to work on **imp005**. |
+| *autoConfigPins* | Boolean   | `true`  | Whether to configure pin R and W according to [electric imps documentation](https://developer.electricimp.com/hardware/imp/imp005pinmux#usb). These pins must be configured for the USB to work on **imp005**. |
 
 ##### Example
 
@@ -400,7 +400,7 @@ The following event types are supported:
 ##### Example (subscribe)
 
 ```squirrel
-// Subscribe to usb connection events
+// Subscribe to USB connection events
 usbHost.setDeviceListener(function (eventType, device) {
     switch (eventType) {
         case USB_DEVICE_STATE_CONNECTED:
