@@ -853,7 +853,7 @@ Each endpoints table contains the following keys:
 | attributes | Integer bitfield | D0-1 — Transfer type:<br />00: control<br />01: isochronous<br />10: bulk<br />11: interrupt |
 | maxpacketsize | Integer | The maximum size of packet this endpoint can send or receive |
 | interval | Integer | Only relevant for Interrupt In endpoints |
-| get | function | The function that returns instance of either [USB.FuncEndpoint](#usbfunctionalendpoint-class) or [USB.ControlEndpoint](#usbcontrolendpoint-class) depending on information stored at `attributes` and `address` fields. |
+| get | function | The function that returns instance of either [USB.FuncEndpoint](#usbfuncendpoint-class) or [USB.ControlEndpoint](#usbcontrolendpoint-class) depending on information stored at `attributes` and `address` fields. |
 
 -------------------
 
