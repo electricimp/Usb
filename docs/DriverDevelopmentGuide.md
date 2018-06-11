@@ -5,7 +5,7 @@ This section is intended for those developers who is going to create new driver 
 ### Generic Recommendations
 
 Please avoid using `#include` or `@require`
-[Builder](https://electricimp.com/docs/tools/builder/)
+[Builder](https://developer.electricimp.com/tools/builder/)
 statements in your driver code to prevent any compilation
 or loaded code duplication issues at runtime.
 
@@ -100,7 +100,7 @@ this interface the driver need to get right endpoint by parsing information from
 is found, to retrieve the endpoint instance the driver needs to call `get()` function provided by every
 [endpoint](#endpoint-descriptor) descriptor.
 
-**NOTE:** due to limits applied by native [USB API](https://electricimp.com/docs/api/hardware/usb/)
+**NOTE:** due to limits applied by native [USB API](https://developer.electricimp.com/api/hardware/usb)
 endpoints `get()` function may result in exception when a number of open
 endpoint exceeds some limits, e.g. there can be only one open interrupt in endpoint.
 
@@ -313,7 +313,7 @@ There are some Electric Imp boards which do not have a usb port, therefore a exc
 will be thrown on an attempt to instantiate `USB.Host` in such case.
 
 **NOTE:** when using the USB framework you shouldn't access the
-[`hardware.usb`](https://electricimp.com/docs/api/hardware/usb/) directly.
+[`hardware.usb`](https://developer.electricimp.com/api/hardware/usb) directly.
 
 | Parameter 	 | Data Type | Required/Default | Description |
 | -------------- | --------- | ------- | ----------- |
@@ -602,7 +602,7 @@ is closed, or has incompatible type, or already busy.
 
 The method sets an upper limit of five seconds for any command to be processed
 for the bulk endpoint according to the
-Electric Imp [documentation](https://electricimp.com/docs/resources/usberrors/#stq=&stp=0).
+Electric Imp [documentation](https://developer.electricimp.com/resources/usberrors).
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
