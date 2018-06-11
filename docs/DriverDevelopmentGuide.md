@@ -840,7 +840,7 @@ Interface descriptors `find` function signature is following:
 | Endpoint direction | Integer | USB_DIRECTION_IN, USB_DIRECTION_OUT |
 
 This function returns an instance of either [ControlEndpoint](#usbcontrolendpoint-class)
-or [FuncEndpoint](#usbfunctionalendpoint-class) or null if no endpoints were found.
+or [FuncEndpoint](#usbfuncendpoint-class) or null if no endpoints were found.
 
 
 #### Endpoint Descriptor
