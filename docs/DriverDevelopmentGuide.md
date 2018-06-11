@@ -91,14 +91,13 @@ Please refer to the HID Device Driver [Guide](./HIDDriverGuide.md) for the USB H
 **NOTE:** there are no limitation on the driver constructor
 arguments as it's being called by the driver's own method `match`.
 
-##### Getting Access to exposed Device Interfaces
+##### Getting Access to USB Interfaces
 
 Every driver receives [interfaces](#interface-descriptor) it may work
-with at [match](#matchdeviceobject-interfaces) function. To start working with
-this interface the driver need to get right endpoint by parsing information from
-`endpoints` array of the interface descriptor. When necessary endpoint descriptor
-is found, to retrieve the endpoint instance the driver needs to call `get()` function provided by every
-[endpoint](#endpoint-descriptor) descriptor.
+with as a parameter of the [match](#matchdeviceobject-interfaces) function. To start working with
+this interface the driver needs to get right endpoint by parsing information from
+`endpoints` array of the interface [descriptor](#interface-descriptor). When a necessary endpoint descriptor is found, to retrieve the endpoint instance the driver needs to call `get()`
+function provided by every endpoint [descriptor](#endpoint-descriptor).
 
 **NOTE:** due to limits applied by native [USB API](https://developer.electricimp.com/api/hardware/usb)
 endpoints `get()` function may result in exception when a number of open
