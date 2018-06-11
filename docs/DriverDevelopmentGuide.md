@@ -101,7 +101,7 @@ function provided by every endpoint [descriptor](#endpoint-descriptor).
 
 **NOTE:** due to limits applied by native [USB API](https://developer.electricimp.com/api/hardware/usb)
 endpoints `get()` function may result in exception when a number of open
-endpoint exceeds some limits, e.g. there can be only one open interrupt in endpoint.
+endpoint exceeds some limits, e.g. there can be only one interrupt In endpoint [open](https://developer.electricimp.com/api/hardware/usb/openendpoint).
 
 ###### Example 1
 
