@@ -22,931 +22,980 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-class USB {
 
-    static VERSION = "0.1.0";
+const USB_ENDPOINT_CONTROL                  = 0x00;
+const USB_ENDPOINT_ISOCHRONOUS              = 0x01;
+const USB_ENDPOINT_BULK                     = 0x02;
+const USB_ENDPOINT_INTERRUPT                = 0x03;
+const USB_ENDPOINT_TYPE_MASK                = 0x03;
 
-    constructor() {
-        const USB_ENDPOINT_CONTROL = 0x00;
-        const USB_ENDPOINT_ISCHRONOUS = 0x01;
-        const USB_ENDPOINT_BULK = 0x02;
-        const USB_ENDPOINT_INTERRUPT = 0x03;
+const USB_SETUP_HOST_TO_DEVICE              = 0x00;
+const USB_SETUP_DEVICE_TO_HOST              = 0x80;
+const USB_SETUP_TYPE_STANDARD               = 0x00;
+const USB_SETUP_TYPE_CLASS                  = 0x20;
+const USB_SETUP_TYPE_VENDOR                 = 0x40;
+const USB_SETUP_TYPE_MASK                   = 0x60;
+const USB_SETUP_RECIPIENT_DEVICE            = 0x00;
+const USB_SETUP_RECIPIENT_INTERFACE         = 0x01;
+const USB_SETUP_RECIPIENT_ENDPOINT          = 0x02;
+const USB_SETUP_RECIPIENT_OTHER             = 0x03;
 
-        const USB_SETUP_HOST_TO_DEVICE = 0x00;
-        const USB_SETUP_DEVICE_TO_HOST = 0x80;
-        const USB_SETUP_TYPE_STANDARD = 0x00;
-        const USB_SETUP_TYPE_CLASS = 0x20;
-        const USB_SETUP_TYPE_VENDOR = 0x40;
-        const USB_SETUP_RECIPIENT_DEVICE = 0x00;
-        const USB_SETUP_RECIPIENT_INTERFACE = 0x01;
-        const USB_SETUP_RECIPIENT_ENDPOINT = 0x02;
-        const USB_SETUP_RECIPIENT_OTHER = 0x03;
+const USB_REQUEST_GET_STATUS                = 0;
+const USB_REQUEST_CLEAR_FEATURE             = 1;
+const USB_REQUEST_SET_FEATURE               = 3;
+const USB_REQUEST_SET_ADDRESS               = 5;
+const USB_REQUEST_GET_DESCRIPTOR            = 6;
+const USB_REQUEST_SET_DESCRIPTOR            = 7;
+const USB_REQUEST_GET_CONFIGURATION         = 8;
+const USB_REQUEST_SET_CONFIGURATION         = 9;
+const USB_REQUEST_GET_INTERFACE             = 10;
+const USB_REQUEST_SET_INTERFACE             = 11;
+const USB_REQUEST_SYNCH_FRAME               = 12;
 
-        const USB_REQUEST_GET_STATUS = 0;
-        const USB_REQUEST_CLEAR_FEATURE = 1;
-        const USB_REQUEST_SET_FEATURE = 3;
-        const USB_REQUEST_SET_ADDRESS = 5;
-        const USB_REQUEST_GET_DESCRIPTOR = 6;
-        const USB_REQUEST_SET_DESCRIPTOR = 7;
-        const USB_REQUEST_GET_CONFIGURATION = 8;
-        const USB_REQUEST_SET_CONFIGURATION = 9;
-        const USB_REQUEST_GET_INTERFACE = 10;
-        const USB_REQUEST_SET_INTERFACE = 11;
-        const USB_REQUEST_SYNCH_FRAME = 12;
+const USB_DEVICE_DESCRIPTOR_LENGTH          = 0x12;
+const USB_CONFIGURATION_DESCRIPTOR_LENGTH   = 0x09;
 
-        const USB_DEVICE_DESCRIPTOR_LENGTH = 0x12;
-        const USB_CONFIGURATION_DESCRIPTOR_LENGTH = 0x09;
+const USB_DESCRIPTOR_DEVICE                 = 0x01;
+const USB_DESCRIPTOR_CONFIGURATION          = 0x02;
+const USB_DESCRIPTOR_STRING                 = 0x03;
+const USB_DESCRIPTOR_INTERFACE              = 0x04;
+const USB_DESCRIPTOR_ENDPOINT               = 0x05;
+const USB_DESCRIPTOR_DEVICE_QUALIFIER       = 0x06;
+const USB_DESCRIPTOR_OTHER_SPEED            = 0x07;
+const USB_DESCRIPTOR_INTERFACE_POWER        = 0x08;
+const USB_DESCRIPTOR_OTG                    = 0x09;
+const USB_DESCRIPTOR_HID                    = 0x21;
 
-        const USB_DESCRIPTOR_DEVICE = 0x01;
-        const USB_DESCRIPTOR_CONFIGURATION = 0x02;
-        const USB_DESCRIPTOR_STRING = 0x03;
-        const USB_DESCRIPTOR_INTERFACE = 0x04;
-        const USB_DESCRIPTOR_ENDPOINT = 0x05;
-        const USB_DESCRIPTOR_DEVICE_QUALIFIER = 0x06;
-        const USB_DESCRIPTOR_OTHER_SPEED = 0x07;
-        const USB_DESCRIPTOR_INTERFACE_POWER = 0x08;
-        const USB_DESCRIPTOR_OTG = 0x09;
-        const USB_DESCRIPTOR_HID = 0x21;
+const USB_DIRECTION_OUT                     = 0x0;
+const USB_DIRECTION_IN                      = 0x80;
+const USB_DIRECTION_MASK                    = 0x80;
 
-        const USB_DIRECTION_OUT = 0x0;
-        const USB_DIRECTION_IN = 0x1;
-    }
-}
+const OK                                    = 0;
+const USB_TYPE_CRC_ERROR                    = 1;
+const USB_TYPE_BIT_STUFFING_ERROR           = 2;
+const USB_TYPE_DATA_TOGGLE_MISMATCH_ERROR   = 3;
+const USB_TYPE_STALL_ERROR                  = 4;
+const USB_TYPE_DEVICE_NOT_RESPONDING_ERROR  = 5;
+const USB_TYPE_PID_CHECK_FAILURE_ERROR      = 6;
+const USB_TYPE_UNEXPECTED_PID_ERROR         = 7;
+const USB_TYPE_DATA_OVERRUN_ERROR           = 8;
+const USB_TYPE_DATA_UNDERRUN_ERROR          = 9;
+const USB_TYPE_UNKNOWN_ERROR                = 10;
+const USB_TYPE_UNKNOWN_ERROR                = 11;
+const USB_TYPE_BUFFER_OVERRUN_ERROR         = 12;
+const USB_TYPE_BUFFER_UNDERRUN_ERROR        = 13;
+const USB_TYPE_DISCONNECTED                 = 14;
+const USB_TYPE_FREE                         = 15;
+const USB_TYPE_IDLE                         = 16;
+const USB_TYPE_BUSY                         = 17;
+const USB_TYPE_INVALID_ENDPOINT             = 18;
+const USB_TYPE_TIMEOUT                      = 19;
+const USB_TYPE_INTERNAL_ERROR               = 20;
 
+const USB_DRIVER_STATE_STARTED              = "started";
+const USB_DRIVER_STATE_STOPPED              = "stopped";
 
-//
-// Usb wrapper class.
-//
-class USB.Host {
+const USB_DEVICE_STATE_CONNECTED            = "connected";
+const USB_DEVICE_STATE_DISCONNECTED         = "disconnected";
 
-    _eventHandlers = null;
-    _customEventHandlers = null;
-    _driver = null;
-    _autoConfiguredPins = false;
-    _bulkTransferQueue = null;
-    _address = 1;
-    _registeredDrivers = null;
-    _usb = null
-    _driverCallback = null;
-    _DEBUG = false;
-    _busy = false;
+// The class that introduces USB namespace and related constants.
+// Not intended to use by any developers.
+USB <- {
 
-    //
-    // Constructor
-    //
-    // @param  {Object} usb Internal `hardware.usb` object
-    // @param  {Boolean} flag to specify whether to configure pins for usb usage (see https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb)
-    //
-    constructor(usb, autoConfPins = true) {
-        _usb = usb;
-        _bulkTransferQueue = [];
-        _registeredDrivers = {};
-        _eventHandlers = {};
-        _customEventHandlers = {};
+    VERSION = "1.0.0",
 
-        if (autoConfPins) {
-            _autoConfiguredPins = true;
-            // Configure the pins required for usb
-            hardware.pinW.configure(DIGITAL_IN_PULLUP);
-            hardware.pinR.configure(DIGITAL_OUT, 1);
+    // Debug flag
+    debug = true,
+
+    // Information level logger
+    log = function(txt) {
+        if (debug) {
+            server.log("[USB]: " + txt);
         }
-
-
-        _eventHandlers[USB_DEVICE_CONNECTED] <- _onDeviceConnected.bindenv(this);
-        _eventHandlers[USB_DEVICE_DISCONNECTED] <- _onDeviceDisconnected.bindenv(this);
-        _eventHandlers[USB_TRANSFER_COMPLETED] <- _onTransferCompleted.bindenv(this);
-        _eventHandlers[USB_UNRECOVERABLE_ERROR] <- _onHardwareError.bindenv(this);
-        _usb.configure(_onEvent.bindenv(this));
     }
 
-
-    //
-    // Meta method to overrride typeof instance
-    //
-    // @return {String} typeof instance of class
-    //
-    function _typeof() {
-        return "USB.Host";
+    // Error level logger
+    err = function(txt) {
+        server.error("[USB|ERROR]: " + txt);
     }
 
-
     //
-    // Registers a list of VID PID pairs to a driver class with usb host. This driver will be instantiated
-    // when a matching VID PID device is connected via usb
-    //
-    // @param {Class} driverClass Class to be instantiated when a matching VID PID device is connected
-    // @param {Array of Tables} Array of VID PID tables
-    //
-    function registerDriver(driverClass, identifiers) {
+    // The main interface to start working with USB devices.
+    // Here an application registers drivers and assigns listeners
+    // for important events like device connection/detachment.
+    Host = class {
 
-        // Check the driver class is using the correct base class
-        if (!(driverClass.isUSBDriver == true)) {
-            throw "This driver is not a valid usb driver.";
-            return;
-        }
+        // The list of registered driver classes
+        _driverClasses = null;
 
-        // identifiers must be an array
-        if (typeof identifiers != "array") {
-            throw "Identifiers for driver must be of type array.";
-            return;
-        }
+        // The list of connected devices
+        _devices = null;
 
-        // Register all indentifiers to corresponding class
-        foreach (k, identifier in identifiers) {
-            foreach (VID, PIDS in identifier) {
-                if (typeof PIDS != "array") {
-                    PIDS = [PIDS];
-                }
+        // The address available to assign to next device
+        _address = 1;
 
-                foreach (vidIndex, PID in PIDS) {
-                    local vpid = format("%04x%04x", VID, PID);
-                    // store all VID PID combos
-                    _registeredDrivers[vpid] <- driverClass;
-                }
+        // USB device pointer
+        _usb = null;
+
+        // USB Driver state listener
+        // This property is available for device instances, so it's public
+        driverListener = null;
+
+        // USB device state listener
+        // This property is available for device instances, so it's public
+        deviceListener = null;
+
+        // ------------------------ public API -------------------
+
+        //
+        // Constructor
+        // Parameters:
+        //      usb          -
+        //      driverList   - a list of special classes that implement USB.Driver API.
+        //      autoConfPins - flag to specify whether to configure pins for usb usage
+        //                     (see https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb)
+        //
+        constructor(usb, driverList, autoConfPins = true) {
+            try {
+                _usb = usb;
+            } catch(e) {
+                throw "Expected `hardware.usb` interface is not available";
             }
-        }
-    }
 
-
-    //
-    // Returns currently active driver object. Will be null if no driver found.
-    //
-    function getDriver() {
-        return _driver;
-    }
-
-
-    //
-    // Subscribe callback to call on "eventName" event
-    //
-    // @param  {String}   eventName The event name to subscribe callback to
-    // @param  {Function} cb        Function to call when event emitted
-    //
-    function on(eventName, cb) {
-        _customEventHandlers[eventName] <- cb;
-    }
-
-
-    //
-    // Clear callback from "eventName" event
-    //
-    // @param eventName The event name to unsubsribe from
-    //
-    function off(eventName) {
-        if (eventName in _customEventHandlers) {
-            delete _customEventHandlers[eventName];
-        }
-    }
-
-
-    //
-    // Opens a specific endpoint based on params
-    //
-    // @param  {Float}        speed             The speed in Mb/s. Must be either 1.5 or 12
-    // @param  {Integer}      deviceAddress     The address of the device
-    // @param  {Integer}      interfaceNumber   The endpoint’s interface number
-    // @param  {Integer}      type              The type of the endpoint
-    // @param  {Integer}      maxPacketSize     The maximum size of packet that can be written or read on this endpoint
-    // @param  {Integer}      endpointAddress   The address of the endpoint
-    //
-    function _openEndpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress) {
-        _usb.openendpoint(speed, deviceAddress, interfaceNumber, type, maxPacketSize, endpointAddress);
-    }
-
-
-    //
-    // Set control transfer USB_REQUEST_SET_ADDRESS device address
-    //
-    // @param {Integer}    address          An index value determined by the specific USB request (range 0x0000-0xFFFF)
-    // @param {Float}      speed            The speed in Mb/s. Must be either 1.5 or 12
-    // @param {Integer}    maxPacketSize    The maximum size of packet that can be written or read on this endpoint
-    //
-    function _setAddress(address, speed, maxPacketSize) {
-        _usb.controltransfer(
-            speed,
-            0,
-            0,
-            USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
-            USB_REQUEST_SET_ADDRESS,
-            address,
-            0,
-            maxPacketSize
-        );
-    }
-
-
-    //
-    // Set control transfer USB_REQUEST_SET_CONFIGURATION value
-    //
-    // @param {Integer}    deviceAddress    The address of the device
-    // @param {Float}      speed            The speed in Mb/s. Must be either 1.5 or 12
-    // @param {Integer}    maxPacketSize    The maximum size of packet that can be written or read on this endpoint
-    // @param {Integer}    value          An index value determined by the specific USB request (range 0x0000-0xFFFF)
-    //
-    function _setConfiguration(deviceAddress, speed, maxPacketSize, value) {
-        _usb.controltransfer(
-            speed,
-            deviceAddress,
-            0,
-            USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
-            USB_REQUEST_SET_CONFIGURATION,
-            value,
-            0,
-            maxPacketSize
-        );
-    }
-
-
-    //
-    // Creates a USB driver instance if vid/pid combo matches registered devices
-    //
-    // @param {Tables} Table with keys "vendorid" and "productid" of the device
-    //
-    function _create(identifiers) {
-        local vid = identifiers["vendorid"];
-        local pid = identifiers["productid"];
-        local vpid = format("%04x%04x", vid, pid);
-
-        if ((vpid in _registeredDrivers) && _registeredDrivers[vpid] != null) {
-            return _registeredDrivers[vpid](this);
-        }
-        return null;
-    }
-
-
-    //
-    // Usb connected callback
-    //
-    // @param {Table} eventdetails  Table containing the details of the connection event
-    //
-    function _onDeviceConnected(eventdetails) {
-        if (_driver != null) {
-            server.error("UsbHost: Device already connected");
-            return;
-        }
-
-        local speed = eventdetails["speed"];
-        local descriptors = eventdetails["descriptors"];
-        local maxPacketSize = descriptors["maxpacketsize0"];
-        if (_DEBUG) {
-            _logDescriptors(speed, descriptors);
-        }
-
-        // Try to create the driver for connected device
-        _driver = _create(descriptors);
-
-        if (_driver == null) {
-            server.error("UsbHost: No driver found for device");
-            return;
-        }
-
-        _setAddress(_address, speed, maxPacketSize);
-        _driver.connect(_address, speed, descriptors);
-        // Emit connected event that user can subscribe to
-        _onEvent("connected", _driver);
-    }
-
-
-    //
-    // Device disconnected callback
-    //
-    // @param {Table}  eventDetails  Table containing details about the disconnection event
-    function _onDeviceDisconnected(eventdetails) {
-        if (_driver != null) {
-            // Emit disconnected event
-            _onEvent("disconnected", typeof _driver);
-            _driver = null;
-        }
-    }
-
-
-    //
-    // Bulk transfer data blob
-    //
-    // @param {Integer}    address          The address of the device
-    // @param {Integer}    endpoint         The address of the endpoint
-    // @param {Integer}    type             Integer
-    // @param {Blob}       data             The data to be transferred
-    //
-    function _bulkTransfer(address, endpoint, type, data) {
-        // Push to the end of the queue
-        _pushBulkTransferQueue([_usb, address, endpoint, type, data]);
-        // Process request at the front of the queue
-        _popBulkTransferQueue();
-    }
-
-
-    //
-    // Control transfer wrapper method
-    //
-    // @param {Float}               speed            The speed in Mb/s. Must be either 1.5 or 12
-    // @param {Integer}             deviceAddress    The address of the device
-    // @param {Integer (bitfield)}  requestType      The type of the endpoint
-    // @param {Integer}             request          The specific USB request
-    // @param {Integer}             value            A value determined by the specific USB request (range 0x0000-0xFFFF)
-    // @param {Integer}             index            An index value determined by the specific USB request (range 0x0000-0xFFFF)
-    // @param {Integer}             maxPacketSize    The maximum size of packet that can be written or read on this endpoint
-    //
-    function _controlTransfer(speed, deviceAddress, requestType, request, value, index, maxPacketSize) {
-        _usb.controltransfer(
-            speed,
-            deviceAddress,
-            0,
-            requestType,
-            request,
-            value,
-            index,
-            maxPacketSize
-        );
-    }
-
-
-    //
-    // Called when a Usb request is succesfully completed
-    //
-    // @param  {Table} eventdetails Table with the transfer event details
-    //
-    function _onTransferCompleted(eventdetails) {
-
-        _busy = false;
-        if (_driver) {
-            // Pass complete event to driver
-            _driver._transferComplete(eventdetails);
-        }
-        // Process any queued requests
-        _popBulkTransferQueue();
-    }
-
-
-    //
-    // Callback on hardware error
-    //
-    // @param  {Table} eventdetails  Table with the hardware event details
-    //
-    function _onHardwareError(eventdetails) {
-        server.error("UsbHost: Internal unrecoverable usb error. Resetting the bus.");
-        usb.disable();
-        _usb.configure(_onEvent.bindenv(this));
-    }
-
-
-    //
-    // Push bulk transfer request to back of queue
-    //
-    // @params {Array} request  bulktransfer params to be passed via the .acall function in format [_usb, address, endpoint, type, data].
-    //
-    function _pushBulkTransferQueue(request) {
-        _bulkTransferQueue.push(request);
-    }
-
-
-    //
-    // Pop bulk transfer request to front of queue
-    //
-    function _popBulkTransferQueue() {
-        if (!_busy && _bulkTransferQueue.len() > 0) {
-            _usb.generaltransfer.acall(_bulkTransferQueue.remove(0));
-            _busy = true;
-        }
-    }
-
-
-    // Emit event "eventtype" with eventdetails
-    //
-    // @param {String}  Event name to emit
-    // @param {any}     Data to pass to event listener callback
-    //
-    function _onEvent(eventtype, eventdetails) {
-        // Handle event internally first
-        if (eventtype in _eventHandlers) {
-            _eventHandlers[eventtype](eventdetails);
-        }
-        // Pass event to any subscribers
-        if (eventtype in _customEventHandlers) {
-            _customEventHandlers[eventtype](eventdetails);
-        }
-    }
-
-
-    //
-    // Parses and returns descriptors for a device as a string
-    //
-    // @param  {Integer}    deviceAddress  The address of the device
-    // @param  {Float}      speed          The speed in Mb/s. Must be either 1.5 or 12
-    // @param  {Integer}    maxPacketSize  The maximum size of packet that can be written or read on this endpoint
-    // @param  {Integer}    index          An index value determined by the specific USB request (range 0x0000-0xFFFF)
-    // @return {String}                    Descriptors for a device as a string
-    //
-    function _getStringDescriptor(deviceAddress, speed, maxPacketSize, index) {
-        if (index == 0) {
-            return "";
-        }
-        local buffer = blob(2);
-        _usb.controltransfer(
-            speed,
-            deviceAddress,
-            0,
-            USB_SETUP_DEVICE_TO_HOST | USB_SETUP_RECIPIENT_DEVICE,
-            USB_REQUEST_GET_DESCRIPTOR,
-            (USB_DESCRIPTOR_STRING << 8) | index,
-            0,
-            maxPacketSize,
-            buffer
-        );
-
-        local stringSize = buffer[0];
-        buffer = blob(stringSize);
-        _usb.controltransfer(
-            speed,
-            deviceAddress,
-            0,
-            USB_SETUP_DEVICE_TO_HOST | USB_SETUP_RECIPIENT_DEVICE,
-            USB_REQUEST_GET_DESCRIPTOR,
-            (USB_DESCRIPTOR_STRING << 8) | index,
-            0,
-            maxPacketSize,
-            buffer
-        );
-
-        // String descriptors are zero-terminated, unicode.
-        // This could be done better.
-        buffer.seek(2, 'b');
-        local description = blob();
-        while (!buffer.eos()) {
-            local char = buffer.readn('b');
-            if (char != 0) {
-                description.writen(char, 'b');
+            if (typeof driverList != "array") {
+                throw "Driver list must be array";
             }
-            buffer.readn('b');
-        }
-        return description.tostring();
-    }
 
-
-    //
-    // Prints the descriptors for a device
-    //
-    // @param  {Float}  speed       The speed in Mb/s. Must be either 1.5 or 12
-    // @param  {Table}  descriptor  The descriptors received from the device
-    //
-    function _logDescriptors(speed, descriptor) {
-        local maxPacketSize = descriptor["maxpacketsize0"];
-        server.log("USB Device Connected, speed=" + speed + " Mbit/s");
-        server.log(format("usb = 0x%04x", descriptor["usb"]));
-        server.log(format("class = 0x%02x", descriptor["class"]));
-        server.log(format("subclass = 0x%02x", descriptor["subclass"]));
-        server.log(format("protocol = 0x%02x", descriptor["protocol"]));
-        server.log(format("maxpacketsize0 = 0x%02x", maxPacketSize));
-        local manufacturer = _getStringDescriptor(0, speed, maxPacketSize, descriptor["manufacturer"]);
-        server.log(format("VID = 0x%04x (%s)", descriptor["vendorid"], manufacturer));
-        local product = _getStringDescriptor(0, speed, maxPacketSize, descriptor["product"]);
-        server.log(format("PID = 0x%04x (%s)", descriptor["productid"], product));
-        local serial = _getStringDescriptor(0, speed, maxPacketSize, descriptor["serial"]);
-        server.log(format("device = 0x%04x (%s)", descriptor["device"], serial));
-
-        local configuration = descriptor["configurations"][0];
-        local configurationString = _getStringDescriptor(0, speed, maxPacketSize, configuration["configuration"]);
-        server.log(format("Configuration: 0x%02x (%s)", configuration["value"], configurationString));
-        server.log(format("  attributes = 0x%02x", configuration["attributes"]));
-        server.log(format("  maxpower = 0x%02x", configuration["maxpower"]));
-
-        foreach (interface in configuration["interfaces"]) {
-            local interfaceDescription = _getStringDescriptor(0, speed, maxPacketSize, interface["interface"]);
-            server.log(format("  Interface: 0x%02x (%s)", interface["interfacenumber"], interfaceDescription));
-            server.log(format("    altsetting = 0x%02x", interface["altsetting"]));
-            server.log(format("    class=0x%02x", interface["class"]));
-            server.log(format("    subclass = 0x%02x", interface["subclass"]));
-            server.log(format("    protocol = 0x%02x", interface["protocol"]));
-
-            foreach (endpoint in interface["endpoints"]) {
-                local address = endpoint["address"];
-                local endpointNumber = address & 0x3;
-                local direction = (address & 0x80) >> 7;
-                local attributes = endpoint["attributes"];
-                local type = _endpointTypeString(attributes);
-                server.log(format("    Endpoint: 0x%02x (ENDPOINT %d %s %s)", address, endpointNumber, type, _directionString(direction)));
-                server.log(format("      attributes = 0x%02x", attributes));
-                server.log(format("      maxpacketsize = 0x%02x", endpoint["maxpacketsize"]));
-                server.log(format("      interval = 0x%02x", endpoint["interval"]));
+            if (null == driverList || 0 == driverList.len()) {
+                throw "Driver list must not be empty";
             }
-        }
-    }
 
+            _devices = {};
+            _driverClasses = [];
 
-    //
-    // Extract the direction from and endpoint address
-    //
-    // @param  {Integer} direction  Direction of data as an Integer
-    // @return {String}             Direction of data as a String
-    //
-    function _directionString(direction) {
-        if (direction == USB_DIRECTION_IN) {
-            return "IN";
-        } else if (direction == USB_DIRECTION_OUT) {
-            return "OUT";
-        } else {
-            return "UNKNOWN";
-        }
-    }
+            // checks validity, filters duplicate, append to the list
+            foreach (driver in driverList) {
+                _checkAndAppend(driver);
+            }
 
-
-    //
-    // Extract the endpoint type from attributes byte
-    //
-    // @param {Integer} attributes  Transfer attributes retrived from device descriptors
-    // @return {String}             String representing type of transfer
-    //
-    function _endpointTypeString(attributes) {
-        local type = attributes & 0x3;
-        if (type == 0) {
-            return "CONTROL";
-        } else if (type == 1) {
-            return "ISOCHRONOUS";
-        } else if (type == 2) {
-            return "BULK";
-        } else if (type == 3) {
-            return "INTERRUPT";
-        }
-    }
-};
-
-
-//
-// Usb control tranfer wrapper class
-//
-class USB.ControlEndpoint {
-
-    _usb = null;
-    _deviceAddress = null;
-    _speed = null;
-    _maxPacketSize = null;
-
-    //
-    // Contructor
-    //
-    // @param  {UsbHostClass} usb       Instance of the UsbHostClass
-    // @param  {Integer} deviceAddress  The address of the device
-    // @param  {Float} speed            The speed in Mb/s. Must be either 1.5 or 12
-    // @param  {Integer} maxPacketSize  The maximum size of packet that can be written or read on this endpoint
-    //
-    constructor(usb, deviceAddress, speed, maxPacketSize) {
-        _usb = usb;
-        _deviceAddress = deviceAddress;
-        _speed = speed;
-        _maxPacketSize = maxPacketSize;
-    }
-
-
-    //
-    // Configures the control endpoint
-    //
-    // @param {Integer} value   A value determined by the specific USB request (range 0x0000-0xFFFF)
-    //
-    function _setConfiguration(value) {
-        _usb._setConfiguration(_deviceAddress, _speed, _maxPacketSize, value);
-    }
-
-
-    //
-    // Retrieves and returns the string descriptors from the UsbHost.
-    //
-    // @param {Integer} index   An index value determined by the specific USB request (range 0x0000-0xFFFF)
-    // @return {String}         String of device descriptors
-    //
-    function getStringDescriptor(index) {
-        return _usb._getStringDescriptor(_deviceAddress, _speed, _maxPacketSize, index);
-    }
-
-
-    //
-    // Makes a control transfer
-    //
-    // @param  {Integer (bitfield)} requestType  The type of the endpoint
-    // @param  {Integer}            request      The specific USB request
-    // @param  {Integer}            value        A value determined by the specific USB request (range 0x0000-0xFFFF)
-    // @param  {Integer}            index        An index value determined by the specific USB request (range 0x0000-0xFFFF)
-    //
-    function send(requestType, request, value, index) {
-        return _usb._controlTransfer(_speed, _deviceAddress, requestType, request, value, index, _maxPacketSize)
-    }
-}
-
-
-//
-// Usb bulk transfer wrapper super class
-//
-class USB.BulkEndpoint {
-
-    _usb = null;
-    _deviceAddress = null;
-    _endpointAddress = null;
-
-
-    //
-    // Constructor
-    //
-    // @param  {UsbHostClass} usb               Instance of the UsbHostClass
-    // @param  {Float}        speed             The speed in Mb/s. Must be either 1.5 or 12
-    // @param  {Integer}      deviceAddress     The address of the device
-    // @param  {Integer}      interfaceNumber   The endpoint’s interface number
-    // @param  {Integer}      endpointAddress   The address of the endpoint
-    // @param  {Integer}       maxPacketSize    The maximum size of packet that can be written or read on this endpoint
-    //
-    constructor(usb, speed, deviceAddress, interfaceNumber, endpointAddress, maxPacketSize) {
-        _usb = usb;
-        if (_usb._DEBUG) server.log(format("Opening bulk endpoint 0x%02x", endpointAddress));
-
-        _deviceAddress = deviceAddress;
-        _endpointAddress = endpointAddress;
-        _usb._openEndpoint(speed, _deviceAddress, interfaceNumber, USB_ENDPOINT_BULK, maxPacketSize, _endpointAddress);
-    }
-}
-
-//
-// Usb bulk in transfer wrapper class
-//
-class USB.BulkInEndpoint extends USB.BulkEndpoint {
-
-    _data = null;
-
-    //
-    // Constructor
-    //
-    // @param  {UsbHostClass} usb               Instance of the UsbHostClass
-    // @param  {Float}        speed             The speed in Mb/s. Must be either 1.5 or 12
-    // @param  {Integer}      deviceAddress     The address of the device
-    // @param  {Integer}      interfaceNumber   The endpoint’s interface number
-    // @param  {Integer}      endpointAddress   The address of the endpoint
-    // @param  {Integer}       maxPacketSize    The maximum size of packet that can be written or read on this endpoint
-    //
-    constructor(usb, speed, deviceAddress, interfaceNumber, endpointAddress, maxPacketSize) {
-        assert((endpointAddress & 0x80) >> 7 == USB_DIRECTION_IN);
-        base.constructor(usb, speed, deviceAddress, interfaceNumber, endpointAddress, maxPacketSize);
-    }
-
-    //
-    // Reads incoming data
-    //
-    // @param {String/Blob} data to be read
-    //
-    function read(data) {
-        _data = data;
-        _usb._bulkTransfer(_deviceAddress, _endpointAddress, USB_ENDPOINT_BULK, data);
-    }
-
-
-    //
-    // Mark transfer as complete
-    //
-    // @param {Table} details  detials of the transfer
-    // @return result of bulkin transfer
-    function done(details) {
-        assert(details["endpoint"] == _endpointAddress);
-        _data.resize(details["length"]);
-        // assign locally
-        local data = _data;
-        // blank current data
-        _data = null;
-        return data;
-    }
-
-
-}
-
-
-//
-// Usb bulk out transfer wrapper classs
-//
-class USB.BulkOutEndpoint extends USB.BulkEndpoint {
-
-    _data = null;
-
-    //
-    // Constructor
-    //
-    // @param  {UsbHostClass} usb               Instance of the UsbHostClass
-    // @param  {Float}        speed             The speed in Mb/s. Must be either 1.5 or 12
-    // @param  {Integer}      deviceAddress     The address of the device
-    // @param  {Integer}      interfaceNumber   The endpoint’s interface number
-    // @param  {Integer}      endpointAddress   The address of the endpoint
-    // @param  {Integer}       maxPacketSize    The maximum size of packet that can be written or read on this endpoint
-    //
-    constructor(usb, speed, deviceAddress, interfaceNumber, endpointAddress, maxPacketSize) {
-        assert((endpointAddress & 0x80) >> 7 == USB_DIRECTION_OUT);
-        base.constructor(usb, speed, deviceAddress, interfaceNumber, endpointAddress, maxPacketSize);
-    }
-
-
-    //
-    // Writes data to usb via bulk transfer
-    //
-    // @param {String/Blob} data to be written
-    //
-    function write(data) {
-        _data = data;
-        _usb._bulkTransfer(_deviceAddress, _endpointAddress, USB_ENDPOINT_BULK, data);
-    }
-
-
-    //
-    // Called when transfer is complete
-    //
-    // @param  {Table}   details    detials of the transfer
-    //
-    function done(details) {
-        assert(details["endpoint"] == _endpointAddress);
-        _data = null;
-    }
-
-
-}
-
-
-//
-// Super class for Usb driver classes.
-//
-class USB.DriverBase {
-
-    static VERSION = "0.1.0";
-
-    static isUSBDriver = true;
-
-    _usb = null;
-    _controlEndpoint = null;
-    _eventHandlers = {};
-
-    constructor(usb) {
-        _usb = usb;
-    }
-
-
-    //
-    // Set up the usb to connect to this device
-    //
-    // @param  {Integer} deviceAddress The address of the device
-    // @param  {Float}   speed         The speed in Mb/s. Must be either 1.5 or 12
-    // @param  {String}  descriptors   The descriptors received from device
-    //
-    function connect(deviceAddress, speed, descriptors) {
-        _setupEndpoints(deviceAddress, speed, descriptors);
-        _configure(descriptors["device"]);
-        _start();
-    }
-
-
-    //
-    // Should return an array of VID PID combination tables.
-    //
-    function getIdentifiers() {
-        throw "Method not implemented";
-    }
-
-
-    //
-    // Registers a callback to a specific event
-    //
-    // @param  {String}   eventType The event name to subscribe callback to
-    // @param  {Function} cb        Function to call when event emitted
-    //
-    function on(eventType, cb) {
-        _eventHandlers[eventType] <- cb;
-    }
-
-
-    //
-    // Clears event listener on specific event
-    //
-    // @param  {String}   eventName The event name to unsubscribe from
-    //
-    function off(eventName) {
-        if (eventName in _eventHandlers) {
-            delete _eventHandlers[eventName];
-        }
-    }
-
-
-    //
-    // Handle case when a Usb request is succesfully completed
-    //
-    function _transferComplete(eventdetails) {
-        throw "Method not implemented";
-    }
-
-
-    //
-    // Initialize and set up all required endpoints
-    //
-    // @param  {Integer} deviceAddress The address of the device
-    // @param  {Float}   speed         The speed in Mb/s. Must be either 1.5 or 12
-    // @param  {String}  descriptors   The descriptors received from device
-    //
-    function _setupEndpoints(deviceAddress, speed, descriptors) {
-        if (_usb._DEBUG) server.log(format("Driver connecting at address 0x%02x", deviceAddress));
-        _deviceAddress = deviceAddress;
-        _controlEndpoint = USB.ControlEndpoint(_usb, deviceAddress, speed, descriptors["maxpacketsize0"]);
-
-        // Select configuration
-        local configuration = descriptors["configurations"][0];
-
-        if (_usb._DEBUG) server.log(format("Setting configuration 0x%02x (%s)", configuration["value"], _controlEndpoint.getStringDescriptor(configuration["configuration"])));
-        _controlEndpoint._setConfiguration(configuration["value"]);
-
-        // Select interface
-        local interface = configuration["interfaces"][0];
-        local interfacenumber = interface["interfacenumber"];
-
-        foreach (endpoint in interface["endpoints"]) {
-            local address = endpoint["address"];
-            local maxPacketSize = endpoint["maxpacketsize"];
-            if ((endpoint["attributes"] & 0x3) == 2) {
-                if ((address & 0x80) >> 7 == USB_DIRECTION_OUT) {
-                    _bulkOut = USB.BulkOutEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+            if (autoConfPins) {
+                if ("pinW" in hardware && "pinR" in hardware) {
+                    // Configure the pins required for usb
+                    hardware.pinW.configure(DIGITAL_IN_PULLUP);
+                    hardware.pinR.configure(DIGITAL_OUT, 1);
                 } else {
-                    _bulkIn = USB.BulkInEndpoint(_usb, speed, _deviceAddress, interfacenumber, address, maxPacketSize);
+                    throw "Invalid hardware is used";
+                }
+            }
+
+            _usb.configure(_onUsbEvent.bindenv(this));
+        }
+
+        // Reset the USB BUS.
+        // Can be used by driver or application in response to unrecoverable error
+        // like unending bulk transfer or halt condition during control transfers
+        reset = function() {
+            _usb.disable();
+
+            // force disconnect for all attached devices
+            foreach (address, device in _devices) {
+                _onDeviceDetached({"device" : address});
+            }
+
+            // re-connect all devices
+            _usb.configure(_onUsbEvent.bindenv(this));
+
+            USB.log("USB reset complete");
+        }
+
+        // Auxillary function to get list of attached devices.
+        // Returns:
+        //      an array of USB.Device instances
+        getAttachedDevices = function() {
+            local devs = [];
+
+            foreach(device in _devices)  devs.append(device);
+
+            return devs;
+        }
+
+        // Setter for the driver state listener
+        // Parameters:
+        //      listener  - null or the function that receives two parameters:
+        //                      eventType   - USB_DRIVER_STATE_STARTED - the driver is started
+        //                                    USB_DRIVER_STATE_STOPPED - the driver is stopped
+        //                      eventObject - instance of USB.Driver
+        setDriverListener = function(listener) {
+            if (typeof listener != "function" && listener != null) {
+                throw "Invalid event listener parameter";
+            }
+            driverListener = listener;
+        }
+
+
+        // Setter for the device state listener
+        // Parameters:
+        //      listener  - null or the function that receives two parameters:
+        //                      eventType - USB_DEVICE_STATE_CONNECTED      - the device was attached
+        //                                  USB_DEVICE_STATE_DISCONNECTED   - the device was detached
+        //                      eventObject - depending on event type it could be
+        //                                    either USB.Device or USB.Driver instance
+        setDeviceListener = function(listener) {
+            if (typeof listener != "function" && listener != null) {
+                throw "Invalid event listener parameter";
+            }
+
+            deviceListener = listener;
+       }
+
+        // ------------------------ private API -------------------
+
+        // Checks if given parameter implement USB.Driver API,
+        // filters duplicate and append to the driver list
+        _checkAndAppend = function(driverClass) {
+            if (typeof driverClass == "class" &&
+                "match"   in driverClass && typeof driverClass.match   == "function" &&
+                "release" in driverClass && typeof driverClass.release == "function")
+            {
+                if (null == _driverClasses.find(driverClass)) {
+                    _driverClasses.append(driverClass);
+                }
+            } else {
+                throw "Invalid driver class";
+            }
+        }
+
+        // The function that will be called in response to a USB event.
+        // Parameters:
+        //          eventType       - The type of event that triggered the event
+        //          eventDetails    - Event-specific information
+        _onUsbEvent = function(eventType, eventDetails) {
+            switch (eventType) {
+                case USB_DEVICE_CONNECTED:
+                    USB.log("USB_DEVICE_CONNECTED event");
+                    _onDeviceConnected(eventDetails);
+                    break;
+                case USB_DEVICE_DISCONNECTED:
+                    USB.log("USB_DEVICE_DISCONNECTED event");
+                    _onDeviceDetached(eventDetails);
+                    break;
+                case USB_TRANSFER_COMPLETED:
+                    USB.log("USB_TRANSFER_COMPLETED event");
+                    _onTransferComplete(eventDetails);
+                    break;
+                case USB_UNRECOVERABLE_ERROR:
+                    USB.err("USB_UNRECOVERABLE_ERROR event");
+                    _onError();
+                    break;
+            }
+        }
+
+        // New device processing function
+        // Creates new USB.Device instance, notifies application listener
+        // with USB_DEVICE_STATE_CONNECTED event
+        _onDeviceConnected = function(eventDetails) {
+            local speed = eventDetails.speed;
+            local descr = eventDetails.descriptors;
+            local device = USB.Device(_usb, this, speed, descr, _address);
+
+            // a copy application callback
+            _devices[_address] <- device;
+            USB.log("New device detected: " + device + ". Assigned address: " + _address);
+
+            // address for next device
+            _address++;
+
+            // maintain event sending sequence
+            deviceListener && deviceListener(USB_DEVICE_STATE_CONNECTED, device);
+
+            device.selectDrivers(_driverClasses);
+        }
+
+        // Device detach processing function.
+        // Stops corresponding USB.Device instance, notifies application listener
+        // with USB_DEVICE_STATE_DISCONNECTED event
+        _onDeviceDetached = function(eventDetails) {
+            // TODO: why do we need this check?
+            if ("device" in eventDetails) {
+                local address = eventDetails.device;
+                if (address in _devices) {
+                    local device = _devices[address];
+                    delete _devices[address];
+
+                    try {
+                        device._stop();
+                        USB.log("Device " + device + " is removed");
+                    } catch (e) {
+                        USB.err("Error on device " + device + " release: " + e);
+                    }
+
+                    deviceListener && deviceListener(USB_DEVICE_STATE_DISCONNECTED, device);
+                } else {
+                    USB.err("Detach event for unregistered device: " + address);
+                }
+            } else {
+                USB.err("Detach event occurred for an unknown device");
+            }
+        }
+
+        // Data transfer status processing function
+        // Checks transfer status and either notify USB.Device about event or
+        // schedules bus reset if status is critical error
+        _onTransferComplete = function(eventDetails) {
+            local address = eventDetails.device;
+            local state = eventDetails.state;
+
+            // check for UNRECOVERABLE error
+            if (_checkError(state)) {
+                // all this errors are critical
+                USB.err("Critical error received: " + state);
+                imp.wakeup(0, _onError.bindenv(this));
+                return;
+            }
+
+            if (address in _devices) {
+                local device = _devices[address];
+                device._transferEvent(eventDetails);
+            } else {
+                USB.err("transfer event for unknown device: " + address);
+            }
+        }
+
+        // Checks error class
+        // Returns  TRUE if error is critical and USB need to be reset
+        //          FALSE otherwise
+        _checkError = function(error) {
+            if ((error > 0  && error < 4)   ||
+                (error > 4  && error < 8)   ||
+                (error > 9  && error < 12)  ||
+                error == 14 || error > 17) {
+                return true;
+            }
+            return false;
+        }
+
+        // USB critical error processing function.
+        // Stops all registered USB._Devices and schedules bus reset
+        _onError = function(eventDetails = null) {
+            foreach(device in _devices) {
+                try {
+                    device._stop();
+                } catch (e) {
+                    USB.err("Error on device " + device + " release: " + e);
+                }
+            }
+            imp.wakeup(0, reset.bindenv(this));
+        }
+
+        // Metafunction to return class name when typeof <instance> is run
+        _typeof = function() {
+            return "USB.Host";
+        }
+    } // Host
+
+    // The class that represents attached device.
+    // It manages its configuration, interfaces and endpoints.
+    // An application does not need such object normally.
+    // It is usually used by drivers to acquire required endpoints
+    Device = class {
+
+        // Assigned device address
+        _address = 0;
+
+        // Device descriptor
+        _desc = null;
+
+        // Interfaces descriptor array for current configuration
+        _interfaces = null;
+
+        // A list of drivers assigned to this device
+        // There can be more than one driver for composite device
+        _driverInstances = [];
+
+        // Endpoints instances for this device. Required for quick search from transfer event processor
+        _endpoints = {};
+
+        // Device speed
+        _speed = null;
+
+        // USB interface
+        _usb = null;
+
+        // Instance of the USB host
+        _host = null;
+
+        // Constructs device peer.
+        // Parameters:
+        //      usb              - the native USB interface object
+        //      host             - the instance of the usb host
+        //      speed            - supported device speed
+        //      deviceDescriptor - new device descriptor as specified by ElectricImpl USB API
+        //      deviceAddress    - device address reserved (but assigned) for new device
+        constructor(usb, host, speed, deviceDescriptor, deviceAddress) {
+            _usb = usb;
+            _host = host;
+            _desc = deviceDescriptor;
+            _speed = speed;
+            _address = deviceAddress;
+            local conf = deviceDescriptor.configurations[0];
+            _interfaces = conf.interfaces;
+            _driverInstances = [];
+
+            local ep0 = USB.ControlEndpoint(this, 0, _desc["maxpacketsize0"]);
+            _endpoints[0] <- ep0;
+
+            // When a device is first connected you can communicate with it at address 0x00.
+            // This should be set to a unique value for the device, using a set address control transfer.
+            _setAddress(_address);
+
+            // Select default configuration
+            _setConfiguration(conf.value);
+
+            // Delegate to bind native endpoint descriptor and the framework
+            foreach(ifs in _interfaces) {
+                ifs.setdelegate(_ifsDelegate);
+                foreach (ep in ifs.endpoints) {
+                    ep._device <- this;
+                    ep.setdelegate(_epDelegate);
                 }
             }
         }
-    }
 
+        // Selects the matching drivers from the list of driver classes provided.
+        // The matching drivers are initialized and started.
+        //
+        // Parameters:
+        //      drivers          - an array of available USB driver classes to select from
+        function selectDrivers(drivers) {
+            // test specific behavior: _stop() is called before execution flow yielded
+            if (null == _usb) return;
 
-    //
-    // Set up basic parameters using control transfer
-    //
-    // @param {Integer} device key receieved in descriptors
-    //
-    function _configure(device) {
+            local devClass = _desc["class"];
 
-        if (_usb._DEBUG) server.log(format("Configuring for device version 0x%04x", device));
+            foreach (driver in  drivers) {
+                local matchResult = [];
+                // if a driver matches, the driver instance is created here
+                local result = driver.match(this, _interfaces);
+                if (null != result) {
+                    if (typeof result != "array") {
+                        result = [result];
+                    }
 
-        // Set Baud Rate
-        local baud = 115200;
-        local baudValue;
-        local baudIndex = 0;
-        local divisor3 = 48000000 / 2 / baud; // divisor shifted 3 bits to the left
+                    foreach (instance in result) {
+                        _driverInstances.append(instance);
+                    }
+                    matchResult = result;
+                }
 
-        if (device == 0x0200) { // FT232AM
-            if ((divisor3 & 0x07) == 0x07) {
-                divisor3++; // round x.7/8 up to x+1
-            }
-
-            baudValue = divisor3 >> 3;
-            divisor3 = divisor3 & 0x7;
-
-            if (divisor3 == 1) {
-                baudValue = baudValue | 0xc000; // 0.125
-            } else if (divisor3 >= 4) {
-                baudValue = baudValue | 0x4000; // 0.5
-            } else if (divisor3 != 0) {
-                baudValue = baudValue | 0x8000; // 0.25
-            }
-
-            if (baudValue == 1) {
-                baudValue = 0; // special case for maximum baud rate
-            }
-
-        } else {
-            local divfrac = [0, 3, 2, 0, 1, 1, 2, 3];
-            local divindex = [0, 0, 0, 1, 0, 1, 1, 1];
-
-            baudValue = divisor3 >> 3;
-            baudValue = baudValue | (divfrac[divisor3 & 0x7] << 14);
-
-            baudIndex = divindex[divisor3 & 0x7];
-
-            // Deal with special cases for highest baud rates.
-            if (baudValue == 1) {
-                baudValue = 0; // 1.0
-            } else if (baudValue == 0x4001) {
-                baudValue = 1; // 1.5
+                local listener = _host.driverListener;
+                if (listener) {
+                    foreach (instance in matchResult) {
+                        listener(USB_DRIVER_STATE_STARTED, instance);
+                    }
+                }
             }
         }
 
-        _controlEndpoint.send(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_BAUD_RATE, baudValue, baudIndex);
+        // Returns device descriptor
+        //
+        // Throws exception if the device was detached
+        //
+        function getDescriptor() {
+            _checkStopped();
 
-        const xon = 0x11;
-        const xoff = 0x13;
-
-        _controlEndpoint.send(FTDI_REQUEST_FTDI_OUT, FTDI_SIO_SET_FLOW_CTRL, xon | (xoff << 8), FTDI_SIO_DISABLE_FLOW_CTRL << 8);
-    }
-
-
-    // Emit event "eventtype" with eventdetails
-    //
-    // @param {String}  Event name to emit
-    // @param {any}     Data to pass to event listener callback
-    //
-    function _onEvent(eventtype, eventdetails) {
-        // Handle event internally first
-        if (eventtype in _eventHandlers) {
-            _eventHandlers[eventtype](eventdetails);
+            return _desc;
         }
-    }
+
+        // Returns device vendor ID
+        //
+        // Throws exception if the device was detached
+        //
+        function getVendorId() {
+            _checkStopped();
+
+            return "vendorid" in _desc ? _desc["vendorid"] : null;
+        }
+
+        // Returns device product ID
+        //
+        // Throws exception if the device was detached
+        //
+        function getProductId() {
+            _checkStopped();
+
+            return "productid" in _desc ? _desc["productid"] : null;
+        }
+
+        // Returns an array of drivers for the attached device. Throws exception if the device is detached.
+        // Each device provide the number of interfaces which could be supported by the different drives
+        // (For example keyboard with touchpad could have keyboard driver and a separate touchpad driver).
+        function getAssignedDrivers() {
+            _checkStopped();
+
+            return _driverInstances;
+        }
+
+        // Return Control Endpoint 0 proxy
+        // EP0 is special type of endpoints that is implicitly present at device interfaces
+        function getEndpointZero() {
+            _checkStopped();
+
+            return _endpoints[0];
+        }
+
+        // -------------------- Private functions --------------------
+
+        // Delegate for endpoint descriptor
+        _epDelegate = {
+            // The function to acquire the framework proxy
+            get = function(pollTime = 255) {
+
+                if (! ("_proxy" in this) ) {
+                    _proxy <- _device._getEndpoint(this, pollTime);
+                }
+
+                return _proxy;
+            }
+        }
+
+        // Delegate for interface descriptor
+        _ifsDelegate = {
+            // Auxiliary function to search required endpoint
+            find = function(type, dir) {
+                foreach(ep in endpoints) {
+                    if (ep.attributes == type && (ep.address & USB_DIRECTION_MASK) == dir) {
+                        return ep.get();
+                    }
+                }
+            }
+
+            // Returns USB.Device instance - owner of this interface
+            getDevice = function() {
+                return endpoints[0]._device;
+            }
+        }
+
+        // Request endpoint of required type and direction.
+        // The function creates new endpoint if it was not cached.
+        // Parameters:
+        //      reqEp     - required endpoint descriptor
+        //      pollTime  - interval for polling endpoint for data transfers. For Interrupt/Isochronous only.
+        //
+        //  Returns:
+        //      an instance of USB.ControlEndpoint or USB.FunctionEndpoint, depending on type parameter,
+        //      or `null` if there is no required endpoint found in provided interface
+        //
+        // Throws exception if the device was detached
+        //
+        function _getEndpoint(reqEp, pollTime) {
+            _checkStopped();
+
+            foreach (ifs in _interfaces) {
+                foreach (ep in ifs.endpoints) {
+                    if (ep == reqEp) {
+                        local maxSize = ep.maxpacketsize;
+                        local address = ep.address;
+                        local type = ep.attributes;
+
+                        if (type == USB_ENDPOINT_INTERRUPT) {
+                            _usb.openendpoint(_speed, _address, ifs.interfacenumber, type, maxSize, address, pollTime);
+                        } else {
+                            _usb.openendpoint(_speed, _address, ifs.interfacenumber, type, maxSize, address);
+                        }
+
+                        local newEp = (type == USB_ENDPOINT_CONTROL) ?
+                                        USB.ControlEndpoint(this, address, maxSize) :
+                                        USB.FuncEndpoint(this, address, type, maxSize);
+
+                        _endpoints[address] <- newEp;
+
+                        return newEp;
+                    }
+                }
+            }
+
+            // No endpoint found
+            return null;
+        }
+
+        // Called by USB.Host when the devices is detached
+        // Closes all open endpoint and releases all drivers
+        //
+        // Throws exception if the device was detached
+        //
+        function _stop() {
+            _checkStopped();
+
+            // Close all endpoints at first
+            foreach (ep in _endpoints) {
+                ep._close();
+            }
+
+            // Release all drivers now
+            local listener = _host.driverListener;
+            foreach (driver in _driverInstances) {
+                try {
+                    driver.release();
+                } catch (e) {
+                    USB.err("Exception occurred on driver release: " + e);
+                }
+
+                listener && listener(USB_DRIVER_STATE_STOPPED, driver);
+            }
+
+            _usb = null;
+            _desc = null;
+            _endpoints = null;
+            _interfaces = null;
+            _driverInstances = null;
+        }
+
+        // Selects current device configuration by sending USB_REQUEST_SET_CONFIGURATION request through Endpoint Zero
+        //
+        // Parameter:
+        //      config  - configuration number
+        //
+        // Returns Nothing
+        //
+        function _setConfiguration(config) {
+            _endpoints[0].transfer(
+                USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
+                USB_REQUEST_SET_CONFIGURATION,
+                config,
+                0
+            );
+        }
+
+        // Helper function for device address assignment.
+        //
+        // Parameters:
+        //      address - new device address to assign
+        //
+        // Throws exception if the device was detached
+        //
+        // Note: the function uses 0 as device address therefore can be used only once
+        function _setAddress(address) {
+            _usb.controltransfer(
+                _speed,
+                0,
+                0,
+                USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
+                USB_REQUEST_SET_ADDRESS,
+                address,
+                0,
+                _desc["maxpacketsize0"]
+            );
+        }
+
+        // Device run status check
+        function _checkStopped() {
+            if (null == _usb) throw "Detached";
+        }
+
+        // Proxy function for transfer event.
+        // Looking up for corresponding endpoint and passes the event if found
+        function _transferEvent(eventDetails) {
+            // Do nothing for a closed device
+            if (null == _usb) return;
+
+            local epAddress = eventDetails.endpoint;
+            if (epAddress in _endpoints) {
+                local ep    = _endpoints[epAddress];
+                local state = eventDetails.state;
+                local len   = eventDetails.length;
+
+                ep._onTransferEvent(state, len);
+
+            } else {
+                USB.log("Unexpected transfer for unknown endpoint: " + epAddress);
+            }
+        }
+
+        // Metafunction to return class name when typeof <instance> is run
+        function _typeof() {
+            return "USB.Device";
+        }
+    } // Device
+
+    // The class that represent all non-control endpoints, e.g. bulk, interrupt etc
+    // This class is managed by USB.Device and should be acquired through USB.Device instance
+    FuncEndpoint = class {
+        // Owner
+        _device = null;
+
+        // EP type
+        _type = 0;
+
+        // EP address
+        _epAddr = 0;
+
+        // Maximum packet size for this endpoint
+        // Should be one from {8, 16, 32, 64} set
+        _maxPacketSize = 8;
+
+        // Flag that EP was closed and should not used anymore.
+        // Typically EP is closed when device is detached or configuration is changed
+        _closed = false;
+
+        // Callback to be called when transfer request is complete.
+        // Since the class supports only single request per time,
+        // this flags also indicates that EP is busy
+        _transferCb = null;
+
+        // Watchdog timer
+        _timer = null;
+
+        // Constructor
+        // Parameters:
+        //      device          - USB.Device instance, owner of this endpoint
+        //      endpoint        - unique endpoint address
+        //      epType          - endpoint type
+        //      maxPacketSize   - maximum packet size for this endpoint
+        constructor (device, endpoint, epType, maxPacketSize) {
+            _device = device;
+            _epAddr = endpoint;
+            _maxPacketSize = maxPacketSize;
+            _type = epType;
+        }
+
+        // Write data through this endpoint.
+        // Throws if EP is closed, has incompatible type or already busy
+        // Parameter:
+        //  data        - data blob to be sent through this endpoint
+        //  onComplete  - callback for transfer status notification
+        //
+        //  Returns nothing
+        function write(data, onComplete) {
+            if (_epAddr & USB_DIRECTION_MASK) {
+                throw "Invalid endpoint direction: " + _epAddr;
+            } else {
+                _transfer(data, onComplete);
+            }
+        }
+
+        // Read data through this endpoint.
+        // Throws if EP is closed, has incompatible type or already busy
+        // Parameter:
+        //  data        - data blob where received data to be stored
+        //  onComplete  - callback for transfer status notification
+        //
+        //  Returns nothing
+        function read(data, onComplete) {
+            if (_epAddr & USB_DIRECTION_MASK) {
+                _transfer(data, onComplete);
+            } else {
+                throw "Invalid endpoint direction: " + _epAddr;
+            }
+        }
+
+        // Returns maximum packet size for this endpoint
+        function getMaxPacketSize() {
+            return _maxPacketSize;
+        }
+
+        // Returns this endpoint address
+        // Typical use case for this function is to get endpoint ID for some of device control operation,
+        // performed over Endpoint 0
+        function getEndpointAddr() {
+            return _epAddr;
+        }
+
+        // --------------------- Private functions -----------------
+
+        // Mark this endpoint as closed. All further operation causes exception.
+        function _close() {
+            _closed = true;
+            _transferCb = null;
+        }
 
 
-    //
-    // Instantiate the buffer
-    //
-    function _start() {
-        _bulkIn.read(blob(1));
-    }
-};
+        // Transfer initiator
+        // Throws if EP is closed or already busy
+        // Parameter:
+        //  data        - data blob to be sent/received
+        //  onComplete  - callback for transfer status notification
+        //
+        //  Returns nothing
+        function _transfer(data, onComplete) {
+            if (_closed) throw "Closed";
+            if (_transferCb) throw "Busy";
+
+            _device._usb.generaltransfer(
+                _device._address,
+                _epAddr,
+                _type,
+                data
+            );
+
+            _transferCb = function (state, length) {
+                onComplete && onComplete(this, state, data, length);
+            };
+
+            // Disable 5 seconds time limit for an interrupt endpoint
+            if (_type != USB_ENDPOINT_INTERRUPT) {
+                _timer = imp.wakeup(5, _onTimeout.bindenv(this));
+            }
+
+        }
+
+        // Notifies application about data transfer status
+        // Parameters:
+        //  state  - transfer status code
+        //  length - the length of data was transmitted
+        function _onTransferEvent(state, length) {
+            // Cancel timer because callback happened
+            if (_timer) {
+                imp.cancelwakeup(_timer);
+                _timer = null;
+            }
+
+            if (null == _transferCb) {
+                USB.err("Unexpected transfer event: there is no listener for it");
+                return;
+            }
+
+            local cb = _transferCb;
+            // ready for next request
+            _transferCb = null;
+
+            cb(state, length);
+        }
+
+        // Auxillary function to handle transfer timeout state
+        function _onTimeout() {
+            _timer = null;
+            _onTransferEvent(USB_TYPE_TIMEOUT, 0);
+        }
+
+        // Metafunction to return class name when typeof <instance> is run
+        function _typeof() {
+            return "USB.FuncEndpoint";
+        }
+    } // FuncEndpoint
+
+    // Represent control endpoints.
+    // This class is required due to specific EI usb API
+    // This class is managed by USB.Device and should be acquired through USB.Device instance
+    ControlEndpoint = class {
+
+        // to keep consistency with functional endpoint
+        static _type = USB_ENDPOINT_CONTROL;
+
+        // Owner
+        _device = null;
+
+        // EP address
+        _epAddr = 0;
+
+        // Maximum packet size for this endpoint
+        // Should be one from {8, 16, 32, 64} set
+        _maxPacketSize = 8;
+
+        // Flag that EP was closed and should not used anymore.
+        // Typically EP is closed when device is detached or configuration is changed
+        _closed = false;
+
+        // Constructor
+        // Parameters:
+        //      device          - USB.Device instance, owner of this endpoint
+        //      endpoint        - unique endpoint address
+        //      maxPacketSize   - maximum packet size for this endpoint
+        constructor (device, endpoint, maxPacketSize) {
+            _device = device;
+            _epAddr = endpoint;
+            _maxPacketSize = maxPacketSize;
+        }
+
+        // Generic function for transferring data over control endpoint.
+        // Note! Only vendor specific requires are allowed.
+        // For other control operation use USB.Device, USB.ControlEndpoint public API
+        //
+        // Parameters:
+        //      reqType     - USB request type
+        //      req         - The specific USB request
+        //      value       - A value determined by the specific USB request
+        //      index       - An index value determined by the specific USB request
+        //      data        - [optional] Optional storage for incoming or outgoing data
+        //
+        // Note! This operation is synchronous.
+        function transfer(reqType, req, value, index, data = blob()) {
+            _transfer(
+                reqType,
+                req,
+                value,
+                index,
+                data
+            );
+        }
+
+        // Returns this endpoint address
+        // Typical use case for this function is to get endpoint ID for some of device control operation,
+        // performed over Endpoint 0
+        function getEndpointAddr() {
+            return _epAddr;
+        }
+
+
+        // --------------------- private API -------------------
+
+        // Mark as closed. All further operation causes exception.
+        function _close() {
+            _closed = true;
+        }
+
+        // Generic function for transferring data over control endpoint.
+        //
+        // Parameters:
+        //      reqType     - USB request type
+        //      req         - The specific USB request
+        //      value       - A value determined by the specific USB request
+        //      index       - An index value determined by the specific USB request
+        //      data        - [optional] Optional storage for incoming or outgoing data
+        //
+        function _transfer(reqType, req, value, index, data) {
+            if (_closed) throw "Closed";
+
+            _device._usb.controltransfer(
+                _device._speed,
+                _device._address,
+                _epAddr,
+                reqType,
+                req,
+                value,
+                index,
+                _maxPacketSize,
+                data
+            );
+        }
+
+        // Metafunction to return class name when typeof <instance> is run
+        function _typeof() {
+            return "USB.ControlEndpoint";
+        }
+    } // ControlEndpoint
+
+    // Interface class for all drivers.
+    // Driver developer is not required to subclass it though.
+    // No class hierarchy is verified by any USB.* functions.
+    Driver = class {
+
+        // Queried by USB.Host if this driver supports
+        // given interface function of the device.
+        // Should return new instance of the driver object if
+        // driver matches
+        function match(device, interfaces) {
+            return null;
+        }
+
+        // Notify that driver is going to be released
+        // No endpoint operation should be performed at this function.
+        function release() {
+            USB.log("Released");
+        }
+
+        // Metafunction to return class name when typeof <instance> is run
+        function _typeof() {
+            return "UsbDriver";
+        }
+    } // Driver
+}

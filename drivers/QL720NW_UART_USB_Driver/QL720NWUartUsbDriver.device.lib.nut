@@ -28,15 +28,26 @@
 //  - Imp005
 //  - Brother QL-720NW label printer
 
-// Require USB libraries
-#require "USB.device.lib.nut:0.1.0"
+// This class is require the USB Framework library
 
-// Driver for printer
-class QL720NW {
-    static VERSION = "0.1.0";
+// Driver for QL720NW label printer use via USB
+class QL720NWUartUsbDriver extends USB.Driver {
 
-    _uart = null;   // A preconfigured UART
-    _buffer = null; // buffer for building text
+    // Version of the driver sub-class for printer
+    static VERSION  = "0.3.0";
+
+    _buffer         = null; // buffer for building text
+    _actions        = null; // print actions queue
+
+    // Brother QL720
+    static VID = 0x04f9;
+    static PID = 0x2044;
+
+    // USB output stream
+    _bulkOut = null;
+
+    // no more methods calls
+    _released = false;
 
     // Commands
     static CMD_ESCP_ENABLE      = "\x1B\x69\x61\x00";
@@ -132,22 +143,7 @@ class QL720NW {
     static BARCODE_2D_DATA_INPUT_AUTO   = "\x00";
     static BARCODE_2D_DATA_INPUT_MANUAL = "\x01";
 
-    constructor(uart, init = true) {
-        _uart = uart;
-        _buffer = blob();
-
-        if (init) return initialize();
-    }
-
-    function initialize() {
-        _uart.write(CMD_ESCP_ENABLE); // Select ESC/P mode
-        _uart.write(CMD_ESCP_INIT); // Initialize ESC/P mode
-
-        return this;
-    }
-
-
-    // Formating commands
+    // set page orientation
     function setOrientation(orientation) {
         // Create a new buffer that we prepend all of this information to
         local orientationBuffer = blob();
@@ -156,19 +152,22 @@ class QL720NW {
         orientationBuffer.writestring(CMD_SET_ORIENTATION);
         orientationBuffer.writestring(orientation);
 
-        _uart.write(orientationBuffer);
+        _write(orientationBuffer);
 
         return this;
     }
 
+    // Set page right margin
     function setRightMargin(column) {
         return _setMargin(CMD_SET_RIGHT_MARGIN, column);
     }
 
+    // Set page left margin
     function setLeftMargin(column) {
         return _setMargin(CMD_SET_LEFT_MARGIN, column);;
     }
 
+    // Set current font ID
     function setFont(font) {
         if (font < 0 || font > 4) throw "Unknown font";
 
@@ -178,6 +177,7 @@ class QL720NW {
         return this;
     }
 
+    // Set current font size
     function setFontSize(size) {
         if (size != 24 && size != 32 && size != 48) throw "Invalid font size";
 
@@ -188,7 +188,7 @@ class QL720NW {
         return this;
     }
 
-    // Text commands
+    // Put given text to the buffer with provied formating options
     function write(text, options = 0) {
         local beforeText = "";
         local afterText = "";
@@ -209,14 +209,15 @@ class QL720NW {
         }
 
         _buffer.writestring(beforeText + text + afterText);
-
         return this;
     }
 
+    // Write given text to buffer followed by new line char
     function writen(text, options = 0) {
         return write(text + TEXT_NEWLINE, options);
     }
 
+    // Put new line char
     function newline() {
         return write(TEXT_NEWLINE);
     }
@@ -270,6 +271,7 @@ class QL720NW {
         return this;
     }
 
+    // 2D barcode commands
     function write2dBarcode(data, config = {}) {
         // Set defaults
         if (!("cell_size" in config)) { config.cell_size <- BARCODE_2D_CELL_SIZE_3; }
@@ -316,39 +318,19 @@ class QL720NW {
         return this;
     }
 
-    // Prints the label
+    // Send prepared buffer to the printer.
     function print() {
         _buffer.writestring(PAGE_FEED);
-        _uart.write(_buffer);
+        _write(_buffer);
         _buffer = blob();
     }
 
-    function _setMargin(command, margin) {
-        local marginBuffer = blob();
-        marginBuffer.writestring(command);
-        marginBuffer.writen(margin & 0xFF, 'b');
 
-        _uart.write(marginBuffer);
+    // ------------------- private functions -------------------
 
-        return this;
-    }
-
-    function _typeof() {
-        return "QL720NW";
-    }
-}
-
-// Driver for QL720NW label printer use via USB
-class QL720NWUartUsbDriver extends USB.DriverBase {
-
-    // Brother QL720
-    static VID = 0x04f9;
-    static PID = 0x2044;
-
-    _deviceAddress = null;
-    _bulkIn = null;
-    _bulkOut = null;
-
+    // =======================================
+    // ======= USB Framework API =============
+    // =======================================
 
     //
     // Metafunction to return class name when typeof <instance> is run
@@ -357,25 +339,96 @@ class QL720NWUartUsbDriver extends USB.DriverBase {
         return "QL720NWUartUsbDriver";
     }
 
-
-    //
-    // Returns an array of VID PID combinations
-    //
-    // @return {Array of Tables} Array of VID PID Tables
-    //
-    function getIdentifiers() {
-        local identifiers = {};
-        identifiers[VID] <-[PID];
-        return [identifiers];
+    function match(device, interfaces) {
+        if (device.getVendorId() != this.VID
+            || device.getProductId() != this.PID)
+            return null;
+        return QL720NWUartUsbDriver(interfaces[0]);
     }
 
+    constructor(interface) {
+        _bulkOut = interface.find(USB_ENDPOINT_BULK, USB_DIRECTION_OUT);
+
+        if (null == _bulkOut) throw "Can't get required endpoints";
+
+        _buffer = blob();
+
+        _actions = [];
+
+        _initialize();
+    }
+
+    function release() {
+        // disable more actions handling
+        _released = true;
+
+        // Free usb framwork's resources
+        _bulkOut = null;
+    }
+
+    // ==================================================
+    // ============== Private functions =================
+    // ==================================================
+
+    // Initialize printer
+    function _initialize() {
+        _write(CMD_ESCP_ENABLE); // Select ESC/P mode
+        _write(CMD_ESCP_INIT);   // Initialize ESC/P mode
+
+        return this;
+    }
+
+    // Set page margins
+    function _setMargin(command, margin) {
+        local marginBuffer = blob();
+        marginBuffer.writestring(command);
+        marginBuffer.writen(margin & 0xFF, 'b');
+
+        _write(marginBuffer);
+
+        return this;
+    }
+
+    // Schedule wrining of formatted string with command and data
+    function _write(data) {
+        _actions.push(data);
+        _actionHandler(true);
+    }
+
+    // Action queue processor: pops next command string and sends to printer.
+    function _actionHandler(user = false) {
+        // there is no actions to perform
+        if (_actions.len() == 0) return;
+
+        // Pop the next action
+        local action = _actions.top();
+
+        try {
+            _sendToPrinter(action, _actionHandler.bindenv(this));
+
+            _actions.pop();
+        } catch (e) {
+            if (null == e.find("Busy")) {
+                _actions = [];
+
+                if (user) throw e;
+                else server.error(e);
+            }
+        }
+    }
 
     //
-    // Write bulk transfer on Usb host
+    // Start bulk transfer to Usb Device
     //
-    // @param  {String/Blob} data data to be sent via usb
+    // Parameters:
+    //      data        -   data to be sent via usb (string or blob)
+    //      callback    -   a function to be notified about transfer status
     //
-    function write(data) {
+    //
+    function _sendToPrinter(data, callback = null) {
+
+        if (_released) throw "No printer is available";
+
         local _data = null;
 
         if (typeof data == "string") {
@@ -387,97 +440,15 @@ class QL720NWUartUsbDriver extends USB.DriverBase {
             throw "Write data must of type string or blob";
             return;
         }
-        _bulkOut.write(_data);
+
+        local env = {"callback" : callback};
+        _bulkOut.write(_data, _onComplete.bindenv(env));
     }
 
+    // USB transfer complete callback
+    function _onComplete(ep, error, data, len) {
+        if (error == USB_TYPE_FREE || error == USB_TYPE_IDLE) error = null;
+        if (callback) callback();
 
-    //
-    // Called when a Usb request is succesfully completed
-    //
-    // @param  {Table} eventdetails Table with the transfer event details
-    //
-    function _transferComplete(eventdetails) {
-
-        local direction = (eventdetails["endpoint"] & 0x80) >> 7;
-
-        if (direction == USB_DIRECTION_IN) {
-
-            local readData = _bulkIn.done(eventdetails);
-
-            if (readData.len() >= 3) {
-                readData.seek(2);
-                _onEvent("data", readData.readblob(readData.len()));
-            } else {
-                _bulkIn.read(blob(64 + 2));
-            }
-
-        } else if (direction == USB_DIRECTION_OUT) {
-            _bulkOut.done(eventdetails);
-        }
-    }
-
-
-    //
-    // Called by Usb host to initialize driver
-    //
-    // @param  {Integer} deviceAddress The address of the device
-    // @param  {Float} speed           The speed in Mb/s. Must be either 1.5 or 12
-    // @param  {String} descriptors    The device descriptors
-    //
-    function connect(deviceAddress, speed, descriptors) {
-        _setupEndpoints(deviceAddress, speed, descriptors);
-        _start();
-    }
-
-
-    //
-    // Initialize the read buffer
-    //
-    function _start() {
-        _bulkIn.read(blob(64 + 2));
     }
 }
-
-// Initialize USB Host
-usbHost <- USB.Host(hardware.usb);
-
-// Register the UART over USB driver with USB Host
-usbHost.registerDriver(QL720NWUartUsbDriver, QL720NWUartUsbDriver.getIdentifiers());
-
-// Subscribe to USB connection events
-usbHost.on("connected",function (device) {
-
-    server.log(typeof device + " was connected!");
-
-    switch (typeof device) {
-        case "QL720NWUartUsbDriver":
-            // Initialize Printer Driver with USB UART device
-            printer <- QL720NW(device);
-
-            // Print a text label
-            printer
-                .setOrientation(QL720NW.LANDSCAPE)
-                .setFont(QL720NW.FONT_SAN_DIEGO)
-                .setFontSize(QL720NW.FONT_SIZE_48)
-                .write("San Diego 48 ")
-                .print();
-
-            // Configure Barcode
-            barcodeConfig <- {
-                "type": QL720NW.BARCODE_CODE39,
-                "charsBelowBarcode": true,
-                "width": QL720NW.BARCODE_WIDTH_M,
-                "height": 1,
-                "ratio": QL720NW.BARCODE_RATIO_3_1
-            }
-
-            // Print bacode of the imp's mac address
-            printer.writeBarcode(imp.getmacaddress(), barcodeConfig).print();
-            break;
-    }
-});
-
-// Subscribe to USB disconnection events
-usbHost.on("disconnected",function(deviceName) {
-    server.log(deviceName + " disconnected");
-});
