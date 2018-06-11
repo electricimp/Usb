@@ -142,12 +142,12 @@ function that searches for endpoint with given attributes and return found first
 
 ##### Concurrent Access to Resources
 
-The framework doesn't prevent drivers from accessing to any
-interface resources the driver receives through the 
+The framework doesn't prevent drivers from accessing any
+interface resources the driver receives through the
 [match](#matchdeviceobject-interfaces)
-function. It is up to driver author to create it in safe way and to address
+function. It is up to driver author to create it in a safe way and to address
 situation when several drivers try to concurrently access the same device.
-An example of such collision is an exception that may be thrown by
+An example of such collision is an exception thrown by
 [USB.FuncEndpoint.read()](#readdata-oncomplete) while another driver's
 call is still pending.
 
