@@ -565,7 +565,7 @@ Callback **onComplete(error, len)**:
 
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
-| *ep*        | Endpoint  | instance of the endpoint [FuncEndpoint](#usbfunctionalendpoint-class) |
+| *ep*        | Endpoint  | instance of the endpoint [FuncEndpoint](#usbfuncendpoint-class) |
 | *state*     | Number    | USB transfer state, see Transfer States [table](#usb-transfer-states) for more details |
 | *data*      | Blob      | the payload data being sent |
 | *len*       | Number    | length of the written payload data |
