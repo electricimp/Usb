@@ -26,11 +26,11 @@ The USB driver framework is a wrapper over the `hardware.usb` Squirrel API and i
 
 Application and driver developers may be interested in examples of
 specific device driver implementations. The framework includes the followin driver examples:
-- [Generic HID device](./docs/HIDDriver.md/)
-- [QL720NW printer](./drivers/QL720NW_UART_USB_Driver/)
-- [FTDI usb-to-uart converter](./drivers/FT232RL_FTDI_USB_Driver/)
-- [Keyboard with HID protocol](./drivers/HID_Keyboard/)
-- [Keyboard with boot protocol](./drivers/Keyboard/)
+- [Generic HID Device Developer Guide](./docs/HIDDriverGuide.md)
+- [QL720NW Printer](./drivers/QL720NW_UART_USB_Driver/)
+- [FTDI USB-to-UART Converter](./drivers/FT232RL_FTDI_USB_Driver/)
+- [Keyboard with HID Protocol](./drivers/HIDKeyboard/)
+- [Keyboard with Support for Boot Protocol](./drivers/BootKeyboard/)
 
 # License
 
