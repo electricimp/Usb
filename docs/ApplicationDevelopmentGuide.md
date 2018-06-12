@@ -5,7 +5,7 @@ the existing USB drivers into their applications.
 
 Before you use a driver, please carefully read it's documentation, limitations and requirements.
 
-### Include the USB Framework and Driver Libraries
+### Including USB Framework and Driver Libraries
 
 By default the base USB Drivers Framework itself does not provide any device
 drivers out of the box. So application developers should explicitly include
@@ -25,7 +25,7 @@ into your applicatin code:
 #require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0"
 ```
 
-### Initializing the Framework
+### Initializing the USB Framework
 
 Once the necessary driver libraries are included in the application code,
 the USB frameworks should be configured to use them.
@@ -71,7 +71,7 @@ a driver state listener by calling the `USB.Host.setDriverListener` method. Plea
 refer to callback function [documentation](DriverDevelopmentGuide.md#callbackeventtype-eventdriver)
 for more details.
 
-### Using multiple Drivers in your Application
+### Using Multiple Drivers
 
 It is possible to register several drivers in the USB Framework.
 Whenever a device is plugged or unplugged the corresponding drivers
@@ -97,14 +97,14 @@ host <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2, MyCustomDriver
 But if all tree drivers are match the device interfaces they all
 are instantiated and started by the framework.
 
-### Driver API Access
+### Accessing Driver API
 
 **NOTE:** public driver API neither are limited nor enforced in any way by the USB framework.
 It's up to the driver developer to decide which APIs to expose.
 
 Each driver provides it's own public API for interaction with USB devices and application code. So appliaction developer should carefully read the driver documentation and follow the instructions.
 
-### Hardware Pins Configuration for USB
+### Configuring Hardware Pins for USB
 
 The reference hardware for the USB Drivers Framework is [imp005](https://electricimp.com/docs/hardware/imp/imp005_hardware_guide/) board. It's schematic requires special pin configuration in order to enable USB. USB Driver Framework does this for you by default. Please see documentation on the
 USB.Host [constructor](DriverDevelopmentGuide.md#usbhostusb-drivers--autoconfigpins) for more details.
@@ -178,7 +178,7 @@ host <- USB.Host(hardware.usb, [MyCustomDriver]);
 host.setDeviceListener(deviceStatusListener);
 ```
 
-### USB.Host reset
+### Resetting the `USB.Host`
 
 Resets the USB host see [USB.Host.reset API](DriverDevelopmentGuide.md#reset) . Can be used by application in response to unrecoverable error like driver not responding.
 
