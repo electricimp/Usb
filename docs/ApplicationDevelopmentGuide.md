@@ -94,18 +94,19 @@ then it will be instantiated:
 
 host <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2, MyCustomDriver3]);
 ```
-But if all tree drivers are match the device interfaces then all
-three drivers will be created and started.
+But if all tree drivers are match the device interfaces they all
+are instantiated and started by the framework.
 
-### Driver API access
+### Driver API Access
 
-**Please note**: *API exposed by a particular driver is not a regulated by the USB Driver Framework and is solely the USB driver developer decision.*
+**NOTE:** public driver API neither are limited nor enforced in any way by the USB framework.
+It's up to the driver developer to decide which APIs to expose.
 
-Each driver provides it's own custom API for interaction with USB devices. Appliaction developer should refere to the specific driver documentation for more details.
+Each driver provides it's own public API for interaction with USB devices and application code. So appliaction developer should carefully read the driver documentation and follow the instructions.
 
-### Hardware pins configuration for USB
+### Hardware Pins Configuration for USB
 
-The reference hardware for USB Drivers Framework is *[imp005](https://electricimp.com/docs/hardware/imp/imp005_hardware_guide/)* board. It's schematic requires special pin configuration in order to make USB hardware functional. USB Driver Framework does such configuration when *[USB.Host](DriverDevelopmentGuide.md#usbhostusb-drivers--autoconfigpins)* class is instantiated with *autoConfigPins=true*.
+The reference hardware for the USB Drivers Framework is *[imp005](https://electricimp.com/docs/hardware/imp/imp005_hardware_guide/)* board. It's schematic requires special pin configuration in order to make USB hardware functional. USB Driver Framework does such configuration when *[USB.Host](DriverDevelopmentGuide.md#usbhostusb-drivers--autoconfigpins)* class is instantiated with *autoConfigPins=true* (default behavior).
 
 If your application is intended for a custom board, you may need to set *autoConfigPins=false* to prevent unrelated pin be improperly configured.
 
