@@ -5,89 +5,97 @@ the existing USB drivers into their applications.
 
 Before you use a driver, please carefully read it's documentation, limitations and requirements.
 
-### Include the framework and drivers
+### Include the USB Framework and Driver Libraries
 
 By default the base USB Drivers Framework itself does not provide any device
 drivers out of the box. So application developers should explicitly include
-and manage the drivers they need.
+and manage drivers they need.
 
-**Note:** to include the base USB Driver Framework library to your project,
+**NOTE:** to include the USB Driver Framework library into your project,
 add `#require "USB.device.lib.nut:1.0.0"` to the top of your device code.
 
 Include statements for dependent USB drivers and other libraries,
 as well as the rest of the application code should follow.
 
-In the example below FT232RL FTDI USB Device Driver is included into an application:
+In the example below shows how to include the FT232RL FTDI USB Device Driver
+into your applicatin code:
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
 #require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0"
 ```
 
-### Initializing the framework
+### Initializing the Framework
 
 Once the necessary driver libraries are included in the application code,
-the USB frameworks should be configured to be using them.
+the USB frameworks should be configured to use them.
 
-The main entrance point into the USB Drivers Framework is
+The main entry point into the USB Drivers Framework is
 **[USB.Host](DriverDevelopmentGuide.md#usbhost-class)** class.
 
 This class is responsible for driver registration, instantiation,
 device and driver event notification handling, driver lifecycle management.
 
-The below example shows typical steps of the framework initialization.
-In this example the application creates an instance of
-[USB.Host](DriverDevelopmentGuide.md#usbhost-class) class for an array of
-the pre-defined driver classes (an FT232RL FTDI USB driver in this example).
-To get notification when the required device is connected and the corresponding
-driver is started and ready to use, the application assigns a
-[callback function](DriverDevelopmentGuide.md#callbackeventtype-eventobject)
-that receives USB event type and event object. In simple case it is enough to
-listen for `USB_DRIVER_STATE_STARTED` and `USB_DRIVER_STATE_STOPPED`
-events, where event object is the driver instance.
+The code snippet below shows how to initialize the USB framework
+with a single FT232RL FTDI USB driver as an example.
 
 ```
 #require "USB.device.lib.nut:1.0.0"
-#require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0" // driver example
+#require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0"
 
-ft232DriverInstance <- null;
+ft232Driver <- null;
 
-function driverStatusListener(eventType, eventObject) {
+function driverStatusListener(eventType, driver) {
     if (eventType == USB_DRIVER_STATE_STARTED) {
 
-        if (typeof eventObject == "FT232RLFtdiUsbDriver")
-            ft232DriverInstance = eventObject;
+        if (typeof driver == "FT232RLFtdiUsbDriver")
+            ft232Driver = driver;
 
-        // start work with FT232rl driver API here
+        // Start work with FT232RL driver API here
 
     } else if (eventType == USB_DRIVER_STATE_STOPPED) {
 
-        // immediately stop all interaction with FT232rl driver API
-        // and reset driver reference
-        ft232DriverInstance = null;
+        // Immediately stop all interaction with FT232RL driver API
+        // and cleanup the driver reference
+        ft232Driver = null;
     }
 }
 
-host <- USB.Host([FT232RLFtdiUsbDriver]);
-host.setEventListener(driverStatusListener);
+host <- USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
+host.setDriverListener(driverStatusListener);
 ```
 
-### Multiple drivers support
+The examples creates an instance of the [USB.Host](DriverDevelopmentGuide.md#usbhost-class) class. The constructor takes two parameters: the native USB object and an array of driver classes,
+an array with a single FT232RLFtdiUsbDriver class in this case. Next line shows how to register
+a driver state listener by calling the `USB.Host.setDriverListener` method. Please,
+refer to callback function [documentation](DriverDevelopmentGuide.md#callbackeventtype-eventdriver)
+for more details.
 
-It is possible to register several drivers in USB Drivers Framework. Thus you can plug/unplug devices in runtime and corresponding drivers will be instantiated. There are some devices which provide several interfaces and that interfaces could be implemented via one or several drivers.
-USB Framework instantiate all drivers which could match to the plugged device therefore it is up to the application developer which drivers needs to be included in the application.
+### Using multiple Drivers in your Application
 
-For example, if one of these drivers is matching to the attached device, then driver will be instantiated:
+It is possible to register several drivers in the USB Framework.
+Whenever a device is plugged or unplugged the corresponding drivers
+that match this deviceare going to be started or stopped.
+There are some devices which provide multiple interfaces and these interfaces
+could be implemented via one or several drivers.
+USB Framework instantiate all drivers which match the plugged device.
+Application developer is responsible of which drivers need to be included in the application
+based on its needs.
+
+For example, if one of these drivers matches the device being connected,
+then it will be instantiated:
 
 ```
 #require "USB.device.lib.nut:1.0.0"
+
 #require "MyCustomDriver2.nut:1.2.0"
 #require "MyCustomDriver1.nut:1.0.0"
 #require "MyCustomDriver3.nut:0.1.0"
 
-host <- USB.Host([MyCustomDriver1, MyCustomDriver2, MyCustomDriver3]);
+host <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2, MyCustomDriver3]);
 ```
-But if all tree drivers are matching to the device interfaces then all three drivers will be instantiated.
+But if all tree drivers are match the device interfaces then all
+three drivers will be created and started.
 
 ### Driver API access
 
