@@ -4,10 +4,10 @@ This section is intended for those developers who is going to create new driver 
 
 ### Generic Recommendations
 
-Please avoid using `#include` or `@require`
-[Builder](https://developer.electricimp.com/tools/builder/)
-statements in your driver code to prevent any compilation
-or loaded code duplication issues at runtime.
+Please avoid using the Squirrel native statement `#require` or
+the [Builder](https://developer.electricimp.com/tools/builder/) statement `@include`
+in your driver code to avoid compilation issues
+or prevent loading duplicated code at runtime.
 
 If you are writing a USB driver that's going to be shared with the community,
 please follow requirements for the  third-party library submission
@@ -429,7 +429,7 @@ after `reset`.
 ##### Example
 
 ```squirrel
-#include "MyCustomDriver.device.lib.nut" // some custom driver library
+#require "MyCustomDriver.device.lib.nut" // some custom driver library
 
 host <- USB.Host(hardware.usb, [MyCustomDriver]);
 
@@ -491,7 +491,7 @@ touchpad drivers assigned.
 
 #### getEndpointZero()
 
-Returns a procy for the Control Endpoint 0 for the device.
+Returns a proxy for the Control Endpoint 0 for the device.
 The endpoint 0 is a special type of endpoints that implicitly exists
 for every device.
 Throws exception if the device is not connected.
@@ -502,13 +502,14 @@ Return type is [USB.ControlEndpoint](#usbcontrolendpoint-class)
 
 Represents USB control endpoints.
 This class is managed by USB.Device and should be acquired
-by calling `USB.Device.getEndpointZero()`.
-
-The following code is making reset of the functional
-endpoint via a control endpoint:
+by calling [USB.Device.getEndpointZero()](#getendpointzero).
 
 **NOTE:** neither applications nor drivers should explicitly create
 `USB.ControlEndpoint` objects. They are instantiated by the USB framework automatically.
+
+The following code sends a request to the control endpoint 0
+to reset a functional endpoint state (clear the errors)
+specified by `functionalEndpointAddress`:
 
 ##### Example
 
@@ -519,7 +520,7 @@ device
         USB_SETUP_RECIPIENT_ENDPOINT | USB_SETUP_HOST_TO_DEVICE | USB_SETUP_TYPE_STANDARD,
         USB_REQUEST_CLEAR_FEATURE,
         0,
-        endpointAddress);
+        functionalEndpointAddress);
 ```
 
 #### transfer(reqType, req, value, index, data = null)
@@ -528,10 +529,10 @@ Generic method for transferring data over a control endpoint.
 
 | Parameter 	 | Data Type | Default | Description |
 | -------------- | --------- | ------- | ----------- |
-| *reqType*      | Number    | n/a 	   | USB request type. See Control Endpoint Request Type [definitions](#control-endpoint-request-types) for more details |
-| *req* 		 | Number 	 | n/a 	   | The specific USB request. See the Control Endpoint Request [constants](#control-endpoint-requests) |
-| *value* 		 | Number 	 | n/a 	   | A value determined by the specific USB request|
-| *index* 		 | Number 	 | n/a 	   | An index value determined by the specific USB request |
+| *reqType*      | Integer   | n/a 	   | USB request type. See Control Endpoint Request Type [definitions](#control-endpoint-request-types) for more details |
+| *req* 		 | Integer 	 | n/a 	   | The specific USB request. See the Control Endpoint Request [constants](#control-endpoint-requests) |
+| *value* 		 | Integer 	 | n/a 	   | A value determined by the specific USB request|
+| *index* 		 | Integer 	 | n/a 	   | An index value determined by the specific USB request |
 | *data* 		 | Blob 	 | null    | [optional] Optional storage for incoming or outgoing payload|
 
 Please see Control Endpoint Request [Types](#control-endpoint-request-types) and
@@ -540,7 +541,8 @@ Control Endpoint [Request](#control-endpoint-requests) constants definitions.
 #### getEndpointAddr()
 
 Returns the endpoint address. Typical use case for this function is to get
-endpoint address, which is required by a of device control operation performed over the endpoint 0.
+endpoint address, which is required by a device control
+operation performed over the endpoint 0.
 
 ## USB.FuncEndpoint Class
 
@@ -565,9 +567,9 @@ Callback **onComplete(error, len)**:
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
 | *ep*        | Endpoint  | instance of the endpoint [FuncEndpoint](#usbfuncendpoint-class) |
-| *state*     | Number    | USB transfer state, see Transfer States [table](#usb-transfer-states) for more details |
+| *state*     | Integer   | USB transfer state, see Transfer States [table](#usb-transfer-states) for more details |
 | *data*      | Blob      | the payload data being sent |
-| *len*       | Number    | length of the written payload data |
+| *len*       | Integer   | length of the written payload data |
 
 ##### Example
 
@@ -613,9 +615,9 @@ Callback **onComplete(error, len)**:
 | Parameter   | Data Type | Description |
 | ----------- | --------- | ----------- |
 | *ep*        | Endpoint  | instance of the endpoint [FuncEndpoint](#usbfuncendpoint-class) |
-| *state*     | Number    | USB transfer state, see Transfer States [table](#usb-transfer-states) for more details |
+| *state*     | Integer   | USB transfer state, see Transfer States [table](#usb-transfer-states) for more details |
 | *data*      | Blob      | the payload data read |
-| *len*       | Number    | length of the read data  |
+| *len*       | Integer   | length of the read data  |
 
 ##### Example
 
@@ -673,16 +675,17 @@ Releases all resources instantiated by the driver.
 It is called by USB Drivers Framework when USB device
 is detached and all resources should be released.
 
-It is important to note all device resources are released
-prior to this function call and attempts to access Device or Endpoint members
-may result in an exception being thrown.
+It is not recommended to access `USB.Device` or endpoint instances
+created by the framework from the callback as they may
+have already been partially released by this moment `release` is called.
+So any attempts to access these objects and their members from the callback may throw exceptions.
 
-The methos should be used by the drivers to clean up the driver related resources and free an external resource if necessary.
+The methods should be used by the drivers to clean up the driver related resources and free an external resource if necessary.
 
 ### _typeof()
 
 Meta-function to return class name when `typeof <instance>` is invoked.
-Uses to identify the driver instance type in runtime 
+Uses to identify the driver instance type in runtime
 (for example, for debugging purposes).
 
 ##### Example
