@@ -990,7 +990,7 @@ USB <- {
         // Notify that driver is going to be released
         // No endpoint operation should be performed at this function.
         function release() {
-            USB.log("Released");
+            USB.log("Driver is released");
         }
 
         // Metafunction to return class name when typeof <instance> is run

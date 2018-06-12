@@ -192,9 +192,6 @@ the drivers and devices are created again, they are going to be have addresses.
 #require "USB.device.lib.nut:1.0.0"
 
 class MyCustomDriver extends USB.Driver {
-    constructor() {
-    } // constructor
-
     function match(device, interfaces) {
         return MyCustomDriver();
     }
