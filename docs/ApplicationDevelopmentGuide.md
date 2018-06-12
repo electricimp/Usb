@@ -106,35 +106,67 @@ Each driver provides it's own public API for interaction with USB devices and ap
 
 ### Hardware Pins Configuration for USB
 
-The reference hardware for the USB Drivers Framework is *[imp005](https://electricimp.com/docs/hardware/imp/imp005_hardware_guide/)* board. It's schematic requires special pin configuration in order to make USB hardware functional. USB Driver Framework does such configuration when *[USB.Host](DriverDevelopmentGuide.md#usbhostusb-drivers--autoconfigpins)* class is instantiated with *autoConfigPins=true* (default behavior).
+The reference hardware for the USB Drivers Framework is [imp005](https://electricimp.com/docs/hardware/imp/imp005_hardware_guide/) board. It's schematic requires special pin configuration in order to enable USB. USB Driver Framework does this for you by default. Please see documentation on the
+USB.Host [constructor](DriverDevelopmentGuide.md#usbhostusb-drivers--autoconfigpins) for more details.
 
-If your application is intended for a custom board, you may need to set *autoConfigPins=false* to prevent unrelated pin be improperly configured.
+If your application is targetting a custom board based on a different Electric Imp module,
+you may need to set *autoConfigPins=false* to prevent configuration issues and
+configure it on the application side according to the module specificaion.
 
-### How to get control of an attached device
+### Working with attached Devices
 
-A primary way to interact with an attached device is to use one of the drivers that support that device.
+A recommended way to interact with an attached device is to use one of
+the drivers that support that device. However it may be important to access the
+device directly, e.g. to select alternative configuration or change it's power state.
+To provide such access USB Driver Framework creates a proxy [USB.Device](DriverDevelopmentGuide.md#usbdevice-class) class for every device attached to the USB interface.
 
-However it may be important to access the device directly, e.g. to select alternative configuration or change it's power state. To provide such access USB Driver Framework creates a proxy **[USB.Device](DriverDevelopmentGuide.md#usbdevice-class)** class for every device attached to the USB interface. To get correct instance the application needs to either listen to the `USB_DEVICE_STATE_CONNECTED` events at the callback function assigned by [`USB.Host.setListener`](DriverDevelopmentGuide.md#seteventlistenercallback) method or get a list of the attached devices by calling the [`USB.Host.getAttachedDevices`](DriverDevelopmentGuide.md#getattacheddevices) method and filter out the required one. Than it is possible to use one of the **[USB.Device](DriverDevelopmentGuide.md#usbdevice-class)** class methods or to get access to the special [control endpoint 0](DriverDevelopmentGuide.md#usbcontrolendpoint-class) and send custom messages through this channel. The format of such messages is out the scope of this document. Please refer to [USB specification](http://www.usb.org/) for more details.
+You can retrieve an instance of the `USB.Device` from the callback
+[`USB.Host.setDeviceListener`](DriverDevelopmentGuide.md#setdevicelistenercallback),
+which is executed when a device is connected/disconnected to/from the USB bus. You can also
+retrieve a list of all the attached devices by calling the
+[`USB.Host.getAttachedDevices`](DriverDevelopmentGuide.md#getattacheddevices).
 
-Example below shows how to get control over the endpoint 0 for a device:
+[USB.Device](DriverDevelopmentGuide.md#usbdevice-class) class provides a number of APIs
+to interact and manages devices. For example, `USB.Device.getEndpointZero` returns a special
+control [endpoint 0](DriverDevelopmentGuide.md#usbcontrolendpoint-class) that can be used to configure
+the device by trasfering messages of a special format through this endpoint.
+The format of such messages is out the scope of this document.
+Please refer to [USB specification](http://www.usb.org/) for more details.
+
+Example below shows how to get retrieve the endpoint 0 to then use it for device configuration:
 
 ```
 #require "USB.device.lib.nut:1.0.0"
 
-const VID = 1;
-const PID = 2;
+const VID = 0x413C;
+const PID = 0x2107;
 
 // endpoint 0 for the required device
 ep0 <- null;
 
-function driverStatusListener(eventType, eventObject) {
-    if (eventType == "connected") {
-        local device = eventObject;
+class MyCustomDriver extends USB.Driver {
+    constructor() {
+    } // constructor
+
+    function match(device, interfaces) {
+        return MyCustomDriver();
+    }
+
+    function _typeof() {
+        return "MyCustomDriver";
+    }
+} // class
+
+
+function deviceStatusListener(eventType, device) {
+    server.log(device.getVendorId())
+    server.log(device.getProductId())
+    if (eventType == USB_DEVICE_STATE_CONNECTED) {
         if (device.getVendorId()  == VID &&
             device.getProductId() == PID) {
                 ep0 = device.getEndpointZero();
                 //
-                // make device configuration
+                // Do device configuration here
                 //
         }
     } else if (eventType == "disconnected") {
@@ -142,8 +174,8 @@ function driverStatusListener(eventType, eventObject) {
     }
 }
 
-host <- USB.Host([]);
-host.setEventListener(driverStatusListener);
+host <- USB.Host(hardware.usb, [MyCustomDriver]);
+host.setDeviceListener(deviceStatusListener);
 ```
 
 ### USB.Host reset
