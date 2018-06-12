@@ -508,7 +508,7 @@ by calling [USB.Device.getEndpointZero()](#getendpointzero).
 `USB.ControlEndpoint` objects. They are instantiated by the USB framework automatically.
 
 The following code sends a request to the control endpoint 0
-to reset a functional endpoint state (clear the errors)
+to reset the state (clear error codes) of a functional endpoint
 specified by `functionalEndpointAddress`:
 
 ##### Example
