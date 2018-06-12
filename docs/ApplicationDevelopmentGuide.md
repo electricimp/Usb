@@ -184,8 +184,8 @@ Resets the USB host see [USB.Host.reset API](DriverDevelopmentGuide.md#reset) . 
 
 This method should clean up all drivers and devices with corresponding event listener notifications and finally make USB reconfiguration.
 
-It is not necessary to setup [setDriverListener](DriverDevelopmentGuide.md#setDriverListener) or
-[setDeviceListener](DriverDevelopmentGuide.md#setDeviceListener) again, the same callback should get all notifications about re-attached devices and corresponding drivers state changes. Please note that as
+It is not necessary to setup [setDriverListener](DriverDevelopmentGuide.md#setdriverlistenercallback) or
+[setDeviceListener](DriverDevelopmentGuide.md#setdevicelistenercallback) again, the same callback should get all notifications about re-attached devices and corresponding drivers state changes. Please note that as
 the drivers and devices are created again, they are going to be have addresses.
 
 ```squirrel
