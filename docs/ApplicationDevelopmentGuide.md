@@ -180,29 +180,43 @@ host.setDeviceListener(deviceStatusListener);
 
 ### USB.Host reset
 
-Resets the USB host see [USB.Host.reset API](DriverDevelopmentGuide.md#reset) . Can be used by application in response to unrecoverable error like driver pending or not responding.
+Resets the USB host see [USB.Host.reset API](DriverDevelopmentGuide.md#reset) . Can be used by application in response to unrecoverable error like driver not responding.
 
-This method should clean up all drivers and devices with corresponding event listener notifications and finally make usb reconfiguration.
+This method should clean up all drivers and devices with corresponding event listener notifications and finally make USB reconfiguration.
 
-It is not necessary to setup [setEventListener](DriverDevelopmentGuide.md#setEventListener) again, the same callback should get all notifications about re-attached devices and corresponding drivers allocation. Please note that newly created drivers and devices instances will be different and all devices will have a new addresses.
+It is not necessary to setup [setDriverListener](DriverDevelopmentGuide.md#setDriverListener) or
+[setDeviceListener](DriverDevelopmentGuide.md#setDeviceListener) again, the same callback should get all notifications about re-attached devices and corresponding drivers state changes. Please note that as
+the drivers and devices are created again, they are going to be have addresses.
 
 ```squirrel
+#require "USB.device.lib.nut:1.0.0"
 
-#include "MyCustomDriver.nut" // some custom driver
+class MyCustomDriver extends USB.Driver {
+    constructor() {
+    } // constructor
 
-host <- USB.Host([MyCustomDriver]);
+    function match(device, interfaces) {
+        return MyCustomDriver();
+    }
 
-host.setEventListener(function(eventName, eventDetails) {
+    function _typeof() {
+        return "MyCustomDriver";
+    }
+}
+
+host <- USB.Host(hardware.usb, [MyCustomDriver]);
+
+host.setDeviceListener(function(event, device) {
     // print all events
-    server.log("Event: " + eventName);
+    server.log("[APP]: Event: " + event + ", number of connected " + host.getAttachedDevices().len());
     // Check that the number of connected devices
     // is the same after reset
-    if (eventName == "connected" && host.getAttachedDevices().len() != 1)
+    if (event == USB_DEVICE_STATE_CONNECTED && host.getAttachedDevices().len() != 1) {
         server.log("Expected only one attached device");
+    }
 });
 
 imp.wakeup(2, function() {
     host.reset();
 }.bindenv(this));
-
 ```
