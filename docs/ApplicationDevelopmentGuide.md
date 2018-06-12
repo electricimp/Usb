@@ -68,7 +68,7 @@ host.setDriverListener(driverStatusListener);
 The examples creates an instance of the [USB.Host](DriverDevelopmentGuide.md#usbhost-class) class. The constructor takes two parameters: the native USB object and an array of driver classes,
 an array with a single FT232RLFtdiUsbDriver class in this case. Next line shows how to register
 a driver state listener by calling the `USB.Host.setDriverListener` method. Please,
-refer to callback function [documentation](DriverDevelopmentGuide.md#callbackeventtype-eventdriver)
+refer to callback function [documentation](DriverDevelopmentGuide.md#callbackeventtype-driver)
 for more details.
 
 ### Using Multiple Drivers
@@ -94,8 +94,8 @@ then it will be instantiated:
 
 host <- USB.Host(hardware.usb, [MyCustomDriver1, MyCustomDriver2, MyCustomDriver3]);
 ```
-But if all tree drivers are match the device interfaces they all
-are instantiated and started by the framework.
+But if all the three drivers match device interfaces they all
+are instantiated and started by the USB framework.
 
 ### Accessing Driver API
 
@@ -106,7 +106,7 @@ Each driver provides it's own public API for interaction with USB devices and ap
 
 ### Configuring Hardware Pins for USB
 
-The reference hardware for the USB Drivers Framework is [imp005](https://electricimp.com/docs/hardware/imp/imp005_hardware_guide/) board. It's schematic requires special pin configuration in order to enable USB. USB Driver Framework does this for you by default. Please see documentation on the
+The reference hardware for the USB Drivers Framework is [imp005](https://developer.electricimp.com/hardware/imp/imp005_hardware_guide) board. It's schematic requires special pin configuration in order to enable USB. USB Driver Framework does this for you by default. Please see documentation on the
 USB.Host [constructor](DriverDevelopmentGuide.md#usbhostusb-drivers--autoconfigpins) for more details.
 
 If your application is targetting a custom board based on a different Electric Imp module,
