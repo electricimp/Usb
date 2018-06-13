@@ -40,11 +40,11 @@ future human interface devices. During enumeration the device describes how its
 reports are to be structured so that the host device can properly prepare to
 receive this information.
 
-Each USB HID interface communicates with the host using either a `control` pipe or
-an `interrupt` pipe. `Isochronous` and `bulk` pipes are not used in HID class devices.
-Both IN and OUT control transfers are required for enumeration; only an IN
-interrupt transfer is required for HID reports. OUT interrupt transfers are
-optional in HID-class devices.
+Each USB HID interface communicates with the host using either a `control` or
+an `interrupt` endpoints. `Isochronous` and `bulk` endpoints are not used in
+HID class devices. Both IN and OUT control transfers are required for enumeration;
+only an IN interrupt transfer is required for HID reports. OUT interrupt
+transfers are kooptional in HID-class devices.
 
 The host periodically polls the device's interrupt IN endpoint during operation.
 When the device has data to send it forms a report and sends it as a reply to the

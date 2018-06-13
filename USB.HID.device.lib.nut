@@ -205,7 +205,7 @@ class HIDReport {
     // Update input items with data stored at provided buffer
     function _parseInputData(buffer) {
         foreach (item in _inputItems) {
-            item._parse(buffer);
+            item._readFrom(buffer);
         }
     }
 }
@@ -272,7 +272,7 @@ class HIDReport.Item {
     // Parameters:
     //          buffer - blob instance
     // Throws if buffer size is less than item offset + item size
-    function _parse(buffer) {
+    function _readFrom(buffer) {
         local size     = attributes.bitSize;
         local offset   = _bitOffset;
         local bitMask  = (1 << 0);
@@ -281,14 +281,15 @@ class HIDReport.Item {
         buffer.seek(offset / 8, 'b');
         local data = buffer.readn('b');
 
-        while (size-- > 0)
-        {
-            if (data & (1 << (offset % 8))) _value = _value | bitMask;
+        while (size-- > 0) {
+            if (data & (1 << (offset % 8))) {
+                _value = _value | bitMask;
+            }
 
             offset++;
             bitMask = bitMask << 1;
 
-            if ( 0 == (offset % 8) && size > 0) {
+            if (0 == (offset % 8) && size > 0) {
                 data = buffer.readn('b');
             }
         }
@@ -307,10 +308,10 @@ class HIDReport.Item {
 
         local data = buffer.readn('b');
 
-
-        while (size-- > 0)
-        {
-            if (_value & bitMask) data = data | (1 << (offset % 8));
+        while (size-- > 0) {
+            if (_value & bitMask) {
+                data = data | (1 << (offset % 8));
+            }
 
             offset++;
             bitMask = bitMask << 1;
@@ -318,7 +319,7 @@ class HIDReport.Item {
             buffer.seek(-1, 'c');
             buffer.writen(data, 'b');
 
-            if ( 0 == (offset % 8) && size > 0) {
+            if (0 == (offset % 8) && size > 0) {
                 buffer.seek(-1, 'c');
                 data = buffer.readn('b');
             }
@@ -484,7 +485,7 @@ class HIDDriver extends USB.Driver {
             foreach(interface in found) {
                 local hidReportDescriptor = _getReportDescr(ep0, interface, wTotalLen);
                 if (null != hidReportDescriptor) {
-                    local hidReports = _parse(hidReportDescriptor, interface);
+                    local hidReports = _readFrom(hidReportDescriptor, interface);
                     if (null != hidReports) {
                         local newDriver = _createInstance(hidReports, interface);
                         drivers.append(newDriver);
@@ -652,7 +653,7 @@ class HIDDriver extends USB.Driver {
     //       an array of HIDReport instances or null if no reports was found.
     //
     // Throws if provided buffer contains invalid data or too short
-    function _parse(hidReportDescriptor, interface) {
+    function _readFrom(hidReportDescriptor, interface) {
 
         local currStateTable     = ParserState();
         local currCollectionPath = null;

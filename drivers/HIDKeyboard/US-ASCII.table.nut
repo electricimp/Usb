@@ -30,7 +30,6 @@ local ASCII_OUTPUT  = ['\n', '\t', ' ', '-', '=', '[', ']', '\\', ';', '\'', ','
 // Used with HIDKeyboard class if this file is included into application code
 // NOTE: this is just example function that doesn't process key modifier like CRTL or SHIFT
 local US_ASCII_LAYOUT = function (keys) {
-    server.log("here");
     local result = [];
     local index = -1;
 
