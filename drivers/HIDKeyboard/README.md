@@ -61,13 +61,13 @@ This class  inherits all [HIDDriver](../HID_Driver.md) functions. To accept only
 
 This driver exposes following function for application usage.
 
-#### startPoll(time_ms, cb)
+#### startPoll(millis, cb)
 
 Starts keyboard polling with provided frequency. The function returns nothing but may throws if active polling is ongoing
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
-| *time_ms* | Integer| Poll time in a range of [4 .. 1020] ms |
+| *millis* | Integer| Poll time in a range of [4 .. 1020] ms |
 | *cb* | Function |user callback function that receive keyboard state |
 
 The signature of callback *callback(keyset)*:

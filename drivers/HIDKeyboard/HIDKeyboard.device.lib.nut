@@ -51,7 +51,7 @@ class HIDKeyboardDriver extends HIDDriver {
 
     // Start keyboard polling.
     // Parameters:
-    //      time_ms - poll time in a range of [4 .. 1020] ms
+    //      millis - poll time in a range of [4 .. 1020] ms
     //      cb      - user callback function that receive keyboard state.
     //                Its signature is
     //                  function callback(keyset), where
@@ -65,18 +65,18 @@ class HIDKeyboardDriver extends HIDDriver {
     //       event after desired amount of time. If the hardware doesn't support the command,
     //       the implementation expects to receive response from HIDReport.getAsync() immediately
     //       and will use timer to implement IDLE time functionality.
-    function startPoll(time_ms, cb) {
+    function startPoll(millis, cb) {
         if (null == cb) return;
         if (_getAsyncUserCb != null) throw "Poll is already started";
 
         foreach (report in _reports) {
             try {
-                report.setIdleTimeMs(time_ms);
-                USB.log("Idle time set to " + time_ms);
+                report.setIdleTimeMs(millis);
+                USB.log("Idle time set to " + millis);
             } catch(e) {
                 if (e == USB_TYPE_STALL_ERROR) {
                     USB.log("Set IDLE is not supported by device. Using poll timer");
-                    _timerTick = time_ms;
+                    _timerTick = millis;
                 } else {
                     throw "USB error " + e;
                 }

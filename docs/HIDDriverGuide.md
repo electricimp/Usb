@@ -202,7 +202,7 @@ Obtains HID state from device through Endpoint 0. No result is returned but it m
 
 Synchronous send of output items. The items value need to be updated prior to call. Throws if endpoint is closed or something happens during call to native USB API
 
-##### setIdleTimeMs(time_ms)
+##### setIdleTimeMs(millis)
 
 Issue "Set Idle" command for the associated interface.  Returns nothing but may trow if  EP0 is closed, or something happens during call to native USB API.
 
@@ -210,7 +210,7 @@ The function accepts following parameters:
 
 | Parameters name | Type | Description |
 | --------------- | ---- | ----------- |
-| *time_ms* | Integer | IDLE time (in milliseconds) for this report between 4 - 1020 ms |
+| *millis* | Integer | IDLE time (in milliseconds) for this report between 4 - 1020 ms |
 
 See more at section __7.2.4__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf).
 

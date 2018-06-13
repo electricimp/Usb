@@ -161,12 +161,12 @@ class HIDReport {
      // Issue "Set Idle" command for the interface this report is bound to.
      //
      // Parameters:
-     //     time_ms - IDLE time for this report between 4 - 1020 ms
+     //     millis - IDLE time for this report between 4 - 1020 ms
      //
      // Trows is EP0 is closed, or something happens during call to native USB API
-     function setIdleTimeMs(time_ms) {
+     function setIdleTimeMs(millis) {
 
-        local timeUnit = (time_ms.tointeger() / 4) & 0xFF;
+        local timeUnit = (millis.tointeger() / 4) & 0xFF;
 
         local ep0 = _interface.getDevice().getEndpointZero();
 
