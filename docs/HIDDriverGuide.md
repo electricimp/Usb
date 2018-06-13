@@ -56,17 +56,17 @@ system. In this way it is possible for the USB HID class to be extremely flexibl
 For more details on the HID reports structure and attributes please refer to
 HID usage table [specification](http://www.usb.org/developers/hidpage/Hut1_12v2.pdf).
 
-The generic HID Driver implementation exposes a set of classes that implement some of the HID Concepts
+The generic HID Driver implementation exposes a set of classes
+that implement some of the HID Concepts
 in Squirrel. [HIDReport class](#hidreport-class) wraps a
 set of input, output and feature [HID Report Item](#hidreportitem-class)
 objects. Typically applications deal with [HIDReport](#hidreport-class)
 instances obtained from the from [HIDDriver](#hiddriver-class) class.
 
 There are two ways to read required data from device and only one way
-to send to device.
+to send to device, exposed by the [HIDReport class](#hidreport-class) class:
 
-- [HIDReport class](#hidreport-class) exposes [request()](#request)
-function to read report data from device blocking way
+- synchronous call to [HIDReport.request()](#request) function to read the report data
 - [HIDDriver class](#hiddriver-class) contains a method
 to get [HIDReport](#hidreport-class) asynchronously
 - [HIDReport class](#hidreport-class) exposes [send()](#send)
@@ -161,13 +161,20 @@ See section __6.2.2.5__ of [HID specification](http://www.usb.org/developers/hid
 
 #### HIDDriver Class
 
-**HIDDriver** is a class that represent single HID interface of any device. It retrieves HID report descriptor from peer device and convert it to a set of [HIDReport](#hidreport-class) instances. Inherits basic [USB.Driver](./DriverDevelopmentGuide.md#usbdriver-class) class.
+**HIDDriver** is a class that represent single HID interface of any device.
+It retrieves HID report descriptor from peer device and convert it to a set
+of [HIDReport](#hidreport-class) instances. Inherits basic
+[USB.Driver](./DriverDevelopmentGuide.md#usbdriver-class) class.
 
 ##### match(device, interfaces)
 
-Overridden [USB.Driver.match()](DriverDevelopmentGuide.md#matchdeviceobject-interfaces) function.
+Overridden [USB.Driver.match()](DriverDevelopmentGuide.md#matchdeviceobject-interfaces)
+function.
 
-This function looks into provided [interface](./DriverDevelopmentGuide.md#interface-descriptor) list, searching for interface with class value equls 3 (HID class).  Then it try to extract and parse HID Report descriptor (see [notes](#known-limitation)). If it meets any issue the function returns `null`.
+This function looks into provided [interface](./DriverDevelopmentGuide.md#interface-descriptor)
+list, searching for interface with class value equls 3 (HID class). Then it try
+to extract and parse HID Report descriptor (see [notes](#known-limitation)).
+If it meets any issue the function returns `null`.
 
 ##### getReports()
 
@@ -175,11 +182,20 @@ Returns an array of [HIDReport](#hidreport-class) instances
 
 ##### getAsync(cb)
 
-Performs read through Interrupt In Endpoint. The result depends on how many Input Reports are available at associated interface. In case of multiple Input Reports, the result depends on duplicate report generation rate (can be changed by [setIdleTimeMs](#setidletimetime_ms)). See section __7.2.4__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf) for more details.
+Performs read through Interrupt In Endpoint. The result depends on how many
+Input Reports are available at associated interface. In case of multiple
+Input Reports, the result depends on duplicate report generation rate
+(can be changed by [setIdleTimeMs](#setidletimetime_ms)). See section
+__7.2.4__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf)
+for more details.
 
-May throw an exception if there is ongoing read from related endpoint, or input endpoint is closed, or something happens during call to native USB API, or interface descriptor doesn't describe input endpoint, or input endpoint was not open due to limit of native [USB API](https://electricimp.com/docs/api/hardware/usb/)
+May throw an exception if there is ongoing read from related endpoint, or
+input endpoint is closed, or something happens during call to native USB API,
+or interface descriptor doesn't describe input endpoint, or input endpoint
+was not open due to limit of native [USB API](https://electricimp.com/docs/api/hardware/usb/)
 
-If endpoint was not open due to reached limit of open Interrupt Endpoints, the developer may use synchronous version provided by [HIDReport](#request) class.
+If endpoint was not open due to reached limit of open Interrupt Endpoints,
+the developer may use synchronous version provided by [HIDReport](#request) class.
 
 ###### Callback function signature
 
@@ -192,19 +208,25 @@ The must accept the following parameters.
 
 #### HIDReport Class
 
-This class represents HID Report - a data packet that can be transferred from/to the device.
+This class represents HID Report - a data packet
+that can be transferred from/to the device.
 
 ##### request()
 
-Obtains HID state from device through Endpoint 0. No result is returned but it may throws if error happens during transfer or control endpoint is closed
+Obtains HID state from device through Endpoint 0.
+No result is returned but it may throws if error happens during
+transfer or control endpoint is closed
 
 ##### send()
 
-Synchronous send of output items. The items value need to be updated prior to call. Throws if endpoint is closed or something happens during call to native USB API
+Synchronous send of output items. The items value need to be updated
+prior to call. Throws if endpoint is closed or something happens
+during call to native USB API
 
 ##### setIdleTimeMs(millis)
 
-Issue "Set Idle" command for the associated interface.  Returns nothing but may trow if  EP0 is closed, or something happens during call to native USB API.
+Issue "Set Idle" command for the associated interface. Returns nothing
+but may trow if  EP0 is closed, or something happens during call to native USB API.
 
 The function accepts following parameters:
 
@@ -212,7 +234,8 @@ The function accepts following parameters:
 | --------------- | ---- | ----------- |
 | *millis* | Integer | IDLE time (in milliseconds) for this report between 4 - 1020 ms |
 
-See more at section __7.2.4__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf).
+See more at section __7.2.4__ of
+[HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf).
 
 ##### getInputItems()
 
@@ -245,7 +268,8 @@ Returns last item value.
 
 #### set(value)
 
-Updates item value with provided data. The parameter should be convertible to Integer with `tointeger()` function.
+Updates item value with provided data. The parameter should be
+convertible to Integer with `tointeger()` function.
 
 
 #### HIDReport.Item.Attributes class
@@ -270,11 +294,13 @@ Debug function. Prints items with provided function `stream`.
 
 #### HIDReport.Collection
 
-This class is used to create items collection hierarchy. Collection Path constructs as chain of Collection.
+This class is used to create items collection hierarchy. Collection Path
+constructs as chain of Collection.
 
 ##### constructor(parent)
 
-New collection is always created as part of collection path and thus should receive previous chain element. Or `null` if this first element.
+New collection is always created as part of collection path and thus should
+receive previous chain element. Or `null` if this first element.
 
 ##### print(stream)
 
