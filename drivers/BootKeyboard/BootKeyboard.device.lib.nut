@@ -192,7 +192,7 @@ class BootKeyboardDriver extends USB.Driver {
     //  timeout - poll duration in milliseconds [0...1020]. Zero means the duration is indefinite.
     //
     // Returns: error description or null
-    function setIdleTime(timeout) {
+    function setIdleTimeMs(timeout) {
         local ticks = (timeout / 4) & 0xFF;
         try {
             _ep0.transfer(HID_HOST_TO_DEVICE, HID_SET_IDLE_CMD, ticks << 8, _ifs);

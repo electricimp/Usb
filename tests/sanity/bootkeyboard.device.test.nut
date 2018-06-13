@@ -118,7 +118,7 @@ class UsbFunctionalEndpointSanity extends ImpTestCase {
         getDriver().then(function(drvInstance){
 
             return Promise(function(resolve, reject) {
-                local status = drvInstance.setIdleTime(10);
+                local status = drvInstance.setIdleTimeMs(10);
                 if ("error" in status) reject("Received error: " + status["error"]);
                 else resolve();
             });

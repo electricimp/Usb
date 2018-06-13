@@ -71,7 +71,7 @@ class HIDKeyboardDriver extends HIDDriver {
 
         foreach (report in _reports) {
             try {
-                report.setIdleTime(time_ms);
+                report.setIdleTimeMs(time_ms);
                 USB.log("Idle time set to " + time_ms);
             } catch(e) {
                 if (e == USB_TYPE_STALL_ERROR) {

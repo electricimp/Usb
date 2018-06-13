@@ -1,55 +1,94 @@
 ## Generic HID Driver Implementation
 
-The generic HID driver implements basic functionality required to start using any device that exposes interfaces with HID functionality. It allows to discover, read and change state of any sensors, actuators, indicators and other physical parts of such devices.
+The generic Human Interface Devices(HID) driver implements basic
+functionality required to start using any device that exposes HID interfaces.
+It allows to discover, read and change state of any sensors, actuators,
+indicators and other physical parts of such devices.
 
-It is recommended to be familiar with [Device Class Definition for Human Interface Devices (HID)](http://www.usb.org/developers/hidpage/HID1_11.pdf) prior to use this driver.
+It is recommended to be familiar with [Device Class Definition for
+Human Interface Devices](http://www.usb.org/developers/hidpage/HID1_11.pdf)
+prior to using this driver.
 
-### Include the driver and dependencies
+### Include the HID Driver and Dependencies
 
-The driver depends on some constants and classes of USB Framework, so that framework has to be included by application developer. Please follow [Application Developer Guide](./ApplicationDevelopmentGuide.md#include-the-framework-and-drivers) instruction about how to start using of USB framework.
+The driver depends on some constants and classes of USB Framework,
+so that framework has to be included by application developer. Please follow
+[Application Developer Guide](./ApplicationDevelopmentGuide.md#include-the-framework-and-drivers)
+instruction about how to start using of USB framework.
 
-**To add HID driver to your project, add** `#require "USB.HID.device.lib.nut:1.0.0"` **to the top of your device code.**
-
-In the example below HID driver is included into an application:
+**NOTE:** To add the HID driver to your application, add the following statement
+on top of your code:
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
 #require "USB.HID.device.lib.nut:1.0.0"
 ```
+to the top of your device code.
 
-### Basic concepts
+### Basic Doncepts
 
-The Human Interface Devices group consists of devices that are used by humans to interact with computer systems. Typical examples of HID class devices include:
-- Keyboards and pointing devices (mouse, trackballs, joysticks).
+The Human Interface Devices group consists of devices that are used by humans to interact with computer systems. Typical examples of HID class devices are:
+
+- Keyboards and pointing devices (mouse, trackballs, joysticks)
 - Bar-code readers, thermometers, voltmeters
 - LCD, LED indicator
 - Speakers
 
-To cover wide range of possible devices HID specification states that every device must describe its functionality in special form known for remote host and named as `descriptors`.  The HID driver may request those descriptors to get information about device identification and protocol required to speak with the device.
+The USB HID class requires that every device describes how it will communicate
+with the host device in order to accurately predict and define all current and
+future human interface devices. During enumeration the device describes how its
+reports are to be structured so that the host device can properly prepare to
+receive this information.
 
-The main protocol unit used to control HID is `HID report`. HID report consists of a set of `items` -  an elementary peace of data that describes state of single part or group of parts of the device.
+Each USB HID interface communicates with the host using either a `control` pipe or
+an `interrupt` pipe. `Isochronous` and `bulk` pipes are not used in HID class devices.
+Both IN and OUT control transfers are required for enumeration; only an IN
+interrupt transfer is required for HID reports. OUT interrupt transfers are
+optional in HID-class devices.
 
-Every `item` is described by a set of attributes. Some of them are describing `item` function, another one is for `item` data interpretation.
+The host periodically polls the device's interrupt IN endpoint during operation.
+When the device has data to send it forms a report and sends it as a reply to the
+poll token. When a vendor makes a
+custom USB HID class device, the reports formed by the device need to match the
+report description given during enumeration and the driver installed on the host
+system. In this way it is possible for the USB HID class to be extremely flexible.
 
-To select necessary `item` application developer consults with [HID usage table](http://www.usb.org/developers/hidpage/Hut1_12v2.pdf) where to chose required attributes. For example, `USAGE PAGE KEYBOARD` indicates that the `item` may contain pressed key number, or may be used to control keyboard LED indicator. Then chosen `usage page` and `usage ID` are used to find required HID report `item` inside `report`.
+For more details on the HID reports structure and attributes please refer to
+HID usage table [specification](http://www.usb.org/developers/hidpage/Hut1_12v2.pdf).
 
-This HID Driver exposes a set of classes that express HID species in squirrel language. [HIDReport class](#hidreport-class) wraps a set of input, output and feature [HID Report Item](#hidreportitem-class) objects. Typically an application receives  [HIDReport](#hidreport-class) objects from [HIDDriver](#hiddriver-class) instance, then starts working with some of them if they are containing interested items.
+The generic HID Driver implementation exposes a set of classes that implement some of the HID Concepts
+in Squirrel. [HIDReport class](#hidreport-class) wraps a
+set of input, output and feature [HID Report Item](#hidreportitem-class)
+objects. Typically applications deal with [HIDReport](#hidreport-class)
+instances obtained from the from [HIDDriver](#hiddriver-class) class.
 
-There are two ways to read required data from device and only one way to send to device.
+There are two ways to read required data from device and only one way
+to send to device.
 
-- [HIDReport class](#hidreport-class) exposes [request()](#request) function to read report data from device blocking way.
-- [HIDDriver class](#hiddriver-class) contains a method to get [HIDReport](#hidreport-class) asynchronously.
-- [HIDReport class](#hidreport-class) exposes [send()](#send) function to send report data to device blocking way.
+- [HIDReport class](#hidreport-class) exposes [request()](#request)
+function to read report data from device blocking way
+- [HIDDriver class](#hiddriver-class) contains a method
+to get [HIDReport](#hidreport-class) asynchronously
+- [HIDReport class](#hidreport-class) exposes [send()](#send)
+function to send report data to device blocking way.
 
-Asynchronous read require special attention in a case when there are several input reports described by HID Report Descriptor. Actual report read through this function depends on the rate at which duplicate reports are generated for the specified report. See section __7.2.4__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf) for more details.
+Asynchronous read require special attention in a case when there are
+several input reports described by HID Report Descriptor. Actual report
+read through this function depends on the rate at which duplicate reports
+are generated for the specified report. See section __7.2.4__ of
+[HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf) for more details.
 
-When report was read, its input items (acquired with [getInputItems()](#getinputitems) function) contain updated data.
+When report was read, its input items
+(acquired with [getInputItems()](#getinputitems) function) contain updated data.
 
-Output items (acquired with [getOutputItems()](#getoutputitems)) need to be updated individually prior to be sent to the device.
+Output items (acquired with [getOutputItems()](#getoutputitems)) need
+to be updated individually prior to be sent to the device.
 
-Interpretation of item value according to value data description (see [HIDReport.Item.Attributes class](#hidreportitemattributes-class)) is out of this driver implementation scope.
+Interpretation of item value according to value data description
+(see [HIDReport.Item.Attributes class](#hidreportitemattributes-class))
+is out of this driver implementation scope.
 
-### Complete example
+### Complete Example
 
 ```squirrel
 
@@ -80,13 +119,16 @@ server.log("USB initialization complete");
 
 ```
 
-### An application of this driver
+### Application Example
 
-[HIDKeyboard](examples/HID_Keyboard) is an example of this driver application. It converts this driver API to simple single function API.
+Please refer to [HIDKeyboard](./../Driver/HIDKeyboard) is an
+example of this driver application.
 
-### Known limitation
+### Known Limitation
 
-The driver issues special command `"Get Descriptor"` to acquire HID report descriptor. Some devices doesn't support this command, so the driver doesn't match such devices. Workaround for this case is a subject for future release.
+The driver issues special command `"Get Descriptor"` to acquire HID report
+descriptor. Some devices doesn't support this command, so the driver doesn't
+match such devices. Workaround for this case is a subject for future release.
 
 ### Public API
 
@@ -117,7 +159,7 @@ See section __6.2.2.5__ of [HID specification](http://www.usb.org/developers/hid
 | HID_IOF_BUFFERED_BYTES     | the contents are not interpreted as a single numeric quantity |
 | HID_IOF_BITFIELD           | the control emits a fixed-size stream of bytes |
 
-#### HIDDriver class
+#### HIDDriver Class
 
 **HIDDriver** is a class that represent single HID interface of any device. It retrieves HID report descriptor from peer device and convert it to a set of [HIDReport](#hidreport-class) instances. Inherits basic [USB.Driver](./DriverDevelopmentGuide.md#usbdriver-class) class.
 
@@ -133,7 +175,7 @@ Returns an array of [HIDReport](#hidreport-class) instances
 
 ##### getAsync(cb)
 
-Performs read through Interrupt In Endpoint. The result depends on how many Input Reports are available at associated interface. In case of multiple Input Reports, the result depends on duplicate report generation rate (can be changed by [setIdleTime](#setidletimetime_ms)). See section __7.2.4__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf) for more details.
+Performs read through Interrupt In Endpoint. The result depends on how many Input Reports are available at associated interface. In case of multiple Input Reports, the result depends on duplicate report generation rate (can be changed by [setIdleTimeMs](#setidletimetime_ms)). See section __7.2.4__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf) for more details.
 
 May throw an exception if there is ongoing read from related endpoint, or input endpoint is closed, or something happens during call to native USB API, or interface descriptor doesn't describe input endpoint, or input endpoint was not open due to limit of native [USB API](https://electricimp.com/docs/api/hardware/usb/)
 
@@ -148,7 +190,7 @@ The must accept the following parameters.
 | *error*   | Any  | Non null parameter indicates presence of error state |
 | *report*  | [HIDReport](#hidreport-class) | Read report |
 
-#### HIDReport class
+#### HIDReport Class
 
 This class represents HID Report - a data packet that can be transferred from/to the device.
 
@@ -160,7 +202,7 @@ Obtains HID state from device through Endpoint 0. No result is returned but it m
 
 Synchronous send of output items. The items value need to be updated prior to call. Throws if endpoint is closed or something happens during call to native USB API
 
-##### setIdleTime(time_ms)
+##### setIdleTimeMs(time_ms)
 
 Issue "Set Idle" command for the associated interface.  Returns nothing but may trow if  EP0 is closed, or something happens during call to native USB API.
 

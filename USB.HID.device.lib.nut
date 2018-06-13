@@ -164,7 +164,7 @@ class HIDReport {
      //     time_ms - IDLE time for this report between 4 - 1020 ms
      //
      // Trows is EP0 is closed, or something happens during call to native USB API
-     function setIdleTime(time_ms) {
+     function setIdleTimeMs(time_ms) {
 
         local timeUnit = (time_ms.tointeger() / 4) & 0xFF;
 

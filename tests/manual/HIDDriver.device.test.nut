@@ -49,11 +49,11 @@ class HIDDriverTest extends ImpTestCase {
         return "USB setup complete";
     }
 
-    // Test HIDReport.setIdleTime
+    // Test HIDReport.setIdleTimeMs
     function test1() {
         return _setUpHost().then(function(driverInstance) {
             foreach (report in driverInstance.getReports()) {
-                report.setIdleTime(55);
+                report.setIdleTimeMs(55);
             }
         });
     }

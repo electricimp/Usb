@@ -73,7 +73,7 @@ function usbDriverListener(event, driver) {
         server.log("[App] BootKeyboardDriver started");
         kbrDrv = driver;
         // Report only when key status is changed
-        kbrDrv.setIdleTime(0);
+        kbrDrv.setIdleTimeMs(0);
         // Receive new key state every second
         kbrDrv.getKeyStatusAsync(keyboardEventListener);
 

@@ -65,7 +65,7 @@ function usbDriverListener(event, driver) {
         server.log("[App] BootKeyboardDriver started");
         kbrDrv = driver;
         // Report only when key status is changed
-        kbrDrv.setIdleTime(0);
+        kbrDrv.setIdleTimeMs(0);
         // Receive new key state every second
         kbrDrv.getKeyStatusAsync(keyboardEventListener);
 
@@ -114,7 +114,7 @@ Function read keyboard report  through control endpoint 0 and thus synchronously
 
 It returns keyboard status [table](#keyboard-status-table) or throws if an error happens during transfer
 
-#### setIdleTime()
+#### setIdleTimeMs()
 
 This request is used to limit the reporting frequency.
 
