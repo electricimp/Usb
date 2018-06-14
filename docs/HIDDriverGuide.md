@@ -91,8 +91,6 @@ of the driver implementation.
 
 ```squirrel
 
-hidDrv < - null;
-
 hidDriver <- null;
 
 function hidEventListener(error, report) {
@@ -107,7 +105,7 @@ function hidEventListener(error, report) {
 function usbEventListener(event, driver) {
     if (event == USB_DRIVER_STATE_STARTED) {
        hidDriver = driver;
-        hidDriver.getAsync(hidEventListener);
+       hidDriver.getAsync(hidEventListener);
     }
 }
 
@@ -274,11 +272,11 @@ It has a number of attributes:
 
 Debug function, prints the report data to the specified function `stream`, for example, `server.log`.
 
-#### get()
+##### get()
 
 Returns the present HID report item value.
 
-#### set(value)
+##### set(value)
 
 Updates HID report item value with the data provided. The parameter should be
 convertible to Integer with `tointeger()` function.
