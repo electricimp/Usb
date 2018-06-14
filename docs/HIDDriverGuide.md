@@ -120,7 +120,7 @@ server.log("USB initialization complete");
 
 ### Real-World Application Example
 
-Please refer to [HIDKeyboard](./../drivers/HIDKeyboard) is an
+Please refer to [HIDKeyboard](./../drivers/HIDKeyboard) as an
 example of this driver application.
 
 ### Known Limitation
@@ -187,7 +187,7 @@ Returns an array of [HIDReport](#hidreport-class) instances
 Performs read through an Interrupt IN endpoint. The result depends on how many
 Input Reports are available for the associated interface. In case of multiple
 Input Reports, the result depends on duplicate report generation rate
-(can be changed by [setIdleTimeMs](#setidletimetime_ms)). See section
+(can be changed by [setIdleTimeMs](#setidletimemsmillis)). See section
 __7.2.4__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf)
 for more details.
 
@@ -198,7 +198,7 @@ May throw an exception in case of the following situations:
 3. an error occurred on the native USB API level
 4. the interface descriptor doesn't declare any IN endpoints on the device
 5. input endpoint was not open due to the limits
-of the native USB [API](https://electricimp.com/docs/api/hardware/usb/).
+of the native USB [API](https://developer.electricimp.com/api/hardware/usb).
 
 If endpoint was not open due to the limit of open Interrupt Endpoints,
 the developer may use the synchronous [HIDReport.request()](#request) call,
@@ -268,7 +268,7 @@ It has a number of attributes:
 | ----------- | ---- | ----------- |
 | *attributes* | [HIDReport.Item.Attributes](#hidreportitemattributes-class) | HID report item tags |
 | *itemFlags*  | Integer | Defines HID Report Item value attributes. [HID Constants](#hid-constants). Should be used by application for processing the Item's data |
-| *collectionPath* | [HIDReport.Collection](#hidreportcollectionpath) | Identifies a collection, the item belongs to |
+| *collectionPath* | [HIDReport.Collection](#hidreportcollection) | Identifies a collection, the item belongs to |
 
 ##### print(stream)
 
