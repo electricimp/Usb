@@ -2,7 +2,7 @@
 
 The generic Human Interface Devices (HID) driver implements the base
 functionality required to start using any device with an HID interface.
-It allows discovering, read and change a state of any sensors, actuators,
+It allows discovering, read and change states of any sensors, actuators,
 indicators and other physical parts of such devices.
 
 It is highly recommended to get familiar with the [Device Class Definition for
@@ -120,7 +120,7 @@ server.log("USB initialization complete");
 
 ### Real-World Application Example
 
-Please refer to [HIDKeyboard](./../Driver/HIDKeyboard) is an
+Please refer to [HIDKeyboard](./../drivers/HIDKeyboard) is an
 example of this driver application.
 
 ### Known Limitation
