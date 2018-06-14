@@ -140,7 +140,7 @@ class HIDReport {
         _parseInputData(buffer);
     }
 
-    // Synchronous send of output items.
+    // Synchronously send the output items.
     // The items value need to be updated prior to call.
     //
     // Throws: endpoint is closed or something happens during call to native USB API
@@ -436,10 +436,9 @@ class HIDDriver extends USB.Driver {
     //      interface           - USB device interface this driver assigned to.
     constructor(reports, interface) {
         _reports    = reports;
-
         _interface  = interface;
         try {
-            _epIn       = interface.find(USB_ENDPOINT_INTERRUPT, USB_SETUP_DEVICE_TO_HOST);
+            _epIn = interface.find(USB_ENDPOINT_INTERRUPT, USB_SETUP_DEVICE_TO_HOST);
         } catch (e) {
             // we may face a limitation of native API when only one Interrupt In endpoint may be opened.
             USB.err("Can't open Interrupt In endpoint:" + e);

@@ -61,38 +61,40 @@ that implement some of the HID Concepts
 in Squirrel. [HIDReport class](#hidreport-class) wraps a
 set of input, output and feature [HID Report Item](#hidreportitem-class)
 objects. Typically applications deal with [HIDReport](#hidreport-class)
-instances obtained from the from [HIDDriver](#hiddriver-class) class.
+instances obtained from [HIDDriver](#hiddriver-class).
 
-There are two ways to read required data from device and only one way
-to send to device, exposed by the [HIDReport class](#hidreport-class) class:
+There are two ways to retrieve data from a device and only one way
+to transfer data to a device. They are implemented as
+the following APIs:
 
-- synchronous call to [HIDReport.request()](#request) function to read the report data
-- [HIDDriver class](#hiddriver-class) contains a method
-to get [HIDReport](#hidreport-class) asynchronously
-- [HIDReport class](#hidreport-class) exposes [send()](#send)
-function to send report data to device blocking way.
+- [HIDReport.request()](#request), a synchronous request to receive inbound report data if available
+- [HIDDriver.getAsync](#getasynccb) allows to asynchronously read input items for the driver reports
+- [HIDReport.send](#send) Synchronously send the output items
 
-Asynchronous read require special attention in a case when there are
+**NOTE:** Asynchronous read require special attention in a case when there are
 several input reports described by HID Report Descriptor. Actual report
 read through this function depends on the rate at which duplicate reports
 are generated for the specified report. See section __7.2.4__ of
 [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf) for more details.
 
-When report was read, its input items
-(acquired with [getInputItems()](#getinputitems) function) contain updated data.
+When report is successfully read, its input items
+(can be acquired via [getInputItems()](#getinputitems) function)
+are updated with the new data.
 
-Output items (acquired with [getOutputItems()](#getoutputitems)) need
-to be updated individually prior to be sent to the device.
+Output items (can acquired via [getOutputItems()](#getoutputitems))
+need to be updated individually prior to sending them to the device.
 
-Interpretation of item value according to value data description
-(see [HIDReport.Item.Attributes class](#hidreportitemattributes-class))
-is out of this driver implementation scope.
+Data conversion between different measuring units and
+logical-to-physical data item values mapping are out of the scope
+of the driver implementation.
 
 ### Complete Example
 
 ```squirrel
 
 hidDrv < - null;
+
+hidDriver <- null;
 
 function hidEventListener(error, report) {
     server.log("HID event");
@@ -103,23 +105,21 @@ function hidEventListener(error, report) {
     hidDriver.getAsync(hidEventListener);
 }
 
-function usbEventListener(event, data) {
-    if (event == "started") {
-        local hidDrv = data;
-
+function usbEventListener(event, driver) {
+    if (event == USB_DRIVER_STATE_STARTED) {
+    	hidDriver = driver;
         hidDriver.getAsync(hidEventListener);
     }
 }
 
-host <- USB.Host([HIDDriver]);
+host <- USB.Host(hardware.usb, [HIDDriver]);
 
-host.setEventListener(usbEventListener);
+host.setDriverListener(usbEventListener);
 
 server.log("USB initialization complete");
-
 ```
 
-### Application Example
+### Real-World Application Example
 
 Please refer to [HIDKeyboard](./../Driver/HIDKeyboard) is an
 example of this driver application.
@@ -127,16 +127,18 @@ example of this driver application.
 ### Known Limitation
 
 The driver issues special command `"Get Descriptor"` to acquire HID report
-descriptor. Some devices doesn't support this command, so the driver doesn't
-match such devices. Workaround for this case is a subject for future release.
+descriptor. Some devices don't support this command, so the driver doesn't
+match such devices. This issue may be addressed in the future releases.
 
 ### Public API
 
-#### HID constants
+#### HID Constants
 
-Following constants is used to compose [HIDReport.Item.itemFlags](#hidreportitem-class) field.
+Following constants are used to compose
+[HIDReport.Item.itemFlags](#hidreportitem-class) field.
 
-See section __6.2.2.5__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf) for more details.
+See section __6.2.2.5__ of
+[HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf) for more details.
 
 | Constant name | Constant description |
 | ------------- | -------------------- |
@@ -161,9 +163,9 @@ See section __6.2.2.5__ of [HID specification](http://www.usb.org/developers/hid
 
 #### HIDDriver Class
 
-**HIDDriver** is a class that represent single HID interface of any device.
-It retrieves HID report descriptor from peer device and convert it to a set
-of [HIDReport](#hidreport-class) instances. Inherits basic
+**HIDDriver** is a class that represents a single HID interface of any device.
+It retrieves HID report descriptor from the corresponding device and converts it into a set
+of [HIDReport](#hidreport-class) instances. The class extends the base
 [USB.Driver](./DriverDevelopmentGuide.md#usbdriver-class) class.
 
 ##### match(device, interfaces)
@@ -257,7 +259,7 @@ This represent single report item at report packet. It is just container for a n
 | Class field | Type | Description |
 | ----------- | ---- | ----------- |
 | *attributes* | [HIDReport.Item.Attributes](#hidreportitemattributes-class) | Defines item tags |
-| *itemFlags*  | Bitfield/Integer | Defines item value attributes. [HID Constants](#hid-constants) may be used for tag interpretation |
+| *itemFlags*  | Integer | Defines item value attributes. [HID Constants](#hid-constants) may be used for tag interpretation |
 | *collectionPath* | [HIDReport.Collection](#hidreportcollectionpath) | Defines the collection this item is part of |
 
 ##### print(stream)
