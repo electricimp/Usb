@@ -161,7 +161,7 @@ class HIDReport {
      // Issue "Set Idle" command for the interface this report is bound to.
      //
      // Parameters:
-     //     millis - IDLE time for this report between 4 - 1020 ms
+     //     millis - idle time for this report between 4 - 1020 ms
      //
      // Throws an exception if EP0 is closed,
      // or something happens during call to native USB API
@@ -243,7 +243,7 @@ class HIDReport.Item {
         _value = value.tointeger();
     }
 
-    // Debug function. Prints items to  given stream.
+    // Debug function. Prints items to the given stream.
     //
     // Parameters:
     //          stream - function that prints this item to some output stream.

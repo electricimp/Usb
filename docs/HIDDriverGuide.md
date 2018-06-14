@@ -192,92 +192,102 @@ Input Reports, the result depends on duplicate report generation rate
 __7.2.4__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf)
 for more details.
 
-May throw an exception if there is ongoing read from related endpoint, or
-input endpoint is closed, or something happens during call to native USB API,
-or interface descriptor doesn't describe input endpoint, or input endpoint
-was not open due to limit of native [USB API](https://electricimp.com/docs/api/hardware/usb/)
+May throw an exception in case of the following situations:
 
-If endpoint was not open due to reached limit of open Interrupt Endpoints,
-the developer may use synchronous version provided by [HIDReport](#request) class.
+1. there is an ongoing read operation from the corresponding endpoint
+2. input endpoint is closed
+3. an error occurred on the native USB API level
+4. the interface descriptor doesn't declare any IN endpoints on the device
+5. input endpoint was not open due to the limits
+of the native USB [API](https://electricimp.com/docs/api/hardware/usb/).
 
-###### Callback function signature
+If endpoint was not open due the limit of open Interrupt Endpoints,
+the developer may use the synchronous [HIDReport.request()](#request) call,
+which works through the enddpoint 0 and isn't affected by the limitaion.
+
+###### Callback Function
 
 The must accept the following parameters.
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
-| *error*   | Any  | Non null parameter indicates presence of error state |
+| *error*   | String  | Non null parameter indicates an error |
 | *report*  | [HIDReport](#hidreport-class) | Read report |
 
 #### HIDReport Class
 
-This class represents HID Report - a data packet
-that can be transferred from/to the device.
+This class represents HID Reports - a data packet
+that can be transferred to or from the device.
 
 ##### request()
 
-Obtains HID state from device through Endpoint 0.
-No result is returned but it may throws if error happens during
-transfer or control endpoint is closed
+Obtains HID state from device through the Endpoint 0.
+The method doesn't return anything, but may throw an exception
+if an error uccurs during the transfer or if the
+control endpoint is closed.
 
 ##### send()
 
-Synchronous send of output items. The items value need to be updated
-prior to call. Throws if endpoint is closed or something happens
-during call to native USB API
+Synchronously sends the output items. The items value need to be updated
+prior to call. Throws an exception if the endpoint is closed or an error
+occurs during the native USB API call.
 
 ##### setIdleTimeMs(millis)
 
-Issue "Set Idle" command for the associated interface. Returns nothing
-but may trow if  EP0 is closed, or something happens during call to native USB API.
+Issues the `"Set Idle"` command through the associated endpoint. Returns nothing
+but may throw an exception, if the endpoint 0 is closed or an error
+occurs during the native USB API call.
 
-The function accepts following parameters:
+The function takes the following arguments:
 
 | Parameters name | Type | Description |
 | --------------- | ---- | ----------- |
-| *millis* | Integer | IDLE time (in milliseconds) for this report between 4 - 1020 ms |
+| *millis* | Integer | milliseconds, the idle time for the report, between 4 - 1020 ms |
 
-See more at section __7.2.4__ of
-[HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf).
+Refer to the section __7.2.4__ of
+[HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf) for more details.
 
 ##### getInputItems()
 
-Returns an array of input items or null if no items was found at the report descriptor.
+Returns an array of input items or null if no items were found in the report descriptor.
 
 ##### getOutputItems()
 
-Returns an array of output items or null if no items was found at the report descriptor.
+Returns an array of output items or null if no items were found in the report descriptor.
 
 ##### getFeatureItems()
 
-Returns an array of feature items or null if no items was found at the report descriptor.
+Returns an array of feature items or null if no items were found in the report descriptor.
 
 
 #### HIDReport.Item class
 
-This represent single report item at report packet. It is just container for a number of attributes.
+The class represent a single report item in a HID Report.
+It has a number of attributes:
 
-| Class field | Type | Description |
+| Class Field | Type | Description |
 | ----------- | ---- | ----------- |
-| *attributes* | [HIDReport.Item.Attributes](#hidreportitemattributes-class) | Defines item tags |
-| *itemFlags*  | Integer | Defines item value attributes. [HID Constants](#hid-constants) may be used for tag interpretation |
-| *collectionPath* | [HIDReport.Collection](#hidreportcollectionpath) | Defines the collection this item is part of |
+| *attributes* | [HIDReport.Item.Attributes](#hidreportitemattributes-class) | HID report item tags |
+| *itemFlags*  | Integer | Defines HID Report Item value attributes. [HID Constants](#hid-constants). Should be used by application for processing the Item's data |
+| *collectionPath* | [HIDReport.Collection](#hidreportcollectionpath) | Identifies a collection, the item belongs to |
 
 ##### print(stream)
 
+Debug function, prints the report data to the specified function `stream`, for example `server.log`.
+
 #### get()
 
-Returns last item value.
+Returns the present HID report item value.
 
 #### set(value)
 
-Updates item value with provided data. The parameter should be
+Updates HID report item value with the data provided. The parameter should be
 convertible to Integer with `tointeger()` function.
 
 
 #### HIDReport.Item.Attributes class
 
-This class is container for item tags.
+The class that contains the HID report item attributes.
 
 | Class field | Type | Description |
 | ----------- | ---- | ----------- |
@@ -293,18 +303,19 @@ This class is container for item tags.
 
 ##### print(stream)
 
-Debug function. Prints items with provided function `stream`.
+Debug function, prints the report data to the specified function `stream`, for example `server.log`.
 
 #### HIDReport.Collection
 
 This class is used to create items collection hierarchy. Collection Path
-constructs as chain of Collection.
+is constructed as a chain of linked `HIDReport.Collection` instances.
 
 ##### constructor(parent)
 
-New collection is always created as part of collection path and thus should
-receive previous chain element. Or `null` if this first element.
+New collection is always created as part of a collection path and thus should
+receive the previous element in the chain as an argument. If this is a new path
+being created, `null` should be passed as an argument.
 
 ##### print(stream)
 
-Debug function. Prints items with provided function `stream`.
+Debug function, prints the report data to the specified function `stream`, for example `server.log`.
