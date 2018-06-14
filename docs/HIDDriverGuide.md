@@ -1,31 +1,31 @@
 ## Generic HID Driver Implementation
 
-The generic Human Interface Devices(HID) driver implements basic
-functionality required to start using any device that exposes HID interfaces.
-It allows to discover, read and change state of any sensors, actuators,
+The generic Human Interface Devices (HID) driver implements the base
+functionality required to start using any device with an HID interface.
+It allows discovering, read and change a state of any sensors, actuators,
 indicators and other physical parts of such devices.
 
-It is recommended to be familiar with [Device Class Definition for
+It is highly recommended to get familiar with the [Device Class Definition for
 Human Interface Devices](http://www.usb.org/developers/hidpage/HID1_11.pdf)
-prior to using this driver.
+specification prior to using this driver.
 
-### Include the HID Driver and Dependencies
+### Include the HID Driver Library
 
-The driver depends on some constants and classes of USB Framework,
-so that framework has to be included by application developer. Please follow
+The driver depends on the base USB Framework, and thus it needs
+to be included by an application developer. Please follow the
 [Application Developer Guide](./ApplicationDevelopmentGuide.md#include-the-framework-and-drivers)
-instruction about how to start using of USB framework.
+instruction about how to start using the USB framework.
 
-**NOTE:** To add the HID driver to your application, add the following statement
-on top of your code:
+**NOTE:** To include the HID driver into your application,
+add the following statement:
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
 #require "USB.HID.device.lib.nut:1.0.0"
 ```
-to the top of your device code.
+to top of your device code.
 
-### Basic Doncepts
+### Basic Concepts
 
 The Human Interface Devices group consists of devices that are used by humans to interact with computer systems. Typical examples of HID class devices are:
 
@@ -36,7 +36,7 @@ The Human Interface Devices group consists of devices that are used by humans to
 
 The USB HID class requires that every device describes how it will communicate
 with the host device in order to accurately predict and define all current and
-future human interface devices. During enumeration the device describes how its
+future human interface devices. During enumeration, the device describes how its
 reports are to be structured so that the host device can properly prepare to
 receive this information.
 
@@ -44,14 +44,14 @@ Each USB HID interface communicates with the host using either a `control` or
 an `interrupt` endpoints. `Isochronous` and `bulk` endpoints are not used in
 HID class devices. Both IN and OUT control transfers are required for enumeration;
 only an IN interrupt transfer is required for HID reports. OUT interrupt
-transfers are kooptional in HID-class devices.
+transfers are optional in HID-class devices.
 
 The host periodically polls the device's interrupt IN endpoint during operation.
 When the device has data to send it forms a report and sends it as a reply to the
 poll token. When a vendor makes a
 custom USB HID class device, the reports formed by the device need to match the
 report description given during enumeration and the driver installed on the host
-system. In this way it is possible for the USB HID class to be extremely flexible.
+system. This way, it is possible for the USB HID class to be extremely flexible.
 
 For more details on the HID reports structure and attributes please refer to
 HID usage table [specification](http://www.usb.org/developers/hidpage/Hut1_12v2.pdf).
@@ -67,13 +67,12 @@ There are two ways to retrieve data from a device and only one way
 to transfer data to a device. They are implemented as
 the following APIs:
 
-- [HIDReport.request()](#request), a synchronous request to receive inbound report data if available
+- [HIDReport.request()](#request), asynchronous request to receive inbound report data if available
 - [HIDDriver.getAsync](#getasynccb) allows to asynchronously read input items for the driver reports
 - [HIDReport.send](#send) Synchronously send the output items
 
 **NOTE:** Asynchronous read require special attention in a case when there are
-several input reports described by HID Report Descriptor. Actual report
-read through this function depends on the rate at which duplicate reports
+several input reports described by HID Report Descriptor. Data read through this function depends on the rate at which duplicate reports
 are generated for the specified report. See section __7.2.4__ of
 [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf) for more details.
 
@@ -99,15 +98,15 @@ hidDriver <- null;
 function hidEventListener(error, report) {
     server.log("HID event");
 
-    // Do with report here
+    // Process the report here
 
-    // Start new read
+    // Initiate a new read operation
     hidDriver.getAsync(hidEventListener);
 }
 
 function usbEventListener(event, driver) {
     if (event == USB_DRIVER_STATE_STARTED) {
-    	hidDriver = driver;
+       hidDriver = driver;
         hidDriver.getAsync(hidEventListener);
     }
 }
@@ -201,9 +200,9 @@ May throw an exception in case of the following situations:
 5. input endpoint was not open due to the limits
 of the native USB [API](https://electricimp.com/docs/api/hardware/usb/).
 
-If endpoint was not open due the limit of open Interrupt Endpoints,
+If endpoint was not open due to the limit of open Interrupt Endpoints,
 the developer may use the synchronous [HIDReport.request()](#request) call,
-which works through the enddpoint 0 and isn't affected by the limitaion.
+which works through the endpoint 0 and isn't affected by the limitation.
 
 ###### Callback Function
 
@@ -221,15 +220,15 @@ that can be transferred to or from the device.
 
 ##### request()
 
-Obtains HID state from device through the Endpoint 0.
-The method doesn't return anything, but may throw an exception
-if an error uccurs during the transfer or if the
+Obtains HID state from the device through the Endpoint 0.
+The method doesn't return anything but may throw an exception
+if an error occurs during the transfer or if the
 control endpoint is closed.
 
 ##### send()
 
 Synchronously sends the output items. The items value need to be updated
-prior to call. Throws an exception if the endpoint is closed or an error
+prior to the call. Throws an exception if the endpoint is closed or an error
 occurs during the native USB API call.
 
 ##### setIdleTimeMs(millis)
@@ -262,7 +261,7 @@ Returns an array of feature items or null if no items were found in the report d
 
 #### HIDReport.Item class
 
-The class represent a single report item in a HID Report.
+The class represents a single report item in an HID Report.
 It has a number of attributes:
 
 | Class Field | Type | Description |
@@ -273,7 +272,7 @@ It has a number of attributes:
 
 ##### print(stream)
 
-Debug function, prints the report data to the specified function `stream`, for example `server.log`.
+Debug function, prints the report data to the specified function `stream`, for example, `server.log`.
 
 #### get()
 
@@ -293,7 +292,7 @@ The class that contains the HID report item attributes.
 | ----------- | ---- | ----------- |
 | *logicalMaximum* | Integer | Maximum value that a variable or array item will report |
 | *logicalMinimum* | Integer | Minimum value that a variable or array item will report|
-| *physicalMaximum* | Integer | This represents the Logical Maximum  with units applied to it |
+| *physicalMaximum* | Integer | This represents the Logical Maximum with units applied to it |
 | *physicalMinimum* | Integer | This represents the Logical Minimum with units applied to it |
 | *unitExponent* | Integer | Value of the unit exponent |
 | *unitType* | Integer | Item unit |
@@ -303,7 +302,7 @@ The class that contains the HID report item attributes.
 
 ##### print(stream)
 
-Debug function, prints the report data to the specified function `stream`, for example `server.log`.
+Debug function, prints the report data to the specified function `stream`, for example, `server.log`.
 
 #### HIDReport.Collection
 
@@ -312,10 +311,11 @@ is constructed as a chain of linked `HIDReport.Collection` instances.
 
 ##### constructor(parent)
 
-New collection is always created as part of a collection path and thus should
-receive the previous element in the chain as an argument. If this is a new path
-being created, `null` should be passed as an argument.
+A new collection is always created as part of a collection path and thus should
+receive the previous element in the chain as an argument. If a new path
+is created, `null` should be passed as an argument.
 
 ##### print(stream)
 
-Debug function, prints the report data to the specified function `stream`, for example `server.log`.
+Debug function, prints the report data to the specified function `stream`, for example, `server.log`.
+
