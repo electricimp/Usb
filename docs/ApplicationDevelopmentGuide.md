@@ -3,11 +3,11 @@
 This guide is intended for those developers who is going to integrate one or more of
 the existing USB drivers into their applications.
 
-Before you use a driver, please carefully read it's documentation, limitations and requirements.
+Before you use a driver, please carefully read it's documentation, limitations, and requirements.
 
 ### Including USB Framework and Driver Libraries
 
-By default the base USB Drivers Framework itself does not provide any device
+By default, the base USB Drivers Framework itself does not provide any device
 drivers out of the box. So application developers should explicitly include
 and manage drivers they need.
 
@@ -65,7 +65,7 @@ host <- USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
 host.setDriverListener(driverStatusListener);
 ```
 
-The examples creates an instance of the [USB.Host](DriverDevelopmentGuide.md#usbhost-class) class. The constructor takes two parameters: the native USB object and an array of driver classes,
+The examples create an instance of the [USB.Host](DriverDevelopmentGuide.md#usbhost-class) class. The constructor takes two parameters: the native USB object and an array of driver classes,
 an array with a single FT232RLFtdiUsbDriver class in this case. Next line shows how to register
 a driver state listener by calling the `USB.Host.setDriverListener` method. Please,
 refer to callback function [documentation](DriverDevelopmentGuide.md#callbackeventtype-driver)
@@ -75,12 +75,12 @@ for more details.
 
 It is possible to register several drivers in the USB Framework.
 Whenever a device is plugged or unplugged the corresponding drivers
-that match this deviceare going to be started or stopped.
+that match this device are going to be started or stopped.
 There are some devices which provide multiple interfaces and these interfaces
 could be implemented via one or several drivers.
 USB Framework instantiate all drivers which match the plugged device.
-Application developer is responsible of which drivers need to be included in the application
-based on its needs.
+Application developers are responsible for including required libraries into
+the application code.
 
 For example, if one of these drivers matches the device being connected,
 then it will be instantiated:
@@ -102,7 +102,7 @@ are instantiated and started by the USB framework.
 **NOTE:** public driver API neither are limited nor enforced in any way by the USB framework.
 It's up to the driver developer to decide which APIs to expose.
 
-Each driver provides it's own public API for interaction with USB devices and application code. So appliaction developer should carefully read the driver documentation and follow the instructions.
+Each driver provides its own public API for interaction with USB devices and application code. So application developer should carefully read the driver documentation and follow the instructions.
 
 ### Configuring Hardware Pins for USB
 
@@ -111,13 +111,13 @@ USB.Host [constructor](DriverDevelopmentGuide.md#usbhostusb-drivers--autoconfigp
 
 If your application is targetting a custom board based on a different Electric Imp module,
 you may need to set *autoConfigPins=false* to prevent configuration issues and
-configure it on the application side according to the module specificaion.
+configure it on the application side according to the module specification.
 
 ### Working with attached Devices
 
 A recommended way to interact with an attached device is to use one of
-the drivers that support that device. However it may be important to access the
-device directly, e.g. to select alternative configuration or change it's power state.
+the drivers that support that device. However, it may be important to access the
+device directly, e.g. to select alternative configuration or change its power state.
 To provide such access USB Driver Framework creates a proxy [USB.Device](DriverDevelopmentGuide.md#usbdevice-class) class for every device attached to the USB interface.
 
 You can retrieve an instance of the `USB.Device` from the callback
@@ -129,7 +129,7 @@ retrieve a list of all the attached devices by calling the
 [USB.Device](DriverDevelopmentGuide.md#usbdevice-class) class provides a number of APIs
 to interact and manages devices. For example, `USB.Device.getEndpointZero` returns a special
 control [endpoint 0](DriverDevelopmentGuide.md#usbcontrolendpoint-class) that can be used to configure
-the device by trasfering messages of a special format through this endpoint.
+the device by transferring messages of a special format through this endpoint.
 The format of such messages is out the scope of this document.
 Please refer to [USB specification](http://www.usb.org/) for more details.
 
@@ -180,13 +180,13 @@ host.setDeviceListener(deviceStatusListener);
 
 ### Resetting the `USB.Host`
 
-Resets the USB host see [USB.Host.reset API](DriverDevelopmentGuide.md#reset) . Can be used by application in response to unrecoverable error like driver not responding.
+Resets the USB host see [USB.Host.reset API](DriverDevelopmentGuide.md#reset) . Can be used by an application in response to unrecoverable error like a driver not responding.
 
 This method should clean up all drivers and devices with corresponding event listener notifications and finally make USB reconfiguration.
 
 It is not necessary to setup [setDriverListener](DriverDevelopmentGuide.md#setdriverlistenercallback) or
 [setDeviceListener](DriverDevelopmentGuide.md#setdevicelistenercallback) again, the same callback should get all notifications about re-attached devices and corresponding drivers state changes. Please note that as
-the drivers and devices are created again, they are going to be have addresses.
+the drivers and devices are created again, they are going to have addresses.
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
