@@ -170,13 +170,14 @@ of [HIDReport](#hidreport-class) instances. The class extends the base
 
 ##### match(device, interfaces)
 
-Overridden [USB.Driver.match()](DriverDevelopmentGuide.md#matchdeviceobject-interfaces)
-function.
+Overrides the base
+[USB.Driver.match()](DriverDevelopmentGuide.md#matchdeviceobject-interfaces) method.
 
-This function looks into provided [interface](./DriverDevelopmentGuide.md#interface-descriptor)
-list, searching for interface with class value equls 3 (HID class). Then it try
-to extract and parse HID Report descriptor (see [notes](#known-limitation)).
-If it meets any issue the function returns `null`.
+This function looks into the list of provided [interfaces](./DriverDevelopmentGuide.md#interface-descriptor),
+and finds those of class value USB_CLASS_HID (`3`). Then it tries
+to extract and parse HID Report descriptors (see [notes](#known-limitation)).
+If a problem occurs the function returns `null`. Otherwise the methods returns
+a list of HIDDriver instances, one per each of the corresponding HID interface.
 
 ##### getReports()
 
