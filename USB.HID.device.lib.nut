@@ -126,7 +126,7 @@ class HIDReport {
 
     // Synchronous read of input items.
     // Returns: nothing.
-    // Throws: if error happens during transfer or control endpoint is closed
+    // Throws an exception if error happens during transfer or control endpoint is closed
     function request() {
         local buffer = blob(_totalInSize);
         local ep0 = _interface.getDevice().getEndpointZero();
@@ -143,7 +143,7 @@ class HIDReport {
     // Synchronously send the output items.
     // The items value need to be updated prior to call.
     //
-    // Throws: endpoint is closed or something happens during call to native USB API
+    // Throws an exception if endpoint is closed or something happens during call to native USB API
     function send() {
         local buffer = blob(_totalOutSize);
         foreach (item in _outputItems) {
@@ -163,7 +163,8 @@ class HIDReport {
      // Parameters:
      //     millis - IDLE time for this report between 4 - 1020 ms
      //
-     // Trows is EP0 is closed, or something happens during call to native USB API
+     // Throws an exception if EP0 is closed,
+     // or something happens during call to native USB API
      function setIdleTimeMs(millis) {
 
         local timeUnit = (millis.tointeger() / 4) & 0xFF;
@@ -237,7 +238,7 @@ class HIDReport.Item {
 
     // Updates item value
     //
-    // Throws if provided value in not a number
+    // Throws an exception if provided value in not a number
     function set(value) {
         _value = value.tointeger();
     }
@@ -271,7 +272,7 @@ class HIDReport.Item {
     // Extract item data from given data buffer.
     // Parameters:
     //          buffer - blob instance
-    // Throws if buffer size is less than item offset + item size
+    // Throws an exception if buffer size is less than item offset + item size
     function _readFrom(buffer) {
         local size     = attributes.bitSize;
         local offset   = _bitOffset;
@@ -298,7 +299,7 @@ class HIDReport.Item {
     // Write the item to given data buffer.
     // Parameters:
     //      buffer - blob instance
-    // Throws if buffer size is less than item offset + item size
+    // Throws an exception if buffer size is less than item offset + item size
     function _writeTo(buffer) {
         local size     = attributes.bitSize;
         local offset   = _bitOffset;
@@ -514,7 +515,7 @@ class HIDDriver extends USB.Driver {
     //                  error  - error message or null
     //                  report - HIDReport instance
     //
-    // Throws: if there is ongoing read from related endpoint, or endpoint is closed,
+    // Throws an exception if there is ongoing read from related endpoint, or endpoint is closed,
     //          or something happens during call to native USB API,
     //          or interface descriptor doesn't describe input endpoint
     function getAsync(cb) {
@@ -651,7 +652,7 @@ class HIDDriver extends USB.Driver {
     // Returns:
     //       an array of HIDReport instances or null if no reports was found.
     //
-    // Throws if provided buffer contains invalid data or too short
+    // Throws an exception if provided buffer contains invalid data or too short
     function _readFrom(hidReportDescriptor, interface) {
 
         local currStateTable     = ParserState();

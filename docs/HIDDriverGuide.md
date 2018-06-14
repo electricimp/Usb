@@ -185,8 +185,8 @@ Returns an array of [HIDReport](#hidreport-class) instances
 
 ##### getAsync(cb)
 
-Performs read through Interrupt In Endpoint. The result depends on how many
-Input Reports are available at associated interface. In case of multiple
+Performs read through an Interrupt IN endpoint. The result depends on how many
+Input Reports are available for the associated interface. In case of multiple
 Input Reports, the result depends on duplicate report generation rate
 (can be changed by [setIdleTimeMs](#setidletimetime_ms)). See section
 __7.2.4__ of [HID specification](http://www.usb.org/developers/hidpage/HID1_11.pdf)
