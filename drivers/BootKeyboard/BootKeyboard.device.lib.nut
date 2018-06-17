@@ -89,7 +89,7 @@ class BootKeyboardDriver extends USB.Driver {
 
             if (   iClass     == 3 // HID
                 && iSubClass  == 1 // BOOT
-                && iProtocol  == 1 // Keyboard
+                && iProtocol  == 1 // keyboard
             ) {
                  local inEp = interface.find(USB_ENDPOINT_INTERRUPT, USB_DIRECTION_IN);
                  if (null != inEp) {
@@ -209,7 +209,7 @@ class BootKeyboardDriver extends USB.Driver {
     //      ep      - source endpoint
     //      error   - error code
     //      data    - data blob
-    //      len     - a nu,ber of read bytes
+    //      len     - a number of read bytes
     function _receiveCallback(ep, error, data, len) {
         if (error !=  USB_TYPE_FREE && error != USB_TYPE_IDLE) {
             if (null != _asyncCb) {

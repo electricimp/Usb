@@ -1,19 +1,34 @@
-## Keyboard driver
+## Boot Keyboard Driver
 
-This class is an example of [USB.Driver](../../DriverDevelopmentGuide.md#usbdriver-classHID_Driver.md) implementation. It exposes very simple API that allows to work with any devices that implements [boot keyboard protocol](http://www.usb.org/developers/hidpage/HID1_11.pdf)
+This class is an example of
+[USB.Driver](../../docs/DriverDevelopmentGuide.md#usbdriver-class)
+implementation. It exposes very simple API that allows to work with
+any devices that implements
+[Boot Keyboard Protocol](http://www.usb.org/developers/hidpage/HID1_11.pdf).
 
 
-### Include the driver and dependencies
+### Include the Driver and Dependencies
 
-The driver depends on some constants and classes of [USB Framework](../../README.md) so that required files has to be included by application developer. Please follow [Application Developer Guide](../../ApplicationDevelopmentGuide.md#include-the-framework-and-drivers) about how to start using of required classes.
+The driver depends on some constants and classes of the
+[USB Framework](../../docs/DriverDevelopmentGuide.md) so that required files has
+to be included by application developer. Please follow
+[Application Developer Guide](../../docs/ApplicationDevelopmentGuide.md#including-usb-framework-and-driver-libraries)
+on how to include the generic USB framework library.
 
-**To add HID driver to your project, add** `#require "Keyboard.nut:1.0.0"` **to the top of your device code.**
+**NOTE:** to add the Boot Keyboard driver into your project, use the following statement
+on top of you application code:
+```
+#require "USB.device.lib.nut:1.0.0"
+```
+and then either include the Boot Keyboard into you application
+by copy-pasting the code Boot Keyboard Driver code
+or use the Builder's [include statements](https://github.com/electricimp/builder#include).
 
 In the example below keyboard driver is included into an application:
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
-#require "BootKeyboard.device.nut:1.0.0"
+@include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.lib.nut"
 ```
 
 ### Complete example
@@ -21,15 +36,17 @@ In the example below keyboard driver is included into an application:
 ```squirrel
 #require "PrettyPrinter.class.nut:1.0.1"
 #require "JSONEncoder.class.nut:1.0.0"
-#require "USB.device.lib.nut:1.0.0"
-#require "BootKeyboard.device.nut:1.0.0"
 
-pp <- PrettyPrinter(null, false);
-print <- pp.print.bindenv(pp);
+// Include the USB framework and the BootKeyboard library
+#require "USB.device.lib.nut:1.0.0"
+@include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.lib.nut"
+
+// Debug print setup
+pp     <- PrettyPrinter(null, false);
+print  <- pp.print.bindenv(pp);
 
 kbrDrv <- null;
-
-leds <- KBD_NUM_LOCK;
+leds   <- KBD_NUM_LOCK;
 
 function blink() {
     if (!kbrDrv) {
@@ -37,10 +54,8 @@ function blink() {
     }
 
     kbrDrv.setLeds(leds);
-
     leds = leds << 1;
     if (leds > KBD_SCROLL_LOCK) leds = KBD_NUM_LOCK;
-
     imp.wakeup(1, blink);
 }
 
@@ -75,27 +90,24 @@ function usbDriverListener(event, driver) {
 }
 
 usbHost <- USB.Host(hardware.usb, [BootKeyboardDriver]);
-
 usbHost.setDriverListener(usbDriverListener);
 
 server.log("[App] USB initialization complete");
-
 ```
 
-### Custom matching procedure
+### Custom Mmatching Procedure
 
-This driver matches only devices interfaces which `class` is 3, `subclass` is 1 and `protocol` is 1.
+This driver matches only devices interfaces of `class` 3 (HID), `subclass` 1 (Boot) and `protocol` 1 (keyboard).
 
 ### Driver API
 
-This driver exposes following function for application usage.
-
+This driver exposes following API for application usage.
 
 #### getKeyStatusAsync(callback)
 
-Function sends read request through Interrupt In endpoint, that gets data and notifies the caller asynchronously.
+Function sends read request through Interrupt IN endpoint, that gets data and notifies the caller asynchronously.
 
-The function signature is following:
+The function signature is as following:
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
@@ -105,12 +117,22 @@ The signature of callback function is following:
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
-| *error*   | Any | error description if any |
-| *status* | Table | A table with a fields named after modifiers keys </br> and set of Key0...Key5 fields with pressed key scancodes  |
+| *status* | Table | A table with a fields named after modifiers keys </br> and set of Key0...Key5 fields with pressed key scancodes. In case of an error the table is going to have the `error` field set to the error description. |
+
+Example of the `status` table:
+```
+{
+    error : null,
+    LEFT_CTRL  : 1,
+    LEFT_SHIFT : 0,
+    Key0       : 32
+    Key1       : 55
+}
+```
 
 #### getKeyStatus()
 
-Function read keyboard report  through control endpoint 0 and thus synchronously.
+A synchronous function that reads keyboard's report through the control endpoint 0.
 
 It returns keyboard status [table](#keyboard-status-table) or throws if an error happens during transfer
 
@@ -122,7 +144,7 @@ The function signature is following:
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
-| *timeout* | Integer | poll duration in milliseconds [0...1020]. Zero means the duration is indefinite.
+| *timeout* | Integer | poll duration in milliseconds [0...1020]. Zero means the duration is indefinite |
 
 #### setLeds(leds)
 
@@ -137,11 +159,12 @@ The function signature is following:
 
 #### Keyboard status table
 
-Both [getKeyStatusAsync](#getkeystatusasynccallback) and [getKeyStatus](#getkeystatus) notifies about keyboard state with special table. The table format is following
+Both [getKeyStatusAsync](#getkeystatusasynccallback) and [getKeyStatus](#getkeystatus)
+return the keyboard state as a table of the following format:
 
 | Field | Type | Description |
 | --------- | ---- | ----------- |
-| *error* | Any | This field is resent when any error happens |
+| *error* | String | The field is present if any error occurred |
 | *LEFT_CTRL* | Integer|  Left Ctrl status (1/0) |
 | *LEFT_SHIFT* | Integer | Left Shift status (1/0) |
 | *LEFT_ALT*  | Integer| Left Alt status (1/0) |
