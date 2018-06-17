@@ -1,38 +1,19 @@
 # FT232RL FTDI USB Device Driver Example
 
-This example shows how to create a driver class for a FT232RL USB for a serial breakout.
+This example shows how to create use the FT232RL USB driver.
 
-The example includes FT232RLFtdiUsbDriver class with public API methods described below, some example code that makes use of the driver and a folder with tests for the driver class.
+The example includes the FT232RLFtdiUsbDriver implementation with public API described below,
+some example code that shows how to use the driver.
 
-## Driver instantiation example
+## Real-World Driver Usage Examples
 
-For the correct example work you need to plug the USB FT232RL FTDI device.
+Please refer to the [examples](./examples) folder for examples of driver implementations
+for CH430 and FTDI232RL chipsets.
 
-```squirrel
-#require "USB.device.lib.nut:0.3.0"
-#require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0"
+## USB.Driver Interface API
 
-// Provide the list of available drivers to the USB.Host
-local host = USB.Host([FT232RLFtdiUsbDriver]);
-
-host.setEventListener(function(eventName, eventObject) {
-  if (eventName == "started") {
-    local driver = eventObject;
-    server.log("FT232RLFtdiUsbDriver instantiated");
-
-    // now you can save the driver instance
-    // and/or call methods from the driver custom API
-    // For example: driver.write("Test message", callback);
-  }
-});
-
-// Give instructions for user
-server.log("USB host initialized. Please, plug FTDI board in to see logs.");
-```
-
-## USB.Driver interface API
-
-The driver must implement these methods in order to be integrated into the [USB Drivers Framework](https://github.com/nobitlost/Usb/blob/CSE-433/README.md).
+The driver must implement `match` and `release` methods in order to be used with the
+USB Driver [Framework](./../../docs/DriverDevelopmentGuide.md).
 
 ### match(device, interfaces)
 
