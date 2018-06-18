@@ -24,7 +24,7 @@ and then either include the Boot Keyboard into you application
 by copy-pasting the code Boot Keyboard Driver code
 or use the Builder's [include statements](https://github.com/electricimp/builder#include).
 
-In the example below keyboard driver is included into an application:
+In the example below, the boot keyboard driver is included into an application:
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
