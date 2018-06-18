@@ -1,6 +1,6 @@
 # FT232RL FTDI USB Device Driver Example
 
-This example shows how to create use the FT232RL USB driver.
+This example shows how to use the FT232RL USB driver.
 
 The example includes the FT232RLFtdiUsbDriver implementation with public API described below,
 some example code that shows how to use the driver.
@@ -51,7 +51,7 @@ Reads data from the connected USB device to the blob.
 
 | Parameter   | Data Type | Required | Description |
 | ----------- | --------- | -------- | ----------- |
-| *payload*   | blob      | Yes      | data to be get from the USB device |
+| *payload*   | blob      | Yes      | data to be read from the USB device |
 | *callback*  | Function  | Yes      | Function to be called on read completion or error. |
 
 
