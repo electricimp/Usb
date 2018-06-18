@@ -1,31 +1,35 @@
 # QL720NW UART USB Driver Example
 
-This example shows how to implement the USB.Driver interface to create a USB over UART driver for a QL720NW label printer.  The example includes the QL720NWUartUsbDriver class with methods described below, some example code that makes use of the driver, and a folder with tests for the driver class.
+This example shows how to implement the [USB.Driver](./../../docs/DriverDevelopmentGuide.md)
+interface to create a USB over UART driver for the QL720NW label printer.
+The example includes
+the QL720NWUartUsbDriver class with methods described below, some example
+code that shows how to use the driver.
 
 ## QL720NW UART USB Driver
 
-The [USB.Host](../USB/) will handle the USB device connection/disconnection events and instantiation of this class. This class should be registered with the [USB.Host](../USB/) and when a device with matching description is connected the device driver will be instantiated and passed to the `"started"` event callback registered with the [USB.Host.setEventListener](../USB/).
+The [USB.Host](./../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification)
+handles the USB device connection/disconnection
+events and instantiation of the driver class.
 
-## USB.Driver class base methods
+Please refer to the Application Development [Guide](./../../docs/ApplicationDevelopmentGuide.md) for
+more details on how to use existing USB drivers.
 
-The driver must implement these methods in order to be integrated into the [USB Drivers Framework](https://github.com/nobitlost/Usb/blob/CSE-433/README.md).
+## USB.Driver Class Base Methods Implementation
+
+The driver must implement `match` and `release` methods in order to work with the
+USB Driver [Framework](./../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification).
 
 ### match(device, interfaces)
 
-Implementation of the [USB.Driver](https://github.com/nobitlost/Usb/blob/CSE-433/README.md#matchdeviceobject-interfaces) interface
+Implementation of the [USB.Driver.match](../../docs/DriverDevelopmentGuide.md#matchdeviceobject-interfaces) interface method.
 
 ### release()
 
-Implementation of the [USB.Driver](https://github.com/nobitlost/Usb/blob/CSE-433/README.md#matchdeviceobject-interfaces) interface
+Implementation of the [USB.Driver.release](../../docs/DriverDevelopmentGuide.md#release) interface method.
 
+## Driver Class Custom API
 
-## Driver class custom API
+Please refer to the QL720NW Driver documentation on details of the [public APSs](https://github.com/electricimp/QL720NW#setorientationorientation).
 
-### write(data)
-
-Writes String or Blob data to the usb printer. Implements async queue inside.
-
-
-| Key | Data Type | Required | Description |
-| --- | --------- | -------- | ----------- |
-| *data* | String/Blob | Yes | The String or Blob to be written to uart over usb.|
+**NOTE:** you don't have to initialize the driver, this is done by the USB framework automatically.

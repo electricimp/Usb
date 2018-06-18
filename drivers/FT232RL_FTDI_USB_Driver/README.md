@@ -13,7 +13,7 @@ that demonstrates the use of the driver for CH430 and FTDI232RL adapters.
 
 ## USB.Driver Interface API Implemtntaion
 
-The driver must implement `match` and `release` methods in order to be used with the
+The driver must implement `match` and `release` methods in order to work with the
 USB Driver [Framework](./../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification).
 
 ### match(device, interfaces)
