@@ -67,16 +67,3 @@ Reads data from the connected USB device to the blob.
 ### _typeof()
 
 Meta-function to return class name when typeof <instance> is run. Uses to identify the driver instance type in runtime.
-
-```squirrel
-
-// For example:
-
-host <- USB.Host(["MyCustomDriver1", "MyCustomDriver2", "FT232RLFtdiUsbDriver"]);
-
-host.setEventListener(function(eventName, eventDetails) {
-    if (eventName == "started" && typeof eventDetails == "FT232RLFtdiUsbDriver")
-        server.log("FT232RLFtdiUsbDriver initialized");
-});
-
-```
