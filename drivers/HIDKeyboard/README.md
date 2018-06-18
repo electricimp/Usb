@@ -1,24 +1,24 @@
 ## HID Keyboard Driver
 
-This class is an example of HID Driver [Guide](../../docs/HIDDriverGuide.md) application.
-It exposes very simple API that allows to work with any devices that implement
+This class is an example of the HID [Driver](../../docs/HIDDriverGuide.md) application.
+It exposes a very simple API that allows working with any devices that implement
 keyboard function: receive pressed key IDs and update the keyboard LED indicator.
 
 ### Include the Driver and Dependencies
 
 The driver depends on some constants and classes of the
-[USB Framework](../../docs/DriverDevelopmentGuide.md) so that required files has
-to be included by application developer. Please follow
+[USB Framework](../../docs/DriverDevelopmentGuide.md) so that required files have
+to be included by an application developer. Please follow the
 [Application Developer Guide](../../docs/ApplicationDevelopmentGuide.md#including-usb-framework-and-driver-libraries)
 on how to include the generic USB framework library.
 
 **NOTE:** to add the Boot Keyboard driver into your project, use the following statement
-on top of you application code:
+on top of the application code:
 ```
 #require "USB.device.lib.nut:1.0.0"
 #require "USB.HID.device.lib.nut:1.0.0"
 ```
-and then either include the HI Keyboard into you application
+and then either include the HI Keyboard into your application
 by copy-pasting the HID Keyboard Driver code
 or use the Builder's [include statements](https://github.com/electricimp/builder#include).
 
@@ -79,7 +79,7 @@ For more examples please refer to the [examples](./examples) folder.
 This class extends all [HIDDriver](./../../docs/HIDDriverGuide.md#public-api) APIs.
 To accept only those HID interfaces that represent physical keyboard devices,
 this class overrides internal method `_filter` of the parent class. This allows
-this driver to be initialized only when at least one input report contain at
+this driver to be initialized only when at least one input report contains at
 least single input item with the `KEYBOARD` Usage Page.
 
 ### Driver API
@@ -96,7 +96,7 @@ but may throw an exception if there is a polling that is running already.
 | *millis* | Integer| Poll time in a range of [4 .. 1020] ms |
 | *cb* | Function |user callback function that receive keyboard state |
 
-The signature of callback *callback(keyset)*:
+The signature of the callback is: *callback(keyset)*
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
@@ -107,8 +107,8 @@ The signature of callback *callback(keyset)*:
 the keyboard hardware to setup key matrix poll time. If the command was issued
 successfully this class implementation expects `HIDReport.getAsync()` to
 generate a next keyboard state event after the desired amount of time. If the hardware
-doesn't support the command, the implementation expects to receive response
-from `HIDReport.getAsync()` immediately and will use a timer to implement the `IDLE` time function.
+doesn't support the command, the implementation expects to receive a response
+from `HIDReport.getAsync()` immediately and will use a timer to implement the `IDLE` function.
 
 #### stopPoll()
 
@@ -120,7 +120,7 @@ Update Keyboard LED status. The function accepts an array of
 integers with LED indicator IDs, declared at
 [HID usage table](http://www.usb.org/developers/hidpage/Hut1_12v2.pdf) chap.8.
 
-The function may throw an exception if the argument is not array or due to a USB issue.
+The function may throw an exception if the argument is not an array or due to a USB issue.
 
 **NOTE:** the function returns error string if the device doesn't have any LEDs indicators.
 
@@ -135,7 +135,7 @@ which is a default layout for the driver.
 
 ##### Layout processor
 
-This class uses special function that processes native keyboard scan codes to application specific values.
+This class uses a special function that processes native keyboard scan codes to application-specific values.
 
 The [example](./US-ASCII.table.nut) of this processor can be a function that
 converts the native key codes to language specific codes.
