@@ -30,6 +30,6 @@ Implementation of the [USB.Driver.release](../../docs/DriverDevelopmentGuide.md#
 
 ## Driver Class Custom API
 
-Please refer to the QL720NW Driver documentation on details of the [public APSs](https://github.com/electricimp/QL720NW#setorientationorientation).
+Please refer to the QL720NW Driver documentation on details of the [public APIs](https://github.com/electricimp/QL720NW#setorientationorientation).
 
 **NOTE:** you don't have to initialize the driver, this is done by the USB framework automatically.
