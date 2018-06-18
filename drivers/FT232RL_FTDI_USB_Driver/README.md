@@ -13,15 +13,15 @@ for CH430 and FTDI232RL chipsets.
 ## USB.Driver Interface API
 
 The driver must implement `match` and `release` methods in order to be used with the
-USB Driver [Framework](./../../docs/DriverDevelopmentGuide.md).
+USB Driver [Framework](./../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification).
 
 ### match(device, interfaces)
 
-Implementation of the [USB.Driver](../../DriverDevelopmentGuide.md#release) interface
+Implementation of the [USB.Driver](../../docs/DriverDevelopmentGuide.md#release) interface
 
 ### release()
 
-Implementation of the [USB.Driver](../../DriverDevelopmentGuide.md#matchdeviceobject-interfaces) interface
+Implementation of the [USB.Driver](../../docs/DriverDevelopmentGuide.md#matchdeviceobject-interfaces) interface
 
 ## Driver custom API
 
