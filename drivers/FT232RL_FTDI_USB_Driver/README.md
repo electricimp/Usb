@@ -1,9 +1,10 @@
 # FT232RL FTDI USB Device Driver Example
 
-This example shows how to use the FT232RL USB driver.
+This example shows how to implement and use the FT232RL USB driver.
 
 The example includes the FT232RLFtdiUsbDriver implementation with public API described below,
-some example code that shows how to use the driver.
+some reference code that shows how to use the driver for two different USB-UART adapters:
+CH430 and FTDI232RL.
 
 ## Real-World Driver Usage Examples
 
