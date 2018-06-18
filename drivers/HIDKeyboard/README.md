@@ -137,7 +137,7 @@ which is a default layout for the driver.
 
 This class uses special function that processes native keyboard scan codes to application specific values.
 
-The [example](./US-ASCII.table.nut) of this processor may be a function that
+The [example](./US-ASCII.table.nut) of this processor can be a function that
 converts the native key codes to language specific codes.
 
 | Parameter | Type | Description |
