@@ -1,6 +1,6 @@
 ## HID Keyboard Driver
 
-This class is an example of [HIDDriver](../../HID_Driver.md) application.
+This class is an example of HID Driver [Guide](../../HIDDriverGuide.md) application.
 It exposes very simple API that allows to work with any devices that implement
 keyboard function: receive pressed key IDs and update the keyboard LED indicator.
 
