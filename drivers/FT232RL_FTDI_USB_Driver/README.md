@@ -6,6 +6,9 @@ The example includes the FT232RLFtdiUsbDriver implementation with public API des
 some reference code that shows how to use the driver for two different USB-UART adapters:
 CH430 and FTDI232RL.
 
+**NOTE**: Please use the driver examples for reference only. They were tested with a limited number
+of devices and may not support all devices of that type.
+
 ## Real-World Driver Usage Examples
 
 Please refer to the [examples](./examples) folder for a complete runnable application code,

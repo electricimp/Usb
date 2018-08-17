@@ -6,6 +6,8 @@ implementation. It exposes very simple API that allows to work with
 any devices that implements
 [Boot Keyboard Protocol](http://www.usb.org/developers/hidpage/HID1_11.pdf).
 
+**NOTE**: Please use the driver examples for reference only. They were tested with a limited number
+of devices and may not support all devices of that type.
 
 ### Include the Driver and Dependencies
 

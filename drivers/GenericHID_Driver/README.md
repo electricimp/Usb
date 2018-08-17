@@ -9,6 +9,9 @@ It is highly recommended to get familiar with the [Device Class Definition for
 Human Interface Devices](http://www.usb.org/developers/hidpage/HID1_11.pdf)
 specification prior to using this driver.
 
+**NOTE**: Please use the driver examples for reference only. They were tested with a limited number
+of devices and may not support all devices of that type.
+
 ### Include the HID Driver Library
 
 The driver depends on the base USB Framework, and thus it needs
@@ -36,7 +39,7 @@ In the code snippet below, the Generic HID driver is included into an applicatio
 
 ### Basic Concepts
 
-The Human Interface Devices group consists of devices that are used by 
+The Human Interface Devices group consists of devices that are used by
 humans to interact with computer systems. Typical examples of HID class devices are:
 
 - Keyboards and pointing devices (mouse, trackballs, joysticks)

@@ -4,6 +4,9 @@ This class is an example of the HID [Driver](../../docs/HIDDriverGuide.md) appli
 It exposes a very simple API that allows working with any devices that implement
 keyboard function: receive pressed key IDs and update the keyboard LED indicator.
 
+**NOTE**: Please use the driver examples for reference only. They were tested with a limited number
+of devices and may not support all devices of that type.
+
 ### Include the Driver and Dependencies
 
 The driver depends on some constants and classes of the

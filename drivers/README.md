@@ -2,7 +2,7 @@
 
 The framework includes the followin driver examples:
 
-- [Generic HID Device Developer Guide](./GenericHID_Driver/)
+- [Generic HID Device Driver](./GenericHID_Driver/)
 - [QL720NW Printer](./QL720NW_UART_USB_Driver/)
 - [FTDI USB-to-UART Converter](./FT232RL_FTDI_USB_Driver/)
 - [Keyboard with HID Protocol](./HIDKeyboard/)

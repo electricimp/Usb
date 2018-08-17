@@ -6,6 +6,9 @@ The example includes
 the QL720NWUartUsbDriver class with methods described below, some example
 code that shows how to use the driver.
 
+**NOTE**: Please use the driver examples for reference only. They were tested with a limited number
+of devices and may not support all devices of that type.
+
 ## QL720NW UART USB Driver
 
 The [USB.Host](./../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification)
