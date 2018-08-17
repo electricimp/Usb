@@ -211,7 +211,6 @@ class HIDReport {
     }
 }
 
-
 // Individual report item class
 class HIDReport.Item {
 
@@ -619,7 +618,6 @@ class HIDDriver extends USB.Driver {
 		}
 	}
 
-
     // Internal class that represents Report Descriptor parser state
     ParserState = class {
         attributes      = null;
@@ -855,4 +853,3 @@ class HIDDriver extends USB.Driver {
 		return "HIDDriver";
 	}
 }
-
