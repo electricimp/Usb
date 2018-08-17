@@ -29,7 +29,7 @@
 @include __PATH__ +  "/../US-ASCII.table.nut"
 
 @include __PATH__ +  "/../../../USB.device.lib.nut"
-@include __PATH__ +  "/../../../USB.HID.device.lib.nut"
+@include __PATH__ +  "/../../GenericHID_Driver/USB.HID.device.lib.nut"
 @include __PATH__ +  "/../HIDKeyboard.device.lib.nut"
 
 log <- server.log.bindenv(server);

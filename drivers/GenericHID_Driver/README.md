@@ -21,13 +21,23 @@ add the following statement:
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
-#require "USB.HID.device.lib.nut:1.0.0"
 ```
-to top of your device code.
+
+and then either include the Generic HID driver code into your application
+by copy-pasting the content of the content of [USB.HID.device.lib.nut](./USB.HID.device.lib.nut) file
+or use the Builder's [include statements](https://github.com/electricimp/builder#include).
+
+In the code snippet below, the Generic HID driver is included into an application:
+
+```squirrel
+#require "USB.device.lib.nut:1.0.0"
+@include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.lib.nut"
+```
 
 ### Basic Concepts
 
-The Human Interface Devices group consists of devices that are used by humans to interact with computer systems. Typical examples of HID class devices are:
+The Human Interface Devices group consists of devices that are used by 
+humans to interact with computer systems. Typical examples of HID class devices are:
 
 - Keyboards and pointing devices (mouse, trackballs, joysticks)
 - Bar-code readers, thermometers, voltmeters

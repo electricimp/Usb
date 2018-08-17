@@ -16,9 +16,8 @@ on how to include the generic USB framework library.
 on top of the application code:
 ```
 #require "USB.device.lib.nut:1.0.0"
-#require "USB.HID.device.lib.nut:1.0.0"
 ```
-and then either include the HI Keyboard into your application
+and then either include the HID Keyboard into your application
 by copy-pasting the HID Keyboard Driver code
 or use the Builder's [include statements](https://github.com/electricimp/builder#include).
 
@@ -26,7 +25,8 @@ In the example below, the HID keyboard driver is included into an application:
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
-#require "USB.HID.device.lib.nut:1.0.0"
+
+@include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.lib.nut"
 @include "github:electricimp/usb/drivers/HIDKeyboard/HIDKeyboard.device.lib.nut"
 @include "github:electricimp/usb/drivers/HIDKeyboard/US-ASCII.table.nut"
 ```
