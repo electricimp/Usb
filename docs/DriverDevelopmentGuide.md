@@ -261,7 +261,7 @@ This is the main interface you use to start working with USB devices and drivers
 
 If you have more then one USB port on your development board, you should create a USB.Host instance for each of them.
 
-### USB.Host(usb, drivers[, autoConfigPins]*) ###
+### USB.Host(*usb, drivers[, autoConfigPins]*) ###
 
 This method instantiates the USB.Host class. USB.Host is a wrapper over the native imp API USB implementation.
 
