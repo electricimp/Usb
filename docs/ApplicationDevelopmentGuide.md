@@ -53,7 +53,7 @@ host.setDriverListener(driverStatusListener);
 The example creates an instance of the [USB.Host](DriverDevelopmentGuide.md#usbhost-class-usage) class. The constructor takes two parameters: the imp API USB object representing your board’s USB bus, and an array of device-driver classes &mdash; in this case, an array with a single FT232RLFtdiUsbDriver class.
 
 The final line shows how to register a driver-state listener function by calling the *USB.Host.setDriverListener()* method. Please
-refer to the method [documentation](DriverDevelopmentGuide.md#setDriverListenerlistener) for more details.
+refer to the method [documentation](DriverDevelopmentGuide.md#setdriverlistenerlistener) for more details.
 
 ## Using Multiple Drivers ##
 
@@ -99,7 +99,7 @@ device directly, for example, to select an alternative configuration or to chang
 
 To provide such access, the USB Drivers Framework creates a proxy [USB.Device](DriverDevelopmentGuide.md#usbdevice-class-usage) class for every device attached to the USB interface.
 
-You can retrieve the device’s USB.Device instance from the listener registered using [*USB.Host.setDeviceListener()*](DriverDevelopmentGuide.md#setdriverlistenerlistener), which is executed when a device is connected and/or disconnected to/from USB. You can also
+You can retrieve the device’s USB.Device instance from the listener registered using [*USB.Host.setDeviceListener()*](DriverDevelopmentGuide.md#setdevicelistenerlistener), which is executed when a device is connected and/or disconnected to/from USB. You can also
 retrieve a list of all the attached devices by calling the [*USB.Host.getAttachedDevices()*](DriverDevelopmentGuide.md#getattacheddevices).
 
 The [USB.Device](DriverDevelopmentGuide.md#usbdevice-class-usage) class provides a number of methods you can use to interact and manages devices. For example, [*USB.Device.getEndpointZero()*](DriverDevelopmentGuide.md#getendpointzero) returns a special control [endpoint 0](DriverDevelopmentGuide.md#usbcontrolendpoint-class-usage) that can be used to configure the device by transferring messages in a special format via this endpoint. The format of such messages is out the scope of this document; please refer to the [USB specification](http://www.usb.org/) for more details.
