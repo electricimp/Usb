@@ -65,7 +65,7 @@ Some devices provide multiple interfaces and these interfaces could be implement
 
 For example, if one of these drivers matches the device being connected, then it will be instantiated:
 
-```
+```squirrel
 #require "USB.device.lib.nut:1.0.0"
 
 #require "ACustomDriver2.nut:1.2.0"
@@ -87,7 +87,7 @@ Each driver provides its own public API for interaction with USB devices and app
 
 ## Configuring Hardware Pins For USB ##
 
-The reference hardware for the USB Drivers Framework is the [imp005](/hardware/imp/datasheets#imp005). This module requires a special pin configuration in order to enable USB. The USB Driver Framework does this for you by default. Please see documentation on the
+The reference hardware for the USB Drivers Framework is the [imp005](https://developer.electricimp.com/hardware/imp/datasheets#imp005). This module requires a special pin configuration in order to enable USB. The USB Driver Framework does this for you by default. Please see documentation on the
 USB.Host [constructor](DriverDevelopmentGuide.md#usbhost-class-usage) for more details.
 
 If your application is targeting a custom board based on a different Electric Imp module, you may need to set *autoConfigPins* to `false` in order to prevent configuration issues. You will also need to configure it from within the application according to the module’s specification.
@@ -106,7 +106,7 @@ The [USB.Device](DriverDevelopmentGuide.md#usbdevice-class-usage) class provides
 
 The following example code shows how to retrieve the endpoint 0 to then use it for device configuration:
 
-```
+```squirrel
 #require "USB.device.lib.nut:1.0.0"
 
 const VID = 0x413C;
