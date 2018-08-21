@@ -1,6 +1,6 @@
 # Boot Keyboard Driver #
 
-This class is an example of a USB Devices Framework [USB.Driver](../../docs/DriverDevelopmentGuide.md#usbdriver-class) implementation. It exposes a very simple API that allows it to work with any device that implements the [Boot Keyboard Protocol](http://www.usb.org/developers/hidpage/HID1_11.pdf).
+This class is an example of a USB Devices Framework [USB.Driver](../../docs/DriverDevelopmentGuide.md#usbdriver-class-usage) implementation. It exposes a very simple API that allows it to work with any device that implements the [Boot Keyboard Protocol](http://www.usb.org/developers/hidpage/HID1_11.pdf).
 
 **Note** Please use this driver for reference only. It was tested with a limited number of devices and may not support all devices of that type.
 
@@ -120,7 +120,7 @@ This method sends a request through an Interrupt In endpoint that gets data and 
 #### Parameters ####
 
 | Parameter | Type | Required | Description |
-| --- | --- | --- |
+| --- | --- | --- | --- |
 | *callback* | Function | Yes | A function to receive the keyboard status |
 
 #### Callback Parameters ####
@@ -148,7 +148,7 @@ This method is used to limit the reporting frequency.
 #### Parameters ####
 
 | Parameter | Type | Required | Description |
-| --- | --- | --- |
+| --- | --- | --- | --- |
 | *timeout* | Integer | Yes | Poll duration in milliseconds, range: 0 (indefinite)-1020 |
 
 #### Return Value ####
@@ -162,7 +162,7 @@ This method changes the keyboard LED status.
 #### Parameters ####
 
 | Parameter | Type | Required | Description |
-| --- | --- | --- |
+| --- | --- | --- | --- |
 | *leds* | Integer Bitfield | Yes | 8-bit field:</br>bit 0 - NUM LOCK</br>bit 1 - CAPS LOCK</br>bit 2 - SCROLL LOCK</br>bit 3 - COMPOSE</br>bit 4 - KANA |
 
 #### Return Value ####
