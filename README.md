@@ -16,7 +16,7 @@ The USB Drivers Framework is a wrapper over the imp API’s [**hardware.usb**](h
 
 ## Documentation Structure ##
 
-- [Application Development Guide](./docs/ApplicationDevelopmentGuide.md) &mdash' the documentation for application developers
+- [Application Development Guide](./docs/ApplicationDevelopmentGuide.md) &mdash; the documentation for application developers
 - [Driver Development Guide](./docs/DriverDevelopmentGuide.md) &mdash; the guide for new USB driver developers
 
 ## Driver Examples ##
