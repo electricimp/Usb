@@ -1,4 +1,4 @@
-# Boot Keyboard Driver #
+# Boot Keyboard Driver Example #
 
 This class is an example of a USB Devices Framework [USB.Driver](../../docs/DriverDevelopmentGuide.md#usbdriver-class-usage) implementation. It exposes a very simple API that allows it to work with any device that implements the [Boot Keyboard Protocol](http://www.usb.org/developers/hidpage/HID1_11.pdf).
 
