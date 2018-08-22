@@ -1,6 +1,6 @@
 # HID Keyboard Driver #
 
-This driver is an example of an HID [Driver](./GenericHID_Driver.md) application. It exposes a very simple API that allows working with any devices that implement the keyboard function: receive pressed key IDs and update the keyboard LED indicator.
+This driver is an example of an HID [Driver](../GenericHID_Driver.md) application. It exposes a very simple API that allows working with any devices that implement the keyboard function: receive pressed key IDs and update the keyboard LED indicator.
 
 **Note** Please use this driver for reference only. It was tested with a limited number of devices and may not support all devices of that type.
 
