@@ -12,6 +12,6 @@ Please refer to the [Application Development Guide](./../../docs/ApplicationDeve
 
 ## The Driver API ##
 
-The driver has the same public APIs as the [QL720NW Driver](https://github.com/electricimp/QL720NW), so please refer to its [documentation](https://github.com/electricimp/QL720NW#setorientationorientation) for more details. The [QL720NW Driver]((https://github.com/electricimp/QL720NW) will be updated to work with the USB Drivers Framework and then this driver will be removed from here to avoid duplication.
+The driver has the same public APIs as the [QL720NW Driver](https://github.com/electricimp/QL720NW), so please refer to its [documentation](https://github.com/electricimp/QL720NW#setorientationorientation) for more details. The [QL720NW Driver](https://github.com/electricimp/QL720NW) will be updated to work with the USB Drivers Framework and then this driver will be removed from here to avoid duplication.
 
 **Note** You don't have to initialize the driver &mdash; this is done by the USB Drivers Framework automatically.
