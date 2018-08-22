@@ -1,30 +1,18 @@
-## HID Keyboard Driver
+# HID Keyboard Driver #
 
-This class is an example of the HID [Driver](../../docs/HIDDriverGuide.md) application.
-It exposes a very simple API that allows working with any devices that implement
-keyboard function: receive pressed key IDs and update the keyboard LED indicator.
+This driver is an example of an HID [Driver](../../docs/HIDDriverGuide.md) application. It exposes a very simple API that allows working with any devices that implement the keyboard function: receive pressed key IDs and update the keyboard LED indicator.
 
-**NOTE**: Please use the driver examples for reference only. They were tested with a limited number
-of devices and may not support all devices of that type.
+**Note** Please use this driver for reference only. It was tested with a limited number of devices and may not support all devices of that type.
 
-### Include the Driver and Dependencies
+### Include The Driver And Its Dependencies ###
 
-The driver depends on some constants and classes of the
-[USB Framework](../../docs/DriverDevelopmentGuide.md) so that required files have
-to be included by an application developer. Please follow the
-[Application Developer Guide](../../docs/ApplicationDevelopmentGuide.md#including-usb-framework-and-driver-libraries)
-on how to include the generic USB framework library.
+To add the HID Keyboard driver to your project, add the following statement to the top of your code:
 
-**NOTE:** to add the Boot Keyboard driver into your project, use the following statement
-on top of the application code:
-```
+```squirrel
 #require "USB.device.lib.nut:1.0.0"
 ```
-and then either include the HID Keyboard into your application
-by copy-pasting the HID Keyboard Driver code
-or use the Builder's [include statements](https://github.com/electricimp/builder#include).
 
-In the example below, the HID keyboard driver is included into an application:
+and then either include the Generic HID driver in you application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
@@ -34,10 +22,13 @@ In the example below, the HID keyboard driver is included into an application:
 @include "github:electricimp/usb/drivers/HIDKeyboard/US-ASCII.table.nut"
 ```
 
-The code above includes the [US-ASCII.table.nut](./US-ASCII.table.nut) file, which defines the
-default keyboard [layout](#setlayoutnewlayout) for the driver.
+**Note** The file [`US-ASCII.table.nut`](./US-ASCII.table.nut) defines the default keyboard [layout](#setlayoutnewlayout) for the driver.
 
-### Complete Example
+## Custom Matching Procedure ##
+
+This class extends all [HIDDriver](./../drivers/GenericHID_Driver.md) APIs. To accept only those HID interfaces that represent physical keyboard devices, this class overrides the private method *_filter()* of the parent class. This allows this driver to be initialized only when at least one input report contains at least single input item with the `KEYBOARD` Usage Page.
+
+## Complete Example ##
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
@@ -48,104 +39,95 @@ default keyboard [layout](#setlayoutnewlayout) for the driver.
 kbrDrv <- null;
 
 function keyboardEventListener(keys) {
-    server.log("[APP] Keyboard event");
-    local txt = "[APP] Keys: ";
-    foreach (key in keys) {
-        txt += key + " ";
-    }
-    txt += " are pressed";
-    server.log(txt);
+  server.log("[APP] Keyboard event");
+  local txt = "[APP] Keys: ";
+  foreach (key in keys) {
+    txt += key + " ";
+  }
+  txt += " pressed";
+  server.log(txt);
 }
 
 function usbDriverListener(event, driver) {
-    if (event == USB_DRIVER_STATE_STARTED) {
-        local kbrDrv = driver;
+  if (event == USB_DRIVER_STATE_STARTED) {
+    local kbrDrv = driver;
 
-        // Receive new key state every second
-        kbrDrv.startPoll(1000, keyboardEventListener);
-    }
+    // Receive new key state every second
+    kbrDrv.startPoll(1000, keyboardEventListener);
+  }
 }
 
 host <- USB.Host(hardware.usb, [HIDKeyboardDriver]);
 host.setDriverListener(usbDriverListener);
-
 server.log("[APP] USB initialization complete");
 ```
 
-**NOTE:** Please note, the code above should be built
-with the [Builder](https://github.com/electricimp/builder) preprocessor.
-
 For more examples please refer to the [examples](./examples) folder.
 
-### Custom Matching Procedure
-
-This class extends all [HIDDriver](./../../docs/HIDDriverGuide.md#public-api) APIs.
-To accept only those HID interfaces that represent physical keyboard devices,
-this class overrides internal method `_filter` of the parent class. This allows
-this driver to be initialized only when at least one input report contains at
-least single input item with the `KEYBOARD` Usage Page.
-
-### Driver API
+## The Driver API ##
 
 This driver exposes the following API to applications.
 
-#### startPoll(millis, cb)
+### startPoll(*pollTime, callback*) ###
 
-Starts keyboard polling with the provided period. The function returns nothing
-but may throw an exception if there is a polling that is running already.
+This method starts keyboard polling with a specified period. It may throw an exception if polling is already taking place.
 
-| Parameter | Type | Description |
-| --------- | ---- | ----------- |
-| *millis* | Integer| Poll time in a range of [4 .. 1020] ms |
-| *cb* | Function |user callback function that receive keyboard state |
+The method tries to issue the `"Set Idle"` USB HID command, which requests the keyboard hardware to set the key matrix poll time. If the command was issued
+successfully, this class implementation expects *HIDReport.getAsync()* to generate the next keyboard state event after the desired amount of time. If the hardware doesn't support the command, the implementation expects to receive a response from *HIDReport.getAsync()* immediately and will use a timer to implement the `IDLE` function.
 
-The signature of the callback is: *callback(keyset)*
+#### Parameters ####
 
-| Parameter | Type | Description |
-| --------- | ---- | ----------- |
-| *keyset* | Array of Integers | An array of pressed keys |
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| *pollTime* | Integer| Yes | Poll time in milliseconds in the range 4-1020ms |
+| *callback* | Function | Yes | A function to be called on write completion or error |
 
-
-**NOTE:** the function tries to issue "Set Idle" USB HID command that requests
-the keyboard hardware to setup key matrix poll time. If the command was issued
-successfully this class implementation expects `HIDReport.getAsync()` to
-generate a next keyboard state event after the desired amount of time. If the hardware
-doesn't support the command, the implementation expects to receive a response
-from `HIDReport.getAsync()` immediately and will use a timer to implement the `IDLE` function.
-
-#### stopPoll()
-
-Stops polling the keyboard events.
-
-#### setLEDs(ledList)
-
-Update Keyboard LED status. The function accepts an array of
-integers with LED indicator IDs, declared at
-[HID usage table](http://www.usb.org/developers/hidpage/Hut1_12v2.pdf) chap.8.
-
-The function may throw an exception if the argument is not an array or due to a USB issue.
-
-**NOTE:** the function returns error string if the device doesn't have any LEDs indicators.
-
-#### setLayout(newLayout)
-
-Changes the keyboard layout. Receives keycode processor - the function that is used
-to convert native scancodes to desired values.
-Setting `NULL` makes the driver reporting the native key codes.
-
-The class tries to use the [US_ASCII_LAYOUT](./US-ASCII.table.nut)
-which is a default layout for the driver.
-
-##### Layout processor
-
-This class uses a special function that processes native keyboard scan codes to application-specific values.
-
-The [example](./US-ASCII.table.nut) of this processor can be a function that
-converts the native key codes to language specific codes.
+#### Callback Parameters ####
 
 | Parameter | Type | Description |
-| --------- | ---- | ----------- |
-| *keyArray* | Array of Integers | the array of scancodes (integers) |
+| --- | --- | --- |
+| *keyset* | Array of integers | The pressed keys |
 
-Returns the converted code values.
+#### Return Value ####
 
+Nothing.
+
+### stopPoll() ###
+
+This method stops polling the keyboard.
+
+#### Return Value ####
+
+Nothing.
+
+### setLEDs(*ledList*) ###
+
+This method updates the Keyboard LED status. It accepts an array of integers as LED indicator IDs, as declared in Chapter 8 of the [HID usage table](http://www.usb.org/developers/hidpage/Hut1_12v2.pdf) chap.8.
+
+The method may throw an exception if the argument is not an array or due to a USB issue.
+
+#### Parameters ####
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| *ledList* | Array of integers | Yes | LED indicator IDs |
+
+#### Return Value ####
+
+Nothing, or an error message if the device has no LEDs indicators.
+
+### setLayout(*newLayout*) ###
+
+This method changes the keyboard layout. It receives a keycode processor &mdash; a function that is used to convert native scancodes to desired values. Passing in `null` causes the driver to report native key codes.
+
+#### Parameters ####
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| *newLayout* | Function | Yes | A keycode processing function |
+
+#### Layout Processor Functions ####
+
+This driver mandates a special function to processes native keyboard scan codes to application-specific values. It has a single parameter of its own into which will be passed an array of integers, each of which is a scancode. It returns the converted code values within an array.
+
+An [example](./US-ASCII.table.nut) of this processor converts the native key codes to language-specific codes.
