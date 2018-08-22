@@ -1,4 +1,4 @@
-# Generic HID Driver Implementation #
+# Generic HID Driver Implementation Example #
 
 This generic Human Interface Devices (HID) driver implements the base functionality required to start using any device with an HID interface. It enables device discovery, and reading and changing the states of any sensors, actuators, indicators and other physical parts of such devices.
 
