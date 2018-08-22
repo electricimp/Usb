@@ -2,21 +2,37 @@
 
 This guide is intended for those developers who are going to integrate one or more existing USB drivers into their applications.
 
-Before you use a driver, please read carefully its documentation to understand its limitations and requirements.
+Before you use a driver, please read its documentation carefully to fully understand its limitations and requirements.
 
-## Including USB Framework And Driver Libraries ##
+## Including The USB Drivers Framework And Drivers ##
 
-To include the USB Drivers Framework library in your application, add `#require "USB.device.lib.nut:1.0.0"` to the top of your device code.
+To include the USB Drivers Framework in your application, add `#require "USB.device.lib.nut:1.0.0"` to the top of your device code.
 
-By default, the base USB Drivers Framework itself does not provide any device drivers out of the box. Application developers will therefore need explicitly  to include and manage drivers they need.
+The base USB Drivers Framework does not itself provide any device drivers. Application developers will therefore need to include in their code any drivers they need.
 
-Include statements for dependent USB drivers and other libraries, as well as the rest of the application code should follow.
-
-The following code example shows how to include the FT232RL FTDI USB Device Driver in your application code:
+Statements to import specific USB drivers and other, related libraries should be placed immediately after the USB Drivers Framework import statement. For example, here we include a generic driver provided as a library by Electric Imp:
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
-#require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0"
+#require "GenericUsbDriver.device.lib.nut:1.0.0"
+```
+
+Not all drivers may be offered this way; some you may need to declare within your code:
+
+```squirrel
+#require "USB.device.lib.nut:1.0.0"
+
+class GenericUsbDriver extends USB.Driver {
+  // Your driver code goes here
+}
+```
+
+Or you may load the driver code in using Builder or some other tool:
+
+```squirrel
+#require "USB.device.lib.nut:1.0.0"
+
+@include "GenericUsbDriver.nut"
 ```
 
 ## Initializing The USB Drivers Framework ##
@@ -37,7 +53,7 @@ function driverStatusListener(eventType, driver) {
   if (eventType == USB_DRIVER_STATE_STARTED) {
     if (typeof driver == "FT232RLFtdiUsbDriver") ft232Driver = driver;
 
-    // Start work with FT232RL driver API here
+    // Start work with FT232RL driver API here...
 
   } else if (eventType == USB_DRIVER_STATE_STOPPED) {
     // Immediately stop all interaction with FT232RL driver API
@@ -50,20 +66,14 @@ host <- USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
 host.setDriverListener(driverStatusListener);
 ```
 
-The example creates an instance of the [USB.Host](DriverDevelopmentGuide.md#usbhost-class-usage) class. The constructor takes two parameters: the imp API USB object representing your board’s USB bus, and an array of device-driver classes &mdash; in this case, an array with a single FT232RLFtdiUsbDriver class.
+The example creates an instance of the [USB.Host](DriverDevelopmentGuide.md#usbhost-class-usage) class. The constructor takes two parameters: the imp API USB object representing your board’s USB bus, and an array of device-driver classes &mdash; in this case, an array containing a single class, FT232RLFtdiUsbDriver.
 
 The final line shows how to register a driver-state listener function by calling the *USB.Host.setDriverListener()* method. Please
 refer to the method [documentation](DriverDevelopmentGuide.md#setdriverlistenerlistener) for more details.
 
 ## Using Multiple Drivers ##
 
-It is possible to register any number of drivers with the USB Drivers Framework: just add further device-driver class references to the array parameter in the [USB.Host](DriverDevelopmentGuide.md#usbhost-class-usage) constructor.
-
-Whenever a device is plugged or unplugged, the corresponding drivers that match this device will be started or stopped.
-
-Some devices provide multiple interfaces and these interfaces could be implemented via a single or multiple drivers. The USB Drivers Framework instantiates all drivers which match the connected device.
-
-For example, if one of these drivers matches the device being connected, then it will be instantiated:
+It is possible to register any number of drivers with the USB Drivers Framework: just add further device-driver class references to the array parameter in the [USB.Host](DriverDevelopmentGuide.md#usbhost-class-usage) constructor:
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.0"
@@ -75,22 +85,24 @@ For example, if one of these drivers matches the device being connected, then it
 host <- USB.Host(hardware.usb, [ACustomDriver1, ACustomDriver2, ACustomDriver3]);
 ```
 
-If all the three drivers match device interfaces, then they all are instantiated and started by the USB Drivers Framework.
+Whenever a device is plugged or unplugged, the corresponding drivers that match this device will be respectively started or stopped automatically by the USB Drivers Framework. Upon the connection of a device, the Framework attempts to match it to each of the registered drivers. If one of the drivers matches the device being connected, then the driver will be instantiated. 
+
+Some devices provide multiple interfaces and these interfaces could be implemented via a single driver or multiple drivers. The USB Drivers Framework instantiates all drivers which match the connected device. If all the registered drivers match device interfaces, then they all are instantiated and started by the USB Drivers Framework.
 
 Application developers are responsible for including required device-driver libraries into the application code.
 
 ## Accessing A Driver’s API ###
 
-Public driver APIs are neither limited nor enforced in any way by the USB Drivers Framework. It is the responsibility of the driver developer to decide which APIs to expose to application developers.
+Each driver provides its own public API to allow the application to interact with USB devices. Application developers should therefore read carefully the driver documentation and follow its instructions.
 
-Each driver provides its own public API for interaction with USB devices and application code. Application developers should therefore read carefully the driver documentation and follow its instructions.
+Driver public APIs are neither limited nor enforced by the USB Drivers Framework in any way. It is the responsibility of the driver developer to decide which APIs to expose to application developers.
 
 ## Configuring Hardware Pins For USB ##
 
-The reference hardware for the USB Drivers Framework is the [imp005](https://developer.electricimp.com/hardware/imp/datasheets#imp005). This module requires a special pin configuration in order to enable USB. The USB Driver Framework does this for you by default. Please see documentation on the
+The reference hardware for the USB Drivers Framework is the [imp005](https://developer.electricimp.com/hardware/imp/datasheets#imp005). This imp module requires a special pin configuration in order to enable USB: pinR (USB active high load control) and pinW (active low USB fault indication) must both be set high. The USB Driver Framework does this for you by default. Please see documentation on the
 USB.Host [constructor](DriverDevelopmentGuide.md#usbhost-class-usage) for more details.
 
-If your application is targeting a custom board based on a different Electric Imp module, you may need to set *autoConfigPins* to `false` in order to prevent configuration issues. You will also need to configure it from within the application according to the module’s specification.
+If your application is targeting a custom board based on a different Electric Imp module, you may need to set the constructor’s *autoConfigPins* parameter to `false` in order to prevent configuration issues. You will also need to configure it from within the application according to the module’s specification.
 
 ## Working With Attached Devices ##
 
