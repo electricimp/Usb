@@ -854,7 +854,7 @@ Each endpoints table contains the following keys:
 ## USB Driver Examples ##
 
 - [Generic HID device](./HIDDriverGuide.md)
-- [QL720NW printer](./../drivers/QL720NW_UART_USB_Driver)
-- [FTDI usb-to-uart Converter](./../drivers/FT232RL_FTDI_USB_Driver)
-- [Keyboard with HID Protocol](./../drivers/HIDKeyboard)
-- [Keyboard with Boot Protocol](./../drivers/BootKeyboard)
+- [Brother QL720NW label printer](./../drivers/QL720NW_UART_USB_Driver)
+- [FTDI USB-to-UART converter](./../drivers/FT232RL_FTDI_USB_Driver)
+- [Keyboard using the HID protocol](./../drivers/HIDKeyboard)
+- [Keyboard using the Boot porotocol](./../drivers/BootKeyboard)
