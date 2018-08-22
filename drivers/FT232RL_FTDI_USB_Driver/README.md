@@ -17,11 +17,11 @@ To add the FT232RL FTDI USB Device Driver driver into your project, add the foll
 #require "USB.device.lib.nut:1.0.0"
 ```
 
-and then either include the Boot Keyboard driver in you application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
+and then either include the FT232RLFtdiUsbDriver driver in you application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
 ```
 #require "USB.device.lib.nut:1.0.0"
-@include "~/project/FT232RLFtdiUsbDriver.device.lib.nut"
+@include "github:electricimp/usb/drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.lib.nut"
 ```
 
 ## The Driver API ##
