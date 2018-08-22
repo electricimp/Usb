@@ -831,10 +831,10 @@ USB <- {
                 onComplete && onComplete(this, state, data, length);
             };
 
-            // Disable 5 seconds time limit for an interrupt endpoint
-            if (_type != USB_ENDPOINT_INTERRUPT) {
-                _timer = imp.wakeup(5, _onTimeout.bindenv(this));
-            }
+            // // Disable 5 seconds time limit for an interrupt endpoint
+            // if (_type != USB_ENDPOINT_INTERRUPT) {
+            //     _timer = imp.wakeup(5, _onTimeout.bindenv(this));
+            // }
 
         }
 
