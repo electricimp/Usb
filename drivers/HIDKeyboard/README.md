@@ -1,6 +1,6 @@
 # HID Keyboard Driver #
 
-This driver is an example of an HID [Driver](../GenericHID_Driver.md) application. It exposes a very simple API that allows working with any devices that implement the keyboard function: receive pressed key IDs and update the keyboard LED indicator.
+This driver is an example of an HID [Driver](../GenericHID_Driver/GenericHID_Driver.md) application. It exposes a very simple API that allows working with any devices that implement the keyboard function: receive pressed key IDs and update the keyboard LED indicator.
 
 **Note** Please use this driver for reference only. It was tested with a limited number of devices and may not support all devices of that type.
 
@@ -26,7 +26,7 @@ and then either include the Generic HID driver in you application by pasting its
 
 ## Custom Matching Procedure ##
 
-This class extends all [HIDDriver](./../drivers/GenericHID_Driver.md) APIs. To accept only those HID interfaces that represent physical keyboard devices, this class overrides the private method *_filter()* of the parent class. This allows this driver to be initialized only when at least one input report contains at least single input item with the `KEYBOARD` Usage Page.
+This class extends all [HIDDriver](../GenericHID_Driver/GenericHID_Driver.md) APIs. To accept only those HID interfaces that represent physical keyboard devices, this class overrides the private method *_filter()* of the parent class. This allows this driver to be initialized only when at least one input report contains at least single input item with the `KEYBOARD` Usage Page.
 
 ## Complete Example ##
 
