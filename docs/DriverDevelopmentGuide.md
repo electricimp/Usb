@@ -325,7 +325,7 @@ will be thrown on an attempt to instantiate `USB.Host` in such case.
 ##### Example
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 #require "MyCustomDriver1.device.lib.nut:1.2.3"
 #require "MyCustomDriver2.device.lib.nut:1.0.0"
 

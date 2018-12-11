@@ -102,7 +102,7 @@ const USB_DEVICE_STATE_DISCONNECTED         = "disconnected";
 // Not intended to use by any developers.
 USB <- {
 
-    VERSION = "1.0.0",
+    VERSION = "1.0.1",
 
     // Debug flag
     debug = true,

@@ -23,7 +23,7 @@ instruction about how to start using the USB framework.
 add the following statement:
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 ```
 
 and then either include the Generic HID driver code into your application
@@ -33,7 +33,7 @@ or use the Builder's [include statements](https://github.com/electricimp/builder
 In the code snippet below, the Generic HID driver is included into an application:
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 @include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.lib.nut"
 ```
 
