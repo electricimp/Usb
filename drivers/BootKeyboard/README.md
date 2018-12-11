@@ -20,7 +20,7 @@ on how to include the generic USB framework library.
 **NOTE:** to add the Boot Keyboard driver into your project, use the following statement
 on top of you application code:
 ```
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 ```
 and then either include the Boot Keyboard into you application
 by copy-pasting the code Boot Keyboard Driver code
@@ -29,7 +29,7 @@ or use the Builder's [include statements](https://github.com/electricimp/builder
 In the example below, the boot keyboard driver is included into an application:
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 @include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.lib.nut"
 ```
 
@@ -40,7 +40,7 @@ In the example below, the boot keyboard driver is included into an application:
 #require "JSONEncoder.class.nut:1.0.0"
 
 // Include the USB framework and the BootKeyboard library
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 @include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.lib.nut"
 
 // Debug print setup

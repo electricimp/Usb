@@ -320,12 +320,12 @@ will be thrown on an attempt to instantiate `USB.Host` in such case.
 | -------------- | --------- | ------- | ----------- |
 | *usb*      | object | required  | The native platform `usb` object representing a Universal Serial Bus (USB) interface |
 | *drivers*      | USB.Driver[] | required  | An array of the pre-defined driver classes |
-| *autoConfigPins* | Boolean   | `true`  | Whether to configure pin R and W according to the documentation on [imp005 Pin Mux](https://developer.electricimp.com/hardware/imp/imp005pinmux#usb). These pins must be configured for the USB to work on **imp005**. |
+| *autoConfigPins* | Boolean   | `false` | Whether to configure pin R and W according to the documentation on [imp005 Pin Mux](https://developer.electricimp.com/hardware/imp/imp005pinmux#usb). These pins must be configured for the USB to work on **imp005**. |
 
 ##### Example
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 #require "MyCustomDriver1.device.lib.nut:1.2.3"
 #require "MyCustomDriver2.device.lib.nut:1.0.0"
 

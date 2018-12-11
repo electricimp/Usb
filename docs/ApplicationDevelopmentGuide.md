@@ -12,7 +12,7 @@ drivers out of the box. So application developers should explicitly include
 and manage drivers they need.
 
 **NOTE:** to include the USB Driver Framework library into your project,
-add `#require "USB.device.lib.nut:1.0.0"` to the top of your device code.
+add `#require "USB.device.lib.nut:1.0.1"` to the top of your device code.
 
 Include statements for dependent USB drivers and other libraries,
 as well as the rest of the application code should follow.
@@ -21,7 +21,7 @@ In the example below shows how to include the FT232RL FTDI USB Device Driver
 into your applicatin code:
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 #require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0"
 ```
 
@@ -40,7 +40,7 @@ The code snippet below shows how to initialize the USB framework
 with a single FT232RL FTDI USB driver as an example.
 
 ```
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 #require "FT232RLFtdiUsbDriver.device.lib.nut:1.0.0"
 
 ft232Driver <- null;
@@ -86,7 +86,7 @@ For example, if one of these drivers matches the device being connected,
 then it will be instantiated:
 
 ```
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 
 #require "MyCustomDriver2.nut:1.2.0"
 #require "MyCustomDriver1.nut:1.0.0"
@@ -136,7 +136,7 @@ Please refer to [USB specification](http://www.usb.org/) for more details.
 Example below shows how to get retrieve the endpoint 0 to then use it for device configuration:
 
 ```
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 
 const VID = 0x413C;
 const PID = 0x2107;
@@ -189,7 +189,7 @@ It is not necessary to setup [setDriverListener](DriverDevelopmentGuide.md#setdr
 the drivers and devices are created again, they are going to have addresses.
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 
 class MyCustomDriver extends USB.Driver {
     function match(device, interfaces) {
