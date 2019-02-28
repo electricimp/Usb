@@ -37,5 +37,5 @@ The driver has the same public APIs as the [QL720NW Driver]((https://github.com/
 
 **NOTE:** you don't have to initialize the driver, this is done by the USB framework automatically.
 
-**NOTE:** the [QL720NW Driver]((https://github.com/electricimp/QL720NW) will be updated to work with the
+**NOTE:** the [QL720NW Driver](https://github.com/electricimp/QL720NW) will be updated to work with the
 USB framework and then this driver will be removed from here to avoid duplication.
