@@ -87,18 +87,6 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
       }.bindenv(this));
     }
 
-    function test02ReadTimeout() {
-      local ep = bulkIn.get();
-      return Promise(function(resolve, reject) {
-          ep.read(blob(5), function(epr, state, data, len) {
-              assertEqual(ep, epr, "Unexpected endpoint value");
-              assertTrue(state != OK, "Unexpected error: " + state);
-              assertEqual(0, len, "Unexpected length of data");
-              resolve();
-          }.bindenv(this));
-      }.bindenv(this));
-    }
-
     function test02ReadError() {
       local ep = bulkIn.get();
       server.log("aa = " + _device._address);
