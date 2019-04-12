@@ -1,12 +1,12 @@
 # Boot Keyboard Driver Example #
 
-This class is an example of how to extend the USB Devices Framework [USB.Driver](../../docs/DriverDevelopmentGuide.md#usbdriver-class-usage) implementation. It exposes a very simple API that allows it to work with any device that implements the [Boot Keyboard Protocol](http://www.usb.org/developers/hidpage/HID1_11.pdf).
+This class is an example of how to extend the USB Devices Framework [USB.Driver](../../docs/DriverDevelopmentGuide.md#usbdriver-class-usage) implementation. It exposes a very simple API that allows it to work with any device that implements the [Boot Keyboard Protocol](https://www.usb.org/sites/default/files/documents/hid1_11.pdf).
 
 **Note** Please use this driver for reference only. It was tested with a limited number of devices and may not support all devices of that type.
 
 ## Include The Driver And Its Dependencies ##
 
-The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md).
+The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification).
 
 To add the Boot Keyboard driver into your project, add `#require "USB.device.lib.nut:1.0.1"` top of you application code and then either include the Boot Keyboard driver in your application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 

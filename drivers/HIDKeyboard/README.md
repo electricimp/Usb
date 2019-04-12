@@ -6,7 +6,7 @@ This driver is an example of an HID [Driver](../GenericHID_Driver/README.md) app
 
 ### Include The Driver And Its Dependencies ###
 
-The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md).
+The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification).
 
 To add the HID Keyboard driver to your project, add `#require "USB.device.lib.nut:1.0.1"` top of you application code and then either include the HID Keyboard driver in your application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
@@ -22,7 +22,7 @@ To add the HID Keyboard driver to your project, add `#require "USB.device.lib.nu
 
 ## Custom Matching Procedure ##
 
-This class extends all [HIDDriver](../GenericHID_Driver/README.md) APIs. To accept only those HID interfaces that represent physical keyboard devices, this class overrides the private method *_filter()* of the parent class. This allows this driver to be initialized only when at least one input report contains at least single input item with the `KEYBOARD` Usage Page.
+This class extends all [HIDDriver](../GenericHID_Driver/README.md#hiddriver-class) APIs. To accept only those HID interfaces that represent physical keyboard devices, this class overrides the private method *_filter()* of the parent class. This allows this driver to be initialized only when at least one input report contains at least single input item with the `KEYBOARD` Usage Page.
 
 ## Driver Class Custom API ##
 
@@ -61,7 +61,7 @@ Nothing.
 
 ### setLEDs(*ledList*) ###
 
-This method updates the Keyboard LED status. It accepts an array of integers as LED indicator IDs, as declared in Chapter 8 of the [HID usage table](http://www.usb.org/developers/hidpage/Hut1_12v2.pdf) chap.8.
+This method updates the Keyboard LED status. It accepts an array of integers as LED indicator IDs, as declared in Chapter 8 of the [HID usage table](https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf) chap.8.
 
 The method may throw an exception if the argument is not an array or due to a USB issue.
 

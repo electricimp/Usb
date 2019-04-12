@@ -1,6 +1,6 @@
 # QL720NW UART USB Driver Example #
 
-This example shows you how to implement the [USB Drivers Framework](./../../docs/DriverDevelopmentGuide.md) interface to create a USB over UART driver for the Brother QL720NW label printer.
+This example shows you how to implement the [USB Drivers Framework](./../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification) interface to create a USB over UART driver for the Brother QL720NW label printer.
 
 It includes the QL720NWUartUsbDriver class with the public methods that match the [QL720NWUart](https://github.com/electricimp/QL720NW/tree/e6163cef81a0dcd37f4e1205a4ab9f456f77f83b) public methods, plus some example code that demonstrates how to use the driver.
 
