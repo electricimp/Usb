@@ -114,7 +114,7 @@ Following constants are used to compose [HIDReport.Item.itemFlags](#hidreportite
 
 ## HIDDriver Class ##
 
-**HIDDriver** is a class that represents a single HID interface of any device. It retrieves the HID report descriptor from the corresponding device and converts it into a set of [HIDReport](#hidreport-class) instances. The class extends the base [USB.Driver](../../docs/DriverDevelopmentGuide.md#usbdriver-class) class.
+**HIDDriver** is a class that represents a single HID interface of any device. It retrieves the HID report descriptor from the corresponding device and converts it into a set of [HIDReport](#hidreport-class) instances. The class extends the base [USB.Driver](../../docs/DriverDevelopmentGuide.md#usbdriver-class-usage) class.
 
 ### match(device, interfaces)
 
