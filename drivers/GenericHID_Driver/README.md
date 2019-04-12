@@ -8,13 +8,9 @@ Please familiarize yourself with the [Device Class Definition for Human Interfac
 
 ## Include The HID Driver Library ##
 
-This driver depends on the base USB Drivers Framework, which needs to be included in your application code:
+The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md).
 
-```squirrel
-#require "USB.device.lib.nut:1.0.1"
-```
-
-and then either include the Generic HID driver in you application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
+To add the Generic HID driver to your project, add `#require "USB.device.lib.nut:1.0.1"` top of your application code and then either include the Generic HID driver in your application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.1"
@@ -69,19 +65,19 @@ match such devices. This issue may be addressed in a future release.
 hidDriver <- null;
 
 function hidEventListener(error, report) {
-  server.log("HID event");
+    server.log("HID event");
 
-  // Process the report here
+    // Process the report here
 
-  // Initiate a new read operation
-  hidDriver.getAsync(hidEventListener);
+    // Initiate a new read operation
+    hidDriver.getAsync(hidEventListener);
 }
 
 function usbEventListener(event, driver) {
-  if (event == USB_DRIVER_STATE_STARTED) {
-    hidDriver = driver;
-    hidDriver.getAsync(hidEventListener);
-  }
+    if (event == USB_DRIVER_STATE_STARTED) {
+        hidDriver = driver;
+        hidDriver.getAsync(hidEventListener);
+    }
 }
 
 host <- USB.Host(hardware.usb, [HIDDriver]);
@@ -118,10 +114,15 @@ Following constants are used to compose [HIDReport.Item.itemFlags](#hidreportite
 
 ## HIDDriver Class ##
 
-**HIDDriver** is a class that represents a single HID interface of any device. It retrieves the HID report descriptor from the corresponding device and converts it into a set of [HIDReport](#hidreport-class) instances. The class extends the base
-[USB.Driver](./DriverDevelopmentGuide.md#usbdriver-class) class.
+**HIDDriver** is a class that represents a single HID interface of any device. It retrieves the HID report descriptor from the corresponding device and converts it into a set of [HIDReport](#hidreport-class) instances. The class extends the base [USB.Driver](./DriverDevelopmentGuide.md#usbdriver-class) class.
 
-It matches against USB_CLASS_HID (`3`) devices.
+### match(device, interfaces)
+
+This method overrides the base [USB.Driver.match()](../../docs/DriverDevelopmentGuide.md#matchdeviceobject-interfaces) method to match only device [interfaces](../../docs/DriverDevelopmentGuide.md#interface-descriptor) of *class* 3 (HID). Then it tries to extract and parse HID Report descriptors (see [notes](#known-limitation)). If a problem occurs the function returns `null`. Otherwise the methods returns a list of HIDDriver instances, one per each of the corresponding HID interface.
+
+#### Return Value ####
+
+Nothing or a list of HID Driver instances, one per each of the corresponding HID interface.
 
 ### getReports() ###
 
@@ -164,8 +165,7 @@ This class represents HID Reports. An HID Report is a data packet that can be tr
 
 ### request() ###
 
-This method obtains HID state information from the device through endpoint 0. It but may throw an exception if an error occurs during the transfer or if the
-control endpoint is closed.
+This method obtains HID state information from the device through endpoint 0. It but may throw an exception if an error occurs during the transfer or if the control endpoint is closed.
 
 #### Return Value ####
 
@@ -221,7 +221,7 @@ Array of feature items, or `null`.
 
 ## HIDReport.Item Class ##
 
-The class represents a single report item in an HID Report. It has a number of properties:
+The class represents a single report item in an HID Report. It has a number of attributes:
 
 | Property | Type | Description |
 | --- | --- | --- |
@@ -239,8 +239,7 @@ Returns the present HID report item value.
 
 ### set(*value*) ###
 
-Updates HID report item value with the data provided. The parameter should be
-convertible to Integer with `tointeger()` function.
+Updates HID report item value with the data provided. The parameter should be convertible to Integer with `tointeger()` function.
 
 ## HIDReport.Item.Attributes Class ##
 
@@ -260,19 +259,7 @@ The class that contains the HID report item attributes.
 
 ### print(*stream*) ###
 
-This method is a debug function that prints report data via the specified method, eg, **server.log**.
-
-#### Parameters ####
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| *stream* | Function | Yes | The Function to handle the output |
-
-#### Example ####
-
-```squirrel
-print(server.error);
-```
+This method is a debug function that prints report data via the specified method, eg, `server.log`.
 
 ## HIDReport.Collection ##
 
@@ -280,16 +267,8 @@ This class is used to create Items' Collection hierarchies. Collection Paths are
 
 ### Constructor: HIDReport.Collection(*parent*) ###
 
-A new Collection is always created as part of a Collection Path and thus should receive the previous element in the chain as an argument. 
-
-If a new Path is to be created, pass in `null`.
+A new Collection is always created as part of a Collection Path and thus should receive the previous element in the chain as an argument. If a new Path is to be created, pass in `null`.
 
 ### print(*stream*) ###
 
-This method is a debug function that prints report data via the specified method, eg, **server.log**.
-
-#### Parameters ####
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| *stream* | Function | Yes | The Function to handle the output |
+This method is a debug function that prints report data via the specified method, eg, `server.log`.

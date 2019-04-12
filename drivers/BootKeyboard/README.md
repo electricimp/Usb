@@ -6,10 +6,9 @@ This class is an example of how to extend the USB Devices Framework [USB.Driver]
 
 ## Include The Driver And Its Dependencies ##
 
-The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md). Please
-see the [Application Developer Guide](../../docs/ApplicationDevelopmentGuide.md#including-usb-framework-and-driver-libraries) to learn how to include the generic USB framework library.
+The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md).
 
-**Note** To add the Boot Keyboard driver into your project, add `#require "USB.device.lib.nut:1.0.1"` top of you application code and then include the Boot Keyboard driver in your application either by copying and pasting the contents of the BootKeyboard.device.lib.nut file or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
+To add the Boot Keyboard driver into your project, add `#require "USB.device.lib.nut:1.0.1"` top of you application code and then either include the Boot Keyboard driver in your application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.1"
@@ -20,7 +19,7 @@ see the [Application Developer Guide](../../docs/ApplicationDevelopmentGuide.md#
 
 This driver matches only devices [interfaces](../../docs/DriverDevelopmentGuide.md#interface-descriptor) of *class* 3 (HID), *subclass* 1 (Boot) and *protocol* 1 (keyboard).
 
-## The Driver API ##
+## Driver Class Custom API ##
 
 This driver exposes following API for application usage.
 
@@ -103,6 +102,8 @@ This method changes the keyboard LED status.
 Nothing, or an error description if an error occurred.
 
 ## Complete Example ##
+
+**Note** The code below should be built with the [Builder](https://github.com/electricimp/builder) preprocessor.
 
 ```squirrel
 #require "PrettyPrinter.class.nut:1.0.1"
