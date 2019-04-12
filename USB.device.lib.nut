@@ -102,7 +102,7 @@ const USB_DEVICE_STATE_DISCONNECTED         = "disconnected";
 // Not intended to use by any developers.
 USB <- {
 
-    VERSION = "1.0.0",
+    VERSION = "1.0.1",
 
     // Debug flag
     debug = true,
@@ -150,12 +150,13 @@ USB <- {
         //
         // Constructor
         // Parameters:
-        //      usb          -
-        //      driverList   - a list of special classes that implement USB.Driver API.
-        //      autoConfPins - flag to specify whether to configure pins for usb usage
-        //                     (see https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb)
+        //      usb            -
+        //      driverList     - a list of special classes that implement USB.Driver API.
+        //      autoConfigPins - the table containing the power control pin ("powerPin")
+        //                       and the fault indication pint ("faultPin")
+        //                       (see https://electricimp.com/docs/hardware/imp/imp005pinmux/#usb)
         //
-        constructor(usb, driverList, autoConfPins = true) {
+        constructor(usb, driverList, autoConfigPins = null) {
             try {
                 _usb = usb;
             } catch(e) {
@@ -178,7 +179,7 @@ USB <- {
                 _checkAndAppend(driver);
             }
 
-            if (autoConfPins) {
+            if (autoConfigPins) {
                 if ("pinW" in hardware && "pinR" in hardware) {
                     // Configure the pins required for usb
                     hardware.pinW.configure(DIGITAL_IN_PULLUP);
@@ -830,12 +831,6 @@ USB <- {
             _transferCb = function (state, length) {
                 onComplete && onComplete(this, state, data, length);
             };
-
-            // Disable 5 seconds time limit for an interrupt endpoint
-            if (_type != USB_ENDPOINT_INTERRUPT) {
-                _timer = imp.wakeup(5, _onTimeout.bindenv(this));
-            }
-
         }
 
         // Notifies application about data transfer status
@@ -859,12 +854,6 @@ USB <- {
             _transferCb = null;
 
             cb(state, length);
-        }
-
-        // Auxillary function to handle transfer timeout state
-        function _onTimeout() {
-            _timer = null;
-            _onTransferEvent(USB_TYPE_TIMEOUT, 0);
         }
 
         // Metafunction to return class name when typeof <instance> is run

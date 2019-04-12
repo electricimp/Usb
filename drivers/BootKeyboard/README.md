@@ -12,13 +12,13 @@ see the [Application Developer Guide](../../docs/ApplicationDevelopmentGuide.md#
 **Note** To add the Boot Keyboard driver into your project, add the following statement on top of you application code:
 
 ```
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 ```
 
 and then either include the Boot Keyboard driver in you application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 @include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.lib.nut"
 ```
 
@@ -55,7 +55,7 @@ Both [*getKeyStatusAsync()*](#getkeystatusasynccallback) and [*getKeyStatus()*](
 #require "JSONEncoder.class.nut:1.0.0"
 
 // Include the USB framework and the BootKeyboard library
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 @include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.lib.nut"
 
 // Debug print setup

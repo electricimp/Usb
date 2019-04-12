@@ -11,13 +11,13 @@ Please familiarize yourself with the [Device Class Definition for Human Interfac
 This driver depends on the base USB Drivers Framework, which needs to be included in your application code:
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 ```
 
 and then either include the Generic HID driver in you application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.0.1"
 @include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.lib.nut"
 ```
 
