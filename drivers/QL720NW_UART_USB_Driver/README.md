@@ -10,8 +10,21 @@ The [USB.Host](./../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-
 
 Please refer to the [Application Development Guide](./../../docs/ApplicationDevelopmentGuide.md) for more details on how to use existing USB drivers.
 
-## The Driver API ##
+## USB.Driver Class Base Methods Implementation ##
 
-The driver has the same public APIs as the [QL720NW Driver](https://github.com/electricimp/QL720NW), so please refer to its [documentation](https://github.com/electricimp/QL720NW#setorientationorientation) for more details. The [QL720NW Driver](https://github.com/electricimp/QL720NW) will be updated to work with the USB Drivers Framework and then this driver will be removed from here to avoid duplication.
+### match(device, interfaces)
+
+Implementation of the [USB.Driver.match](../../docs/DriverDevelopmentGuide.md#matchdeviceobject-interfaces) interface method.
+
+### release()
+
+Implementation of the [USB.Driver.release](../../docs/DriverDevelopmentGuide.md#release) interface method.
+
+## Driver Class Custom API ##
+
+The driver has the same public APIs as the [QL720NW Driver](https://github.com/electricimp/QL720NW). So please refer to it's [documentation](https://github.com/electricimp/QL720NW#setorientationorientation) for more details.
+
+**Note** the [QL720NW Driver](https://github.com/electricimp/QL720NW) will be updated to work with the
+USB framework and then this driver will be removed from here to avoid duplication.
 
 **Note** You don't have to initialize the driver &mdash; this is done by the USB Drivers Framework automatically.

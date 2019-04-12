@@ -8,7 +8,7 @@ This driver is an example of an HID [Driver](../GenericHID_Driver/README.md) app
 
 To add the HID Keyboard driver to your project, add the following statement to the top of your code:
 
-**NOTE:** to add the Boot Keyboard driver into your project, use the following statement
+**Note** to add the Boot Keyboard driver into your project, use the following statement
 on top of the application code:
 
 ```squirrel

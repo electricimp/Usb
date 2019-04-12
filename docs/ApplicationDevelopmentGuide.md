@@ -15,7 +15,7 @@ At this time there are no Electric Imp supported USB Device Driver Libraries. St
 ```squirrel
 #require "USB.device.lib.nut:1.0.1"
 
-class GenericUsbDriver extends USB.Driver {
+class BootKeyboardDriver extends USB.Driver {
   // Your driver code goes here
 }
 ```

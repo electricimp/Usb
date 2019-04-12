@@ -1,4 +1,4 @@
-## Driver Examples
+# Driver Examples #
 
 The USB Drivers Framework repository includes the following driver examples:
 

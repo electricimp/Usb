@@ -1,8 +1,8 @@
 # Driver Development Guide #
 
-This document is intended for those developers who are going to create new drivers for USB devices. Driver development leverages Electric Imp’s [USB Driver Framework](https://github.com/electricimp/Usb), an easily extensible foundation for USB device drivers which is embodied in a class, [USB.Driver](#usbdriver-class-usage).
+This document is intended for those developers who are going to create new drivers for USB devices.
 
-The USB Driver Framework is implemented as a library, which applications making use of your driver will need to import using the standard `#require` directive. For more information on the USB Driver Framework’s core classes and data structures, please see the [Specification section](#usb-drivers-framework-api-specification), below.
+Driver development leverages Electric Imp’s USB Driver Framework Library. For more information on the USB Driver Framework’s core classes and data structures, please see the [Specification section](#usb-drivers-framework-api-specification), below. Developers will need to include the USB Driver Framework Library and extend the [USB.Driver](#usbdriver-class-usage) class when creating a new device driver.
 
 ## Generic Development Recommendations ##
 
@@ -17,7 +17,7 @@ within your driver code to avoid compilation issues and to prevent the loading o
 
 ### 1. Extend The Basic USB.Driver Class ###
 
-The USB Drivers Framework includes a basic [USB.Driver](#usbdriver-class-usage) implementation. You create your new driver class by extending [USB.Driver](#usbdriver-class-usage) as follows:
+The USB Drivers Framework includes a basic [USB.Driver](#usbdriver-class-usage) implementation. You create your new driver class by extending USB.Driver as follows:
 
 ```squirrel
 class MyCustomDriver extends USB.Driver {
@@ -75,7 +75,7 @@ class MyCustomDriver extends USB.Driver {
 }
 ```
 
-**Note:** There are no limits placed on the driver’s constructor arguments as it is always called from within the driver’s own *match()* method.
+**Note** There are no limits placed on the driver’s constructor arguments as it is always called from within the driver’s own *match()* method.
 
 #### Getting Access To USB Interfaces ####
 
@@ -124,7 +124,7 @@ An example of such a collision is an exception thrown by [*USB.FuncEndpoint.read
 
 When device resources required by the driver are no longer available, the USB Drivers Framework calls the driver’s [*release()*](#release) method to give the driver a chance to shut down gracefully and release any resources that were allocated during its lifetime.
 
-**Note:** All the framework resources should be considered closed at this point and **must not** be accessed in the [*release()*](#release) function.
+**Note** All the framework resources should be considered closed at this point and **must not** be accessed in the [*release()*](#release) function.
 
 The *release()* method is optional, so implement it only if you need to release resources.
 
@@ -272,7 +272,7 @@ class MyCustomDriver extends USB.Driver {
 }
 ```
 
-## USB Drivers Framework API Specification 1.0.1 ##
+## USB Drivers Framework API Specification ##
 
 What follows is a detailed description of the USB Drivers Framework’s core classes and related data structures.
 
@@ -439,7 +439,7 @@ This class represents attached USB devices. Please refer to the [USB specificati
 
 Typically, applications don't use device objects directly, instead they use drivers to acquire required endpoints. Neither applications nor drivers should explicitly create USB.Device objects &mdash; they are instantiated by the USB Drivers Framework automatically.
 
-When using the USB Drivers Framework, all management of USB device configurations, interfaces and endpoints **must** go through the device object rather than via the imp API [**hardware.usb**](https://developer.electrcicimp.com/api/hardware/usb) object.
+When using the USB Drivers Framework, all management of USB device configurations, interfaces and endpoints **must** go through the device object rather than via the imp API [**hardware.usb**](https://developer.electricimp.com/api/hardware/usb) object.
 
 ## USB.Device Class Methods ##
 
@@ -534,7 +534,7 @@ Integer &mdash; the endpoint address.
 
 ## USB.FuncEndpoint Class Usage ##
 
-This class represents all non-control endpoints, ie. bulk, interrupt and isochronous endpoints. It is managed by the [USB.Device](#usbdevice-class-usage) class and should be acquired only through [USB.Device](#usbdevice-class-usage) instances.
+This class represents all non-control endpoints, ie. bulk, interrupt and isochronous endpoints. It is managed by the [USB.Device](#usbdevice-class-usage) class and should be acquired only through USB.Device instances.
 
 **Note** Neither applications nor drivers should explicitly create USB.FuncEndpoint objects &mdash; they are instantiated by the USB Drivers Framework automatically.
 
@@ -840,7 +840,7 @@ Each endpoints table contains the following keys:
 
 ## USB Driver Examples ##
 
-- [Generic HID device](./HIDDriverGuide.md)
+- [Generic HID device](./../drivers/GenericHID_Driver)
 - [Brother QL720NW label printer](./../drivers/QL720NW_UART_USB_Driver)
 - [FTDI USB-to-UART converter](./../drivers/FT232RL_FTDI_USB_Driver)
 - [Keyboard using the HID protocol](./../drivers/HIDKeyboard)

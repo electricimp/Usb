@@ -12,7 +12,7 @@ The USB Drivers Framework is a wrapper over the imp API’s [**hardware.usb**](h
 3. Provide plug and unplug events handlers on the application level.
 4. Address the driver compatibility issues with regards to device vendor, model, etc.
 
-**Note:** When using the framework or any driver built on top of it, please do not use the **hardware.usb** object directly.
+**Note** When using the framework or any driver built on top of it, please do not use the **hardware.usb** object directly.
 
 ## Documentation Structure ##
 
@@ -29,7 +29,7 @@ Application and driver developers may be interested in examining examples of spe
 - [Keyboard with HID Protocol](./drivers/HIDKeyboard/)
 - [Keyboard with Support for Boot Protocol](./drivers/BootKeyboard/)
 
-**Note:** Please use the driver examples for reference only. They were tested with a limited number of devices and may not support all devices of that type.
+**Note** Please use the driver examples for reference only. They were tested with a limited number of devices and may not support all devices of that type.
 
 ## License ##
 
