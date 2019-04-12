@@ -52,7 +52,7 @@ Data conversion between different measuring units and logical-to-physical data i
 
 ## Real-World Application Example ##
 
-Please refer to [HIDKeyboard](./HIDKeyboard) as an example of this driver application.
+Please refer to [HIDKeyboard](../HIDKeyboard) as an example of this driver application.
 
 ## Known Limitation ##
 
