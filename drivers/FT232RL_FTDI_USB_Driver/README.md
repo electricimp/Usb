@@ -1,23 +1,24 @@
-# FT232RL FTDI USB Device Driver Example
+# FT232RL FTDI USB Device Driver Example #
 
-This example shows how to implement and use the FT232RL USB driver.
+This example shows you how to implement and use the FT232RL USB driver. It includes the FT232RLFtdiUsbDriver implementation with the public API described below, and some [example code](./examples) that shows how to use the driver with two different USB-UART adapters:
 
-The example includes the FT232RLFtdiUsbDriver implementation with public API described below,
-some reference code that shows how to use the driver for two different USB-UART adapters:
-CH430 and FTDI232RL.
+- CH430.
+- FTDI232RL.
 
-**NOTE**: Please use the driver examples for reference only. They were tested with a limited number
-of devices and may not support all devices of that type.
+**Note** Please use this driver for reference only. It was tested with a limited number of devices and may not support all devices of that type.
 
-## Real-World Driver Usage Examples
+## Include The Driver And Its Dependencies ##
 
-Please refer to the [examples](./examples) folder for a complete runnable application code,
-that demonstrates the use of the driver for CH430 and FTDI232RL adapters.
+The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification).
 
-## USB.Driver Interface API Implemtntaion
+To add the FT232RL FTDI USB Device Driver into your project, add `#require "USB.device.lib.nut:1.0.1"` top of your application code and then either include the FT232RLFtdiUsbDriver in you application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
-The driver must implement `match` and `release` methods in order to work with the
-USB Driver [Framework](./../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification).
+```squirrel
+#require "USB.device.lib.nut:1.0.1"
+@include "github:electricimp/usb/drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.lib.nut"
+```
+
+## USB.Driver Class Base Methods Implementation ##
 
 ### match(device, interfaces)
 
@@ -27,48 +28,52 @@ Implementation of the [USB.Driver.match](../../docs/DriverDevelopmentGuide.md#ma
 
 Implementation of the [USB.Driver.release](../../docs/DriverDevelopmentGuide.md#release) interface method.
 
-## Driver custom API
+## Driver Class Custom API ##
 
-Custom API for application developers. Provides a meaningful functionality of the driver.
+This driver exposes following API for application usage.
 
-### write(*payload*, *callback*)
+### write(*payload*, *callback*) ###
 
-Sends text or blob data to the connected USB device.
+This methods sends text or blob data to the connected USB device.
 
-| Parameter   | Data Type | Required | Description |
-| ----------- | --------- | -------- | ----------- |
-| *payload*   | string or blob  | Yes | data to be sent |
-| *callback*  | Function  | Yes      | Function to be called on write completion or error. |
+#### Parameters ####
 
-#### `write` Callback
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| *payload* | String or Blob  | Yes | The data to be sent |
+| *callback* | Function | Yes | A function to be called on write completion or error |
 
-| Parameter   | Data Type | Description |
-| ----------- | --------- | ----------- |
-| *error*   | Number  | the error number |
-| *data*  | string or blob  | string or blob payload. Use typeof for details. |
-| *length*  | Number  | the data length |
+#### Callback Parameters ####
 
+| Parameter | Type | Description |
+| --- | --- | --- |
+| *error* | Integer | The error number, or `0` |
+| *data* | String or Blob | The data sent. Use `typeof` for details |
+| *length* | Integer | The data length in bytes |
 
-### read(*payload*, *callback*)
+#### Return Value ####
+
+Nothing.
+
+### read(*data, callback*) ###
 
 Reads data from the connected USB device to the blob.
 
-| Parameter   | Data Type | Required | Description |
-| ----------- | --------- | -------- | ----------- |
-| *payload*   | blob      | Yes      | data to be read from the USB device |
-| *callback*  | Function  | Yes      | Function to be called on read completion or error. |
+#### Parameters ####
 
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| *data* | Blob | Yes | The data read from the USB device |
+| *callback* | Function | Yes | A function to be called on read completion or error |
 
-#### `read` Callback
+#### Callback Parameters ####
 
-| Parameter   | Data Type | Description |
-| ----------- | --------- | ----------- |
-| *error*   | Number  | the error number |
-| *data*  | string or blob  | string or blob payload. Use typeof for details. |
-| *length*  | Number  | the data length |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| *error* | Integer | The error number, or `0` |
+| *data* | String or Blob | The data sent. Use `typeof` for details |
+| *length* | Integer | The data length in bytes |
 
+#### Return Value ####
 
-### _typeof()
-
-Meta-function that returns the class name when `typeof <instance>` is called.
-The promarily use of the function is to identify the driver instance type in runtime for debugging purposes.
+Nothing.

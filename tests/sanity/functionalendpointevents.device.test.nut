@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright 2017 Electric Imp
+// Copyright 2017-2019 Electric Imp
 //
 // SPDX-License-Identifier: MIT
 //
@@ -84,18 +84,6 @@ class UsbFunctionalEndpointEventsSanity extends ImpTestCase {
                "state": 0,
                "endpoint": ep._epAddr,
                "length": 3});
-      }.bindenv(this));
-    }
-
-    function test02ReadTimeout() {
-      local ep = bulkIn.get();
-      return Promise(function(resolve, reject) {
-          ep.read(blob(5), function(epr, state, data, len) {
-              assertEqual(ep, epr, "Unexpected endpoint value");
-              assertTrue(state != OK, "Unexpected error: " + state);
-              assertEqual(0, len, "Unexpected length of data");
-              resolve();
-          }.bindenv(this));
       }.bindenv(this));
     }
 

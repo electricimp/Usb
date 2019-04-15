@@ -1,4 +1,4 @@
-# USB Drivers Framework #
+# USB Drivers Framework 1.0.1 #
 
 The USB Drivers Framework is designed to simplify and standardize USB driver development and integration with Electric Imp device code. Its primary audience comprises:
 
