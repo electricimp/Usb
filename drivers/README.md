@@ -8,5 +8,4 @@ The USB Drivers Framework repository includes the following driver examples:
 - [Keyboard with HID Protocol](./HIDKeyboard/)
 - [Keyboard with Support for Boot Protocol](./BootKeyboard/)
 
-**Note** Please use the driver examples for reference only. They were tested with a limited number
-of devices and may not support all devices of their type.
+**Note** Please use the driver examples for reference only. They were tested with a limited number of devices and may not support all devices of their type.

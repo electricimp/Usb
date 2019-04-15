@@ -34,7 +34,9 @@ Once the necessary driver libraries are included in your application code, the U
 
 The main entry point into the USB Drivers Framework is the [USB.Host](DriverDevelopmentGuide.md#usbhost-class-usage) class. This class is responsible for driver registration and instantiation; device and driver event notifications; and driver lifecycle management.
 
-The following code example shows how to initialize the USB Drivers Framework with a single FT232RL FTDI USB driver. It runs on an imp005-based board:
+The following code example shows how to initialize the USB Drivers Framework with a single FT232RL FTDI USB driver.
+
+**Note** The code below runs on an imp005-based board and should be built with the [Builder](https://github.com/electricimp/builder) preprocessor.
 
 ```squirrel
 #require "USB.device.lib.nut:1.0.1"

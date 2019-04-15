@@ -6,10 +6,9 @@ Driver development leverages Electric Imp’s USB Driver Framework Library. For 
 
 ## Generic Development Recommendations ##
 
-- When using the USB Drivers Framework, **do not** access the imp API [**hardware.usb**](https://developer.electricimp.com/api/hardware/usb) object directly.
+- When using the USB Drivers Framework, **DO NOT** access the imp API [hardware.usb](https://developer.electricimp.com/api/hardware/usb) object directly.
 
-- Please avoid using the impCentral `#require` directive or the [Builder](https://developer.electricimp.com/tools/builder) statement `@include`
-within your driver code to avoid compilation issues and to prevent the loading of duplicated code at runtime.
+- Please avoid using the impCentral `#require` directive or the [Builder](https://developer.electricimp.com/tools/builder) statement `@include` within your driver code to avoid compilation issues and to prevent the loading of duplicated code at runtime.
 
 - If you are writing a USB driver that you intend to share with the community, please follow our [guidelines](https://developer.electricimp.com/libraries/submissions) for third-party library submission.
 
@@ -288,7 +287,7 @@ This method instantiates the USB.Host class. USB.Host is a wrapper over the nati
 
 It should be instantiated only once per physical port for any application. There are some Electric Imp boards which do not have a USB port, therefore an exception will be thrown on any attempt to instantiate USB.Host in code running on these boards.
 
-**Note** When using the USB Drivers Framework, **do not** access the imp API [**hardware.usb**](https://developer.electricimp.com/api/hardware/usb) object directly.
+**Note** When using the USB Drivers Framework, **DO NOT** access the imp API [hardware.usb](https://developer.electricimp.com/api/hardware/usb) object directly.
 
 #### Parameters ####
 
