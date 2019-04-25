@@ -14,6 +14,8 @@ The USB Drivers Framework is a wrapper over the imp API’s [**hardware.usb**](h
 
 **Note** When using the framework or any driver built on top of it, please do not use the **hardware.usb** object directly.
 
+![Build Status](https://cse-ci.electricimp.com/app/rest/builds/buildType:(id:Usb_BuildAndTest)/statusIcon)
+
 ## Documentation Structure ##
 
 - [Application Development Guide](./docs/ApplicationDevelopmentGuide.md) &mdash; the documentation for application developers
