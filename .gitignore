@@ -25,3 +25,4 @@
 # exclude Build API key file
 
 settings/auth.info
+.DS_Store
