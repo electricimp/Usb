@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright 2017 Electric Imp
+// Copyright 2017-19 Electric Imp
 //
 // SPDX-License-Identifier: MIT
 //
@@ -102,7 +102,7 @@ const USB_DEVICE_STATE_DISCONNECTED         = "disconnected";
 // Not intended to use by any developers.
 USB <- {
 
-    VERSION = "1.0.1",
+    VERSION = "1.1.0",
 
     // Debug flag
     debug = true,
@@ -495,6 +495,13 @@ USB <- {
                     }
                 }
             }
+        }
+
+        // Returns the device's USB host.
+        // Returns:
+        //      the host
+        function getHost() {
+            return _host;
         }
 
         // Returns device descriptor
