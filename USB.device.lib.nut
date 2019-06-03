@@ -109,9 +109,7 @@ USB <- {
 
     // Information level logger
     log = function(txt) {
-        if (debug) {
-            server.log("[USB]: " + txt);
-        }
+        if (debug) server.log("[USB]: " + txt);
     }
 
     // Error level logger
@@ -160,24 +158,22 @@ USB <- {
             try {
                 _usb = usb;
             } catch(e) {
-                throw "Expected `hardware.usb` interface is not available";
+                throw "USB.Host: Specified hardware.usb object is not available";
             }
 
             if (typeof driverList != "array") {
-                throw "Driver list must be array";
+                throw "USB.Host: Driver list must be array";
             }
 
             if (null == driverList || 0 == driverList.len()) {
-                throw "Driver list must not be empty";
+                throw "USB.Host: Driver list must not be empty";
             }
 
             _devices = {};
             _driverClasses = [];
 
             // checks validity, filters duplicate, append to the list
-            foreach (driver in driverList) {
-                _checkAndAppend(driver);
-            }
+            foreach (driver in driverList) _checkAndAppend(driver);
 
             if (autoConfigPins) {
                 if ("pinW" in hardware && "pinR" in hardware) {
@@ -185,7 +181,7 @@ USB <- {
                     hardware.pinW.configure(DIGITAL_IN_PULLUP);
                     hardware.pinR.configure(DIGITAL_OUT, 1);
                 } else {
-                    throw "Invalid hardware is used";
+                    throw "USB.Host: Invalid pins specified";
                 }
             }
 
@@ -199,13 +195,10 @@ USB <- {
             _usb.disable();
 
             // force disconnect for all attached devices
-            foreach (address, device in _devices) {
-                _onDeviceDetached({"device" : address});
-            }
+            foreach (address, device in _devices) _onDeviceDetached({"device" : address});
 
             // re-connect all devices
             _usb.configure(_onUsbEvent.bindenv(this));
-
             USB.log("USB reset complete");
         }
 
@@ -214,9 +207,7 @@ USB <- {
         //      an array of USB.Device instances
         getAttachedDevices = function() {
             local devs = [];
-
             foreach(device in _devices)  devs.append(device);
-
             return devs;
         }
 
@@ -228,11 +219,10 @@ USB <- {
         //                      eventObject - instance of USB.Driver
         setDriverListener = function(listener) {
             if (typeof listener != "function" && listener != null) {
-                throw "Invalid event listener parameter";
+                throw "Invalid driver listener function passed in";
             }
             driverListener = listener;
         }
-
 
         // Setter for the device state listener
         // Parameters:
@@ -243,9 +233,8 @@ USB <- {
         //                                    either USB.Device or USB.Driver instance
         setDeviceListener = function(listener) {
             if (typeof listener != "function" && listener != null) {
-                throw "Invalid event listener parameter";
+                throw "Invalid device listener function passed in";
             }
-
             deviceListener = listener;
        }
 
@@ -262,7 +251,7 @@ USB <- {
                     _driverClasses.append(driverClass);
                 }
             } else {
-                throw "Invalid driver class";
+                throw "USB.Host: Invalid driver class";
             }
         }
 
@@ -308,7 +297,6 @@ USB <- {
 
             // maintain event sending sequence
             deviceListener && deviceListener(USB_DEVICE_STATE_CONNECTED, device);
-
             device.selectDrivers(_driverClasses);
         }
 
@@ -478,21 +466,14 @@ USB <- {
                 // if a driver matches, the driver instance is created here
                 local result = driver.match(this, _interfaces);
                 if (null != result) {
-                    if (typeof result != "array") {
-                        result = [result];
-                    }
-
-                    foreach (instance in result) {
-                        _driverInstances.append(instance);
-                    }
+                    if (typeof result != "array") result = [result];
+                    foreach (instance in result) _driverInstances.append(instance);
                     matchResult = result;
                 }
 
                 local listener = _host.driverListener;
                 if (listener) {
-                    foreach (instance in matchResult) {
-                        listener(USB_DRIVER_STATE_STARTED, instance);
-                    }
+                    foreach (instance in matchResult) listener(USB_DRIVER_STATE_STARTED, instance);
                 }
             }
         }
@@ -510,7 +491,6 @@ USB <- {
         //
         function getDescriptor() {
             _checkStopped();
-
             return _desc;
         }
 
@@ -520,7 +500,6 @@ USB <- {
         //
         function getVendorId() {
             _checkStopped();
-
             return "vendorid" in _desc ? _desc["vendorid"] : null;
         }
 
@@ -530,7 +509,6 @@ USB <- {
         //
         function getProductId() {
             _checkStopped();
-
             return "productid" in _desc ? _desc["productid"] : null;
         }
 
@@ -539,7 +517,6 @@ USB <- {
         // (For example keyboard with touchpad could have keyboard driver and a separate touchpad driver).
         function getAssignedDrivers() {
             _checkStopped();
-
             return _driverInstances;
         }
 
@@ -547,7 +524,6 @@ USB <- {
         // EP0 is special type of endpoints that is implicitly present at device interfaces
         function getEndpointZero() {
             _checkStopped();
-
             return _endpoints[0];
         }
 
@@ -557,11 +533,7 @@ USB <- {
         _epDelegate = {
             // The function to acquire the framework proxy
             get = function(pollTime = 255) {
-
-                if (! ("_proxy" in this) ) {
-                    _proxy <- _device._getEndpoint(this, pollTime);
-                }
-
+                if (! ("_proxy" in this)) _proxy <- _device._getEndpoint(this, pollTime);
                 return _proxy;
             }
         }
@@ -571,9 +543,7 @@ USB <- {
             // Auxiliary function to search required endpoint
             find = function(type, dir) {
                 foreach(ep in endpoints) {
-                    if (ep.attributes == type && (ep.address & USB_DIRECTION_MASK) == dir) {
-                        return ep.get();
-                    }
+                    if (ep.attributes == type && (ep.address & USB_DIRECTION_MASK) == dir) return ep.get();
                 }
             }
 
@@ -611,12 +581,11 @@ USB <- {
                             _usb.openendpoint(_speed, _address, ifs.interfacenumber, type, maxSize, address);
                         }
 
-                        local newEp = (type == USB_ENDPOINT_CONTROL) ?
-                                        USB.ControlEndpoint(this, address, maxSize) :
-                                        USB.FuncEndpoint(this, address, type, maxSize);
+                        local newEp = (type == USB_ENDPOINT_CONTROL)
+                                        ? USB.ControlEndpoint(this, address, maxSize)
+                                        : USB.FuncEndpoint(this, address, type, maxSize);
 
                         _endpoints[address] <- newEp;
-
                         return newEp;
                     }
                 }
@@ -635,9 +604,7 @@ USB <- {
             _checkStopped();
 
             // Close all endpoints at first
-            foreach (ep in _endpoints) {
-                ep._close();
-            }
+            foreach (ep in _endpoints) ep._close();
 
             // Release all drivers now
             local listener = _host.driverListener;
@@ -666,12 +633,9 @@ USB <- {
         // Returns Nothing
         //
         function _setConfiguration(config) {
-            _endpoints[0].transfer(
-                USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
-                USB_REQUEST_SET_CONFIGURATION,
-                config,
-                0
-            );
+            _endpoints[0].transfer(USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
+                                   USB_REQUEST_SET_CONFIGURATION,
+                                   config, 0);
         }
 
         // Helper function for device address assignment.
@@ -683,16 +647,10 @@ USB <- {
         //
         // Note: the function uses 0 as device address therefore can be used only once
         function _setAddress(address) {
-            _usb.controltransfer(
-                _speed,
-                0,
-                0,
-                USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
-                USB_REQUEST_SET_ADDRESS,
-                address,
-                0,
-                _desc["maxpacketsize0"]
-            );
+            _usb.controltransfer(_speed, 0, 0,
+                                 USB_SETUP_HOST_TO_DEVICE | USB_SETUP_RECIPIENT_DEVICE,
+                                 USB_REQUEST_SET_ADDRESS,
+                                 address, 0, _desc["maxpacketsize0"]);
         }
 
         // Device run status check
@@ -711,9 +669,7 @@ USB <- {
                 local ep    = _endpoints[epAddress];
                 local state = eventDetails.state;
                 local len   = eventDetails.length;
-
                 ep._onTransferEvent(state, len);
-
             } else {
                 USB.log("Unexpected transfer for unknown endpoint: " + epAddress);
             }
@@ -816,7 +772,6 @@ USB <- {
             _transferCb = null;
         }
 
-
         // Transfer initiator
         // Throws if EP is closed or already busy
         // Parameter:
@@ -828,12 +783,7 @@ USB <- {
             if (_closed) throw "Closed";
             if (_transferCb) throw "Busy";
 
-            _device._usb.generaltransfer(
-                _device._address,
-                _epAddr,
-                _type,
-                data
-            );
+            _device._usb.generaltransfer(_device._address, _epAddr, _type, data);
 
             _transferCb = function (state, length) {
                 onComplete && onComplete(this, state, data, length);
@@ -859,7 +809,6 @@ USB <- {
             local cb = _transferCb;
             // ready for next request
             _transferCb = null;
-
             cb(state, length);
         }
 
@@ -915,13 +864,7 @@ USB <- {
         //
         // Note! This operation is synchronous.
         function transfer(reqType, req, value, index, data = blob()) {
-            _transfer(
-                reqType,
-                req,
-                value,
-                index,
-                data
-            );
+            _transfer(reqType, req, value, index, data);
         }
 
         // Returns this endpoint address
@@ -930,7 +873,6 @@ USB <- {
         function getEndpointAddr() {
             return _epAddr;
         }
-
 
         // --------------------- private API -------------------
 
@@ -951,17 +893,8 @@ USB <- {
         function _transfer(reqType, req, value, index, data) {
             if (_closed) throw "Closed";
 
-            _device._usb.controltransfer(
-                _device._speed,
-                _device._address,
-                _epAddr,
-                reqType,
-                req,
-                value,
-                index,
-                _maxPacketSize,
-                data
-            );
+            _device._usb.controltransfer(_device._speed, _device._address, _epAddr,
+                                         reqType, req, value, index, _maxPacketSize, data);
         }
 
         // Metafunction to return class name when typeof <instance> is run
