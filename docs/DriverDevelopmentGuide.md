@@ -300,7 +300,7 @@ It should be instantiated only once per physical port for any application. There
 #### Example ####
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 
 class MyCustomDriver1 extends USB.Driver {
   ...
@@ -483,6 +483,14 @@ This method returns a proxy for the device’s Control Endpoint 0. The endpoint 
 #### Return Value ####
 
 [USB.ControlEndpoint](#usbcontrolendpoint-class-usage) &mdash; the zero endpoint.
+
+### getHost() ###
+
+This method returns a reference to the parent USB host.
+
+#### Return Value ####
+
+[USB.Host](#usbhost-class-usage) &mdash; the host to which the device is connected.
 
 ## USB.ControlEndpoint Class Usage ##
 
