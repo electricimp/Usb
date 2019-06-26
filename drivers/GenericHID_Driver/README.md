@@ -10,10 +10,10 @@ Please familiarize yourself with the [Device Class Definition for Human Interfac
 
 The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification).
 
-To add the Generic HID driver to your project, add `#require "USB.device.lib.nut:1.0.1"` top of your application code and then either include the Generic HID driver in your application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
+To add the Generic HID driver to your project, add `#require "USB.device.lib.nut:1.1.0"` top of your application code and then either include the Generic HID driver in your application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 @include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.lib.nut"
 ```
 

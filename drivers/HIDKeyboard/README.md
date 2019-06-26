@@ -8,10 +8,10 @@ This driver is an example of an HID [Driver](../GenericHID_Driver/README.md) app
 
 The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification).
 
-To add the HID Keyboard driver to your project, add `#require "USB.device.lib.nut:1.0.1"` top of you application code and then either include the HID Keyboard driver in your application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
+To add the HID Keyboard driver to your project, add `#require "USB.device.lib.nut:1.1.0"` top of you application code and then either include the HID Keyboard driver in your application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 
 @include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.lib.nut"
 @include "github:electricimp/usb/drivers/HIDKeyboard/HIDKeyboard.device.lib.nut"
@@ -106,7 +106,7 @@ It returns the converted code values
 **Note** The code below should be built with the [Builder](https://github.com/electricimp/builder) preprocessor.
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 #require "USB.HID.device.lib.nut:1.0.0"
 @include "github:electricimp/usb/drivers/HIDKeyboard/HIDKeyboard.device.lib.nut"
 @include "github:electricimp/usb/drivers/HIDKeyboard/US-ASCII.table.nut"

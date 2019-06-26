@@ -8,10 +8,10 @@ This class is an example of how to extend the USB Devices Framework [USB.Driver]
 
 The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification).
 
-To add the Boot Keyboard driver into your project, add `#require "USB.device.lib.nut:1.0.1"` top of you application code and then either include the Boot Keyboard driver in your application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
+To add the Boot Keyboard driver into your project, add `#require "USB.device.lib.nut:1.1.0"` top of you application code and then either include the Boot Keyboard driver in your application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 @include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.lib.nut"
 ```
 
@@ -110,7 +110,7 @@ Nothing, or an error description if an error occurred.
 #require "JSONEncoder.class.nut:1.0.0"
 
 // Include the USB framework and the BootKeyboard library
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 @include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.lib.nut"
 
 // Debug print setup

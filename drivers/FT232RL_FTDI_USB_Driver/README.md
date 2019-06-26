@@ -11,10 +11,10 @@ This example shows you how to implement and use the FT232RL USB driver. It inclu
 
 The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification).
 
-To add the FT232RL FTDI USB Device Driver into your project, add `#require "USB.device.lib.nut:1.0.1"` top of your application code and then either include the FT232RLFtdiUsbDriver in you application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
+To add the FT232RL FTDI USB Device Driver into your project, add `#require "USB.device.lib.nut:1.1.0"` top of your application code and then either include the FT232RLFtdiUsbDriver in you application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 @include "github:electricimp/usb/drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.lib.nut"
 ```
 

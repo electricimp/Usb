@@ -6,14 +6,14 @@ Before you use a driver, please read its documentation carefully to fully unders
 
 ## Including The USB Drivers Framework Library And Device Drivers ##
 
-To include the USB Drivers Framework Library in your application, add `#require "USB.device.lib.nut:1.0.1"` to the top of your device code.
+To include the USB Drivers Framework Library in your application, add `#require "USB.device.lib.nut:1.1.0"` to the top of your device code.
 
 By default the base USB Drivers Framework Library does not itself provide any device drivers. Application developers will therefore need to include the base Drivers Framework Library as well as any device drivers they need in their code.
 
 At this time there are no Electric Imp supported USB Device Driver Libraries. Statements to include specific USB device drivers and other, related libraries should be placed after the USB Drivers Framework Library import statement, but before any application code. See the following examples for how to include USB drivers in your code:
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 
 class BootKeyboardDriver extends USB.Driver {
   // Your driver code goes here
@@ -23,7 +23,7 @@ class BootKeyboardDriver extends USB.Driver {
 Or, if you are using Builder or some other tool instead of the impCentral IDE, you may load the driver code using Builder's include statement:
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 
 @include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.lib.nut"
 ```
@@ -39,7 +39,7 @@ The following code example shows how to initialize the USB Drivers Framework wit
 **Note** The code below runs on an imp005-based board and should be built with the [Builder](https://github.com/electricimp/builder) preprocessor.
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 
 // Include FT232RLFtdiUsbDriver class
 @include "github:electricimp/usb/drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.lib.nut"
@@ -74,7 +74,7 @@ The final line shows how to register a driver-state listener function by calling
 It is possible to register any number of drivers with the USB Drivers Framework: just add further device-driver class references to the array parameter in the [USB.Host](DriverDevelopmentGuide.md#usbhost-class-usage) constructor:
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 
 #require "ACustomDriver2.nut:1.2.0"
 #require "ACustomDriver1.nut:1.0.0"
@@ -114,7 +114,7 @@ The [USB.Device](DriverDevelopmentGuide.md#usbdevice-class-usage) class provides
 The following example code shows how to retrieve the endpoint 0 to then use it for device configuration:
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 
 const VID = 0x413C;
 const PID = 0x2107;
@@ -166,7 +166,7 @@ It is not necessary to configure [*setDriverListener()*](DriverDevelopmentGuide.
 The following example shows *reset()* being used:
 
 ```squirrel
-#require "USB.device.lib.nut:1.0.1"
+#require "USB.device.lib.nut:1.1.0"
 
 // Custom driver class
 class MyCustomDriver extends USB.Driver {
