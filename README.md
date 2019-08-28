@@ -30,6 +30,7 @@ Application and driver developers may be interested in examining examples of spe
 - [FTDI USB-to-UART Converter](./drivers/FT232RL_FTDI_USB_Driver/)
 - [Keyboard with HID Protocol](./drivers/HIDKeyboard/)
 - [Keyboard with Support for Boot Protocol](./drivers/BootKeyboard/)
+- [USB hub driver](./drivers/USB_Hub_Driver/)
 
 **Note** Please use the driver examples for reference only. They were tested with a limited number of devices and may not support all devices of that type.
 
