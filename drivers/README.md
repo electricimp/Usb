@@ -7,5 +7,6 @@ The USB Drivers Framework repository includes the following driver examples:
 - [FTDI USB-to-UART Converter](./FT232RL_FTDI_USB_Driver/)
 - [Keyboard with HID Protocol](./HIDKeyboard/)
 - [Keyboard with Support for Boot Protocol](./BootKeyboard/)
+- [USB Hub Driver](./USB_Hub_Driver/)
 
 **Note** Please use the driver examples for reference only. They were tested with a limited number of devices and may not support all devices of their type.
