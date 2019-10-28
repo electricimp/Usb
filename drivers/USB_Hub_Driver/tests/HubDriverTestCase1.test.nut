@@ -56,11 +56,23 @@ uart <- null;
 class USBHubDriverTestCase extends ImpTestCase {
 
     function setUp() {
-        local impType = imp.info().type;
         local driverClassArray = [HubUsbDriver, FT232RLFtdiUsbDriver];
-        ::usb = impType == "imp005" ? hardware.usb : hardware.usbAB;
-        ::usbHost = USB.Host(::usb, driverClassArray);
-        ::uart = impType == "imp005" ? hardware.uart1 : hardware.uartNU;
+
+        switch(imp.info().type) {
+            case "imp005":
+                ::usb = hardware.usb;
+                ::uart = hardware.uart1;
+                ::usbHost = USB.Host(::usb, driverClassArray, true);
+                break;
+            case "impC001": 
+                ::usb = hardware.usbAB;
+                ::uart = hardware.uartNU;    
+                ::usbHost = USB.Host(::usb, driverClassArray);            
+                break;
+            default: 
+                throw "Unsupported hardware. Setup failed.";
+        }
+        
         return "USB setup complete";
     }
 
