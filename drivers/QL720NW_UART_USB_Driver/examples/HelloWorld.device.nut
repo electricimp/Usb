@@ -40,6 +40,7 @@ function usbDriverListener(event, driver) {
     log("[App]: USB event: " + event);
 
     if (event == USB_DRIVER_STATE_STARTED) {
+        // Pass in usb driver instead of pre-configured UART
         ql720 = QL720NW(driver);
 
         log("Printing \"Hello,World!\"");

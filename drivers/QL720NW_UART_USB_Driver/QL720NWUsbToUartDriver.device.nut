@@ -68,7 +68,11 @@ class QL720NWUsbToUartDriver extends USB.Driver {
         _bulkOut = null;
     }
     
-    // Update "uart" write to usb write
+    // QL720NW expects a preconfigured uart. The only 
+    // uart method called in the library is uart.write
+    // Create a write method for this driver, so this 
+    // driver can be used instead of a uart object when 
+    // initializing the printer library.
     function write(data) {
         _actions.push(data);
         _actionHandler(true);
