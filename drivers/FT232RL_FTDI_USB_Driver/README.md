@@ -15,7 +15,7 @@ To add the FT232RL FTDI USB Device Driver into your project, add `#require "USB.
 
 ```squirrel
 #require "USB.device.lib.nut:1.1.0"
-@include "github:electricimp/usb/drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.lib.nut"
+@include "github:electricimp/usb/drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.nut"
 ```
 
 ## USB.Driver Class Base Methods Implementation ##

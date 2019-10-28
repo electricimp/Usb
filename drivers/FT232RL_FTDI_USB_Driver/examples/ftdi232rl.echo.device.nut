@@ -25,8 +25,9 @@
 
 // This is an example of FT232RL driver usage. The application echoes all read data back to sender.
 
-@include __PATH__ + "/../../../USB.device.lib.nut"
-@include __PATH__ + "/../FT232RLFtdiUsbDriver.device.lib.nut"
+#require "USB.device.lib.nut:1.1.0"
+
+@include __PATH__ + "/../FT232RLFtdiUsbDriver.device.nut"
 
 log  <- server.log.bindenv(server);
 ftdi <- null;
@@ -73,7 +74,7 @@ function usbDriverListener(event, driver) {
     }
 }
 
-usbHost <- USB.Host(hardware.usb, [FT232RLFtdiUsbDriver]);
+usbHost <- USB.Host(hardware.usb, [FT232RLFtdiUsbDriver], true);
 log("USB.Host setup complete");
 
 usbHost.setDriverListener(usbDriverListener);

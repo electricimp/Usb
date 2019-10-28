@@ -14,7 +14,7 @@ To add the Generic HID driver to your project, add `#require "USB.device.lib.nut
 
 ```squirrel
 #require "USB.device.lib.nut:1.1.0"
-@include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.lib.nut"
+@include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.nut"
 ```
 
 ## Basic Concepts ##
@@ -80,7 +80,7 @@ function usbEventListener(event, driver) {
     }
 }
 
-host <- USB.Host(hardware.usb, [HIDDriver]);
+host <- USB.Host(hardware.usb, [HIDDriver], true);
 host.setDriverListener(usbEventListener);
 server.log("USB initialization complete");
 ```

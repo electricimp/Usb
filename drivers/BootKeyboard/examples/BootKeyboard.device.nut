@@ -25,11 +25,11 @@
 
 #require "PrettyPrinter.class.nut:1.0.1"
 #require "JSONEncoder.class.nut:1.0.0"
+#require "USB.device.lib.nut:1.1.0"
 
 // This is an example of bookt keyboard control application
 
-@include __PATH__ +  "/../../../USB.device.lib.nut"
-@include __PATH__ +  "/../BootKeyboard.device.lib.nut"
+@include __PATH__ +  "/../BootKeyboard.device.nut"
 
 
 pp <- PrettyPrinter(null, false);
@@ -82,7 +82,7 @@ function usbDriverListener(event, driver) {
     }
 }
 
-usbHost <- USB.Host(hardware.usb, [BootKeyboardDriver]);
+usbHost <- USB.Host(hardware.usb, [BootKeyboardDriver], true);
 
 usbHost.setDriverListener(usbDriverListener);
 

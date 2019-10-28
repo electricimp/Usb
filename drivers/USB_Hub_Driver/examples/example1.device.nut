@@ -1,6 +1,7 @@
 // ********** Imports **********
 #require "USB.device.lib.nut:1.1.0"
-#require "USB.hub.device.lib.nut:1.0.0"
+
+@include __PATH__ +  "/../USB.hub.device.nut"
 
 // ********** Globals **********
 hubDriver <- null;
@@ -28,9 +29,9 @@ function driverStatusListener(eventType, driver) {
 
 // ********** Runtime Start **********
 
-// Set up USB
+// Set up USB on an imp005 using the auto configure pins option
 local driverClassArray = [HubUsbDriver];
-host <- USB.Host(hardware.usb, driverClassArray);
+host <- USB.Host(hardware.usb, driverClassArray, true);
 
 // Register the driver listener callback
 host.setDriverListener(driverStatusListener);

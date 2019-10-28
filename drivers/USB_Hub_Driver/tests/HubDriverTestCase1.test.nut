@@ -42,8 +42,8 @@
 
 // Includes
 @include "github:electricimp/Usb/USB.device.lib.nut"
-@include "github:electricimp/Usb/drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.lib.nut"
-@include "github:electricimp/Usb/drivers/USB_Hub_Driver/USB.hub.device.lib.nut"
+@include "github:electricimp/Usb/drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.nut"
+@include "github:electricimp/Usb/drivers/USB_Hub_Driver/USB.hub.device.nut"
 
 // Set the number of connected devices BEFORE running the test
 const NUMBER_OF_DEVICES = 1;

@@ -29,8 +29,9 @@
 // Since CH340 differs from FT232RL  mostly by configuration protocol,
 // it is possible to use FT232RL driver for CH340 by changing VID/PID and block configuration call.
 
-@include __PATH__ + "/../../../USB.device.lib.nut"
-@include __PATH__ + "/../FT232RLFtdiUsbDriver.device.lib.nut"
+#require "USB.device.lib.nut:1.1.0"
+
+@include __PATH__ + "/../FT232RLFtdiUsbDriver.device.nut"
 
 log <- server.log.bindenv(server);
 
@@ -108,7 +109,7 @@ function usbEventListener(event, data) {
     }
 }
 
-usbHost <- USB.Host(hardware.usb, [CH340]);
+usbHost <- USB.Host(hardware.usb, [CH340], true);
 log("USB.Host setup complete");
 
 usbHost.setDriverListener(usbEventListener);

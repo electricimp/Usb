@@ -2,28 +2,30 @@
 
 This library provides basic support for USB hubs to Electric Imp’s existing [USB driver framework](https://github.com/electricimp/Usb).
 
-**Important** Though this library supports hubs, it does not yet support the hot-plugging of devices to that hub. Devices **must** be connected to the hub before the hub is connected to the imp. You can use the method [*checkports()*](#checkports) to verify the status of a hub's ports at any time.
+**Important** Though this driver supports hubs, it does not yet support the hot-plugging of devices to that hub. Devices **must** be connected to the hub before the hub is connected to the imp. You can use the method [*checkports()*](#checkports) to verify the status of a hub's ports at any time.
 
 For more information on USB driver development, please see [**USB Driver Development Guide**](https://developer.electricimp.com/resources/usb-driver-development-guide).
 
-**To include this library in your project, add** `#require "USB.device.lib.nut:1.1.0"` **and** `#require "USB.hub.device.lib.nut:1.0.0"` **at the top of your device code**
+To add the USB Hub driver into your project, add `#require "USB.device.lib.nut:1.1.0"` top of you application code and then either include the USB Hub driver in your application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
+
+```squirrel
+#require "USB.device.lib.nut:1.1.0"
+@include "github:electricimp/usb/drivers/USB_Hub_Driver/USB.hub.device.nut"
+```
 
 ## Class Usage ##
 
 ### Dependencies ###
 
-This library requires Electric Imp’s `USB.device.lib.nut` library, as shown in the instantiation example below.
+This driver requires Electric Imp’s `USB.device.lib.nut` library, as shown in the instantiation example below.
 
 ### Instantiation ###
 
 You do not instantiate the Hub Driver class directly. Instead, you register it for possible use when you instantiate the USB.Host class. For example, for the imp005:
 
 ```squirrel
-#require "USB.device.lib.nut:1.1.0"
-#require "USB.hub.device.lib.nut:1.0.0"
-
 local driverClassArray = [HubUsbDriver];
-host <- USB.Host(hardware.usb, driverClassArray);
+host <- USB.Host(hardware.usb, driverClassArray, true);
 ```
 
 Should a hub be connected to the imp’s USB port, the USB.Host instance will automatically load the nominated driver.
@@ -71,4 +73,4 @@ For a full example, please see the [`examples` directory](./examples) in this re
 
 ## License ##
 
-This library is licensed under the terms of the [MIT License](LICENSE). It is copyright &copy; 2019, Electric Imp, Inc.
+This driver is licensed under the terms of the [MIT License](LICENSE). It is copyright &copy; 2019, Electric Imp, Inc.

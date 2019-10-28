@@ -24,13 +24,12 @@
 //
 
 // This is an example of keyboard control application
+#require "USB.device.lib.nut:1.1.0"
 
-// TODO: the ASCII table definition should precede the HIDKeyboard driver implementation
+// The ASCII table definition should precede the HIDKeyboard driver implementation
 @include __PATH__ +  "/../US-ASCII.table.nut"
-
-@include __PATH__ +  "/../../../USB.device.lib.nut"
-@include __PATH__ +  "/../../GenericHID_Driver/USB.HID.device.lib.nut"
-@include __PATH__ +  "/../HIDKeyboard.device.lib.nut"
+@include __PATH__ +  "/../../GenericHID_Driver/USB.HID.device.nut"
+@include __PATH__ +  "/../HIDKeyboard.device.nut"
 
 log <- server.log.bindenv(server);
 kbdDrv <- null;
@@ -53,7 +52,7 @@ function usbDriverListener(event, data) {
     }
 }
 
-usbHost <- USB.Host(hardware.usb, [HIDKeyboardDriver]);
+usbHost <- USB.Host(hardware.usb, [HIDKeyboardDriver], true);
 log("[App]: USB.Host initialized");
 
 usbHost.setDriverListener(usbDriverListener);

@@ -12,7 +12,7 @@ To add the Boot Keyboard driver into your project, add `#require "USB.device.lib
 
 ```squirrel
 #require "USB.device.lib.nut:1.1.0"
-@include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.lib.nut"
+@include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.nut"
 ```
 
 ## Custom Matching Procedure ##
@@ -111,7 +111,7 @@ Nothing, or an error description if an error occurred.
 
 // Include the USB framework and the BootKeyboard library
 #require "USB.device.lib.nut:1.1.0"
-@include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.lib.nut"
+@include "github:electricimp/usb/drivers/BootKeyboard/BootKeyboard.device.nut"
 
 // Debug print setup
 pp     <- PrettyPrinter(null, false);
