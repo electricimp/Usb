@@ -30,7 +30,7 @@
 
 
 // Driver for QL720NW label printer use via USB
-class QL720NWUsbToUartDriver extends USB.Driver {
+class QL720NWUsbDriver extends USB.Driver {
     
     // Brother QL720
     static VID = 0x04f9;
@@ -57,7 +57,7 @@ class QL720NWUsbToUartDriver extends USB.Driver {
         if (device.getVendorId() != this.VID
             || device.getProductId() != this.PID)
             return null;
-        return QL720NWUsbToUartDriver(interfaces[0]);
+        return QL720NWUsbDriver(interfaces[0]);
     }
 
     function release() {
@@ -82,7 +82,7 @@ class QL720NWUsbToUartDriver extends USB.Driver {
     // Metafunction to return class name when typeof <instance> is run
     //
     function _typeof() {
-        return "QL720NWUsbToUartDriver";
+        return "QL720NWUsbDriver";
     }
 
     // ==================================================

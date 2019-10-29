@@ -30,7 +30,7 @@
 #require "USB.device.lib.nut:1.1.0"
 
 // Include the example driver
-@include __PATH__ + "/../QL720NWUsbToUartDriver.device.nut"
+@include "github:electricimp/Usb/drivers/QL720NW_UART_USB_Driver/QL720NWUsbDriver.device.nut@develop"
 
 log <- server.log.bindenv(server);
 
@@ -53,7 +53,7 @@ function usbDriverListener(event, driver) {
     }
 }
 
-usbHost <- USB.Host(hardware.usb, [QL720NWUsbToUartDriver], true);
+usbHost <- USB.Host(hardware.usb, [QL720NWUsbDriver], true);
 log("[App]: USB.Host setup initialized");
 
 usbHost.setDriverListener(usbDriverListener);

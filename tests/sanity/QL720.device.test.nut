@@ -25,7 +25,7 @@
 @include "github:electricimp/QL720NW/QL720NW.device.lib.nut"
 @include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__ + "/../UsbMock.nut"
-@include __PATH__ + "/../../drivers/QL720NW_UART_USB_Driver/QL720NWUsbToUartDriver.device.nut"
+@include __PATH__ + "/../../drivers/QL720NW_UART_USB_Driver/QL720NWUsbDriver.device.nut"
 
 // Below data is not real printer config, we only need VID/PID pair and interface with BulkOut
 
@@ -88,7 +88,7 @@ printerDevice <- {
 class QL720Sanity extends ImpTestCase {
 
     _usb        = null;
-    _drivers    = [QL720NWUsbToUartDriver];
+    _drivers    = [QL720NWUsbDriver];
 
     function setUp() {
         _usb = UsbMock();
@@ -100,7 +100,7 @@ class QL720Sanity extends ImpTestCase {
             host.setDriverListener(function(eventType, eventObject) {
 
                 if (eventType == USB_DRIVER_STATE_STARTED) {
-                    if (typeof eventObject != "QL720NWUsbToUartDriver") {
+                    if (typeof eventObject != "QL720NWUsbDriver") {
                         reject("Invalid event object: " + typeof eventObject);
                     } else {
                         _usb.triggerEvent(USB_DEVICE_DISCONNECTED, {"device" : 1});
@@ -108,7 +108,7 @@ class QL720Sanity extends ImpTestCase {
                 }
 
                 if (eventType == USB_DRIVER_STATE_STOPPED) {
-                    if (typeof eventObject == "QL720NWUsbToUartDriver") {
+                    if (typeof eventObject == "QL720NWUsbDriver") {
                         resolve();
                     } else {
                         reject();
@@ -178,7 +178,7 @@ class QL720Sanity extends ImpTestCase {
             _getUsbHost().setDriverListener(function(eventType, eventObject) {
 
                 if (eventType == USB_DRIVER_STATE_STARTED &&
-                    typeof eventObject == "QL720NWUsbToUartDriver") {
+                    typeof eventObject == "QL720NWUsbDriver") {
                         resolve(QL720NW(eventObject));
                 } else {
                     reject("Unexpected event or object");

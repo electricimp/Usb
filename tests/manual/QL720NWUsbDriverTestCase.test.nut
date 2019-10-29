@@ -38,9 +38,9 @@
 
 @include "github:electricimp/electricimp/QL720NW/QL720NW.device.lib.nut"
 @include __PATH__+ "/../../USB.device.lib.nut"
-@include __PATH__+ "/../../drivers/QL720NW_UART_USB_Driver/QL720NWUsbToUartDriver.device.nut"
+@include __PATH__+ "/../../drivers/QL720NW_UART_USB_Driver/QL720NWUsbDriver.device.nut"
 
-class QL720NWUartUsbDriverTestCase extends ImpTestCase {
+class QL720NWUsbDriverTestCase extends ImpTestCase {
 
     dataString  = "";
     usbHost     = null;
@@ -55,14 +55,14 @@ class QL720NWUartUsbDriverTestCase extends ImpTestCase {
         this.info("Connect any Uart over Usb device to imp");
 
         return Promise(function(resolve, reject) {
-            usbHost = USB.Host(hardware.usb, [QL720NWUartUsbDriver], true);
+            usbHost = USB.Host(hardware.usb, [QL720NWUsbDriver], true);
 
             // Register cb for connection event
             usbHost.setDriverListener(function(event, driver) {
 
                 if (event == USB_DRIVER_STATE_STARTED) {
-                    // Check the device is an instance of QL720NWUartUsbDriver
-                    if (typeof driver == "QL720NWUartUsbDriver") {
+                    // Check the device is an instance of QL720NWUsbDriver
+                    if (typeof driver == "QL720NWUsbDriver") {
 
                         // Store the driver for the next test
                         _printer = QL720NW(driver);
