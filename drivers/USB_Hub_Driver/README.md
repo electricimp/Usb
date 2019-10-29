@@ -1,10 +1,14 @@
 # USB Hub Driver 1.0.0 #
 
-This library provides basic support for USB hubs to Electric Imp’s existing [USB driver framework](https://github.com/electricimp/Usb).
+This USB hub driver provides basic support for USB hubs.
 
 **Important** Though this driver supports hubs, it does not yet support the hot-plugging of devices to that hub. Devices **must** be connected to the hub before the hub is connected to the imp. You can use the method [*checkports()*](#checkports) to verify the status of a hub's ports at any time.
 
-For more information on USB driver development, please see [**USB Driver Development Guide**](https://developer.electricimp.com/resources/usb-driver-development-guide).
+**Note** Please use this driver for reference only. It was tested with a limited number of devices and may not support all devices of that type.
+
+## Include USB Hub Driver And Its Dependencies ##
+
+The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification). For more information on USB driver development, please see [**USB Driver Development Guide**](https://developer.electricimp.com/resources/usb-driver-development-guide).
 
 To add the USB Hub driver into your project, add `#require "USB.device.lib.nut:1.1.0"` top of you application code and then either include the USB Hub driver in your application by pasting its code into yours or by using [Builder's @include statement](https://github.com/electricimp/builder#include):
 
@@ -13,51 +17,17 @@ To add the USB Hub driver into your project, add `#require "USB.device.lib.nut:1
 @include "github:electricimp/usb/drivers/USB_Hub_Driver/USB.hub.device.nut"
 ```
 
-## Class Usage ##
+## USB.Driver Class Base Methods Implementation ##
 
-### Dependencies ###
+### match(device, interfaces) ###
 
-This driver requires Electric Imp’s `USB.device.lib.nut` library, as shown in the instantiation example below.
+Implementation of the [USB.Driver.match](../../docs/DriverDevelopmentGuide.md#matchdeviceobject-interfaces) interface method.
 
-### Instantiation ###
+### release() ###
 
-You do not instantiate the Hub Driver class directly. Instead, you register it for possible use when you instantiate the USB.Host class. For example, for the imp005:
+Implementation of the [USB.Driver.release](../../docs/DriverDevelopmentGuide.md#release) interface method.
 
-```squirrel
-local driverClassArray = [HubUsbDriver];
-host <- USB.Host(hardware.usb, driverClassArray, true);
-```
-
-Should a hub be connected to the imp’s USB port, the USB.Host instance will automatically load the nominated driver.
-
-You should set up suitable listener functions which can respond to events emitted by the USB.Host and HubUsbDriver instances, including the loading of a driver, and the connection and disconnection of devices:
-
-```squirrel
-hubDriver <- null;
-
-function driverStatusListener(eventType, driver) {
-    switch (eventType) {
-        case USB_DRIVER_STATE_STARTED:
-            if (typeof driver == "HubUsbDriver") {
-                hubDriver = driver;
-            } else {
-                // Checks for other driver types can be included here
-            }
-            break;
-        case USB_DRIVER_STATE_STOPPED:
-            if (typeof driver == "HubUsbDriver") {
-                hubDriver = null;
-            }
-    }
-}
-
-// Listen for driver loads
-host.setDriverListener(driverStatusListener);
-```
-
-## Class Methods ##
-
-The HubUsbDriver class implements a number of public methods. Two, *match()* and *release()* are required by the USB driver framework and are not documented here (please see [**USB Driver Development Guide**](https://developer.electricimp.com/resources/usb-driver-development-guide) for details).
+## Driver Class Custom API ##
 
 ### checkPorts() ###
 
@@ -66,11 +36,3 @@ This method provides a hub port status update that indicates which, if any, of t
 #### Return Value ####
 
 Table &mdash; keys are integers: the hub's port numbers; values are either `"connected"` or `"empty"`
-
-#### Example ####
-
-For a full example, please see the [`examples` directory](./examples) in this repo.
-
-## License ##
-
-This driver is licensed under the terms of the [MIT License](LICENSE). It is copyright &copy; 2019, Electric Imp, Inc.

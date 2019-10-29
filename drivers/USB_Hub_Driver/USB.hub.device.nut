@@ -70,7 +70,7 @@ class HubUsbDriver extends USB.Driver {
      * @property {string} VERSION - The library version.
      *
     */
-    static VERSION = "1.0.0";
+    static VERSION = "1.0.1";
 
     // ********** Private instance properties **********
     _host         = null;
@@ -200,7 +200,7 @@ class HubUsbDriver extends USB.Driver {
 
         // Power may be switched; need to leave time for the USB 5v on the 
         // hub port to rise before we check device presence in the hub
-        imp.sleep(PWR_UP_DELAY_TIME);
+        imp.sleep(USB_HUB_DRIVER.PWR_UP_DELAY_TIME);
 
         // Read port status
         local data = blob(4);
