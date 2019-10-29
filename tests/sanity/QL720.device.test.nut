@@ -123,7 +123,7 @@ class QL720Sanity extends ImpTestCase {
 
     function test2SetOrientation() {
         return _configureDriver().then(function(drvInstance){
-           drvInstance.setOrientation("ORIENTATION");
+           drvInstance.setOrientation(QL720NW_PORTRAIT);
         }, null);
     }
 
@@ -157,7 +157,7 @@ class QL720Sanity extends ImpTestCase {
 
     function test7Write2DBarcode() {
        return  _configureDriver().then(function(drvInstance){
-           drvInstance.write2dBarcode("Write 2D barcode test");
+           drvInstance.write2dBarcode("Write 2D barcode test", QL720NW_BARCODE_2D_QR);
         }, null);
     }
 
