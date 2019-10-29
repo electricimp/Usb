@@ -24,12 +24,19 @@
 //
 
 // This is an example of keyboard control application
+// NOTE: The code below should be built with Builder preprocessor, https://github.com/electricimp/builder
+
+// Hardware connected via a USB cable: 
+//      imp005 breakout board
+//      Keyboard (Tested with Logitech K120)
+
 #require "USB.device.lib.nut:1.1.0"
 
 // The ASCII table definition should precede the HIDKeyboard driver implementation
-@include __PATH__ +  "/../US-ASCII.table.nut"
-@include __PATH__ +  "/../../GenericHID_Driver/USB.HID.device.nut"
-@include __PATH__ +  "/../HIDKeyboard.device.nut"
+@include "github:electricimp/usb/drivers/HIDKeyboard/US-ASCII.table.nut"
+@include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.nut"
+@include "github:electricimp/usb/drivers/HIDKeyboard/HIDKeyboard.device.nut"
+
 
 log <- server.log.bindenv(server);
 kbdDrv <- null;
