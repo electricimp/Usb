@@ -88,7 +88,7 @@ printerDevice <- {
 class QL720Sanity extends ImpTestCase {
 
     _usb        = null;
-    _drivers    = [QL720NWUartUsbDriver];
+    _drivers    = [QL720NWUsbToUartDriver];
 
     function setUp() {
         _usb = UsbMock();
