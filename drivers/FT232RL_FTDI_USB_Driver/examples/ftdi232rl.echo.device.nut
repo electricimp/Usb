@@ -24,6 +24,7 @@
 //
 
 // This is an example of FT232RL driver usage. The application echoes all read data back to sender.
+// NOTE: The code below should be built with Builder preprocessor, https://github.com/electricimp/builder
 
 // Hardware used in this example
 //  - imp005 breakout board

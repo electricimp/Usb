@@ -29,6 +29,8 @@
 // Since CH340 differs from FT232RL  mostly by configuration protocol,
 // it is possible to use FT232RL driver for CH340 by changing VID/PID and block configuration call.
 
+// NOTE: The code below should be built with Builder preprocessor, https://github.com/electricimp/builder
+
 // Hardware used in this example:
 //  - imp005 breakout board
 //  - CH340 USB to TTL Serial Adapter Module

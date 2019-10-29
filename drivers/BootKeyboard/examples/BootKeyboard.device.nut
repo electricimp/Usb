@@ -23,13 +23,18 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 
+// This is an example of book keyboard control application
+// NOTE: The code below should be built with Builder preprocessor, https://github.com/electricimp/builder
+
+// Hardware connected via a USB cable: 
+//      imp005 breakout board
+//      Keyboard (Tested with Logitech K120)
+
 #require "PrettyPrinter.class.nut:1.0.1"
 #require "JSONEncoder.class.nut:1.0.0"
 #require "USB.device.lib.nut:1.1.0"
 
-// This is an example of bookt keyboard control application
-
-@include __PATH__ +  "/../BootKeyboard.device.nut"
+@include "github:electricimp/Usb/drivers/BootKeyboard/BootKeyboard.device.nut"
 
 
 pp <- PrettyPrinter(null, false);
@@ -72,8 +77,10 @@ function usbDriverListener(event, driver) {
     if (event == USB_DRIVER_STATE_STARTED) {
         server.log("[App] BootKeyboardDriver started");
         kbrDrv = driver;
+
         // Report only when key status is changed
         kbrDrv.setIdleTimeMs(0);
+        
         // Receive new key state every second
         kbrDrv.getKeyStatusAsync(keyboardEventListener);
 
@@ -87,5 +94,3 @@ usbHost <- USB.Host(hardware.usb, [BootKeyboardDriver], true);
 usbHost.setDriverListener(usbDriverListener);
 
 server.log("[App] USB initialization complete");
-
-
