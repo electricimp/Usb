@@ -25,9 +25,14 @@
 
 // This is an example of FT232RL driver usage. The application echoes all read data back to sender.
 
+// Hardware used in this example
+//  - imp005 breakout board
+//  - FT232RL FTDI USB to TTL Serial Adapter Module
+//  - Jumper wire that connects adapter's TXD and RXD
+
 #require "USB.device.lib.nut:1.1.0"
 
-@include __PATH__ + "/../FT232RLFtdiUsbDriver.device.nut"
+@include "github:electricimp/Usb/drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.nut"
 
 log  <- server.log.bindenv(server);
 ftdi <- null;

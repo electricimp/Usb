@@ -24,13 +24,16 @@
 //
 
 // This is an example of QL720NW driver usage that prints "Hello,World!" with Bold/Italic fonts.
+// Hardware connected via a USB cable: 
+//      imp005 breakout board
+//      Brother QL-720NW
 
 // Add printer UART driver and USB libraries
 #require "QL720NW.device.lib.nut:1.0.0"
 #require "USB.device.lib.nut:1.1.0"
 
 // Include the example driver
-@include "github:electricimp/Usb/drivers/QL720NW_UART_USB_Driver/QL720NWUsbDriver.device.nut@develop"
+@include "github:electricimp/Usb/drivers/QL720NW_UART_USB_Driver/QL720NWUsbDriver.device.nut"
 
 log <- server.log.bindenv(server);
 

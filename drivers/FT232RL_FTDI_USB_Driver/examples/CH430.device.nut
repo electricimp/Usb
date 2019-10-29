@@ -29,9 +29,14 @@
 // Since CH340 differs from FT232RL  mostly by configuration protocol,
 // it is possible to use FT232RL driver for CH340 by changing VID/PID and block configuration call.
 
+// Hardware used in this example:
+//  - imp005 breakout board
+//  - CH340 USB to TTL Serial Adapter Module
+//  - Jumper wire that connects adapter's TXD and RXD
+
 #require "USB.device.lib.nut:1.1.0"
 
-@include __PATH__ + "/../FT232RLFtdiUsbDriver.device.nut"
+@include "github:electricimp/Usb/drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.nut"
 
 log <- server.log.bindenv(server);
 

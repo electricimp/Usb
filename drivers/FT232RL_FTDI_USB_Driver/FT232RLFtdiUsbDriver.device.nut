@@ -24,9 +24,8 @@
 
 // ----------------------------------------------------------------------
 
-// Hardware used in this example
-//  - Imp005
-//  - FT232RL FTDI USB to TTL Serial Adapter Module
+// This driver was written and tested with FT232RL FTDI USB to TTL 
+// Serial Adapter Module
 
 // FTDI driver
 const FTDI_REQUEST_FTDI_OUT         = 0x40;
