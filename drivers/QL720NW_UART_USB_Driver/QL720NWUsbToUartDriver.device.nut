@@ -57,7 +57,7 @@ class QL720NWUsbToUartDriver extends USB.Driver {
         if (device.getVendorId() != this.VID
             || device.getProductId() != this.PID)
             return null;
-        return QL720NWUsbDriver(interfaces[0]);
+        return QL720NWUsbToUartDriver(interfaces[0]);
     }
 
     function release() {
