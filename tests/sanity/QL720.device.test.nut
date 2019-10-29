@@ -22,7 +22,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-@include "github:electricimp/electricimp/QL720NW/QL720NW.device.lib.nut"
+@include "github:electricimp/QL720NW/QL720NW.device.lib.nut"
 @include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__ + "/../UsbMock.nut"
 @include __PATH__ + "/../../drivers/QL720NW_UART_USB_Driver/QL720NWUsbToUartDriver.device.nut"
