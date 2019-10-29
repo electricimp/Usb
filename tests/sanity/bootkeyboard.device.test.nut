@@ -24,7 +24,7 @@
 //
 
 @include __PATH__+"/../../USB.device.lib.nut"
-@include __PATH__+"/../../drivers/BootKeyboard/BootKeyboard.device.lib.nut"
+@include __PATH__+"/../../drivers/BootKeyboard/BootKeyboard.device.nut"
 @include __PATH__+"/../UsbMock.nut"
 
 
