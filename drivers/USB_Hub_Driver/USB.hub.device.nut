@@ -28,26 +28,27 @@
 */
 enum USB_HUB_DRIVER {
     // Device data constants
-    DEVICE_ADDRESS = 0,
-    ENDPOINT_ADDRESS = 0,
-    WAIT_DELAY_TIME = 0.1,
-    DEVICE_CLASS = 9,
-    DEVICE_SUB_CLASS = 0,
-    SPEED_LO = 1.5,
-    SPEED_HI = 12.0,
+    DEVICE_ADDRESS           = 0,
+    ENDPOINT_ADDRESS         = 0,
+    WAIT_DELAY_TIME          = 0.1,
+    PWR_UP_DELAY_TIME        = 0.02,
+    DEVICE_CLASS             = 9,
+    DEVICE_SUB_CLASS         = 0,
+    SPEED_LO                 = 1.5,
+    SPEED_HI                 = 12.0,
     // Device communication constants
-    BASE_PACKET_SIZE = 8,
+    BASE_PACKET_SIZE         = 8,
     DESCRIPTOR_REQUEST_VALUE = 0,
     DESCRIPTOR_REQUEST_INDEX = 0,
-    PORTS_REQUEST_VALUE = 256,
-    PORTS_REQUEST_INDEX = 0,
-    CONFIGS_REQUEST_VALUE = 512,
+    PORTS_REQUEST_VALUE      = 256,
+    PORTS_REQUEST_INDEX      = 0,
+    CONFIGS_REQUEST_VALUE    = 512,
     PORT_RESET_REQUEST_VALUE = 4,
     PORT_POWER_REQUEST_VALUE = 8,
-    STATUS_REQUEST_VALUE = 0,
-    SPEED_MASK = 512,
-    INTERFACES_DATA_OFFSET = 9,
-    ENDPOINTS_DATA_OFFSET = 9
+    STATUS_REQUEST_VALUE     = 0,
+    SPEED_MASK               = 512,
+    INTERFACES_DATA_OFFSET   = 9,
+    ENDPOINTS_DATA_OFFSET    = 9
 }
 
 /**
@@ -69,13 +70,13 @@ class HubUsbDriver extends USB.Driver {
      * @property {string} VERSION - The library version.
      *
     */
-    static VERSION = "1.0.0";
+    static VERSION = "1.0.1";
 
     // ********** Private instance properties **********
-    _host = null;
+    _host         = null;
     _endPointZero = null;
-    _numPorts = 0;
-    _debug = false;
+    _numPorts     = 0;
+    _debug        = null;
 
     /**
      * Instantiate the HubDriver class.
@@ -83,10 +84,14 @@ class HubUsbDriver extends USB.Driver {
      * @constructor
      *
      * @param {USB.Device} device - A USB.Driver instance as returned by USB.Host.
+     * @param {boolean} debug - Whether to enable debug logging.
      *
      * @returns {instance} The instance.
      */
-    constructor(device) {
+    constructor(device, debug = false) {
+        // Configure debug logging
+        _debug = debug;
+
         // Save endpoint 0 to talk to the hub
         _endPointZero = device.getEndpointZero();
 
@@ -192,6 +197,10 @@ class HubUsbDriver extends USB.Driver {
                                USB_HUB_DRIVER.PORT_POWER_REQUEST_VALUE,
                                portNumber,
                                blob(0));
+
+        // Power may be switched; need to leave time for the USB 5v on the 
+        // hub port to rise before we check device presence in the hub
+        imp.sleep(USB_HUB_DRIVER.PWR_UP_DELAY_TIME);
 
         // Read port status
         local data = blob(4);

@@ -26,42 +26,36 @@
 // Setup
 // ---------------------------------------------------------------------
 
-
 // Test Hardware
-//  - imp005 Breakout Board or impC001 Breakout Board
+//  - imp005 Breakout Board
 //  - USB hub
 //      - Upstream port connected to imp
 //      - Downstream port connected to FTDI cable
-//  - FT232RL FTDI USB to TTL Serial Adapter cable
-//      - USB wired to USB hub downstream port
-//      - TX and RX wired to uart1 (imp005) or uartNU (impC001)
-
+//
 
 // Tests
 // ---------------------------------------------------------------------
 
 // Includes
-@include "github:electricimp/Usb/USB.device.lib.nut"
-@include "github:electricimp/Usb/drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.lib.nut"
-@include "github:electricimp/Usb/drivers/USB_Hub_Driver/USB.hub.device.lib.nut"
+@include __PATH__+"/../../drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.nut"
+@include __PATH__+"/../../drivers/USB_Hub_Driver/USB.hub.device.nut"
 
-const TX_MESSAGE = "Bell-bottoms! Bell-bottoms!"
+// Configured for setup listed above
+const NUMBER_OF_DEVICES = 1;
 
 hubDriver <- null;
-ftdiDriver <- null;
 usbHost <- null;
-uart <- null;
 usb <- null;
+uart <- null;
 
-class USBHubDriverTestCase2 extends ImpTestCase {
+class USBHubDriverTestCase extends ImpTestCase {
 
-    // Set up the peripherals
     function setUp() {
-        local impType = imp.info().type;
         local driverClassArray = [HubUsbDriver, FT232RLFtdiUsbDriver];
-        ::usb = impType == "imp005" ? hardware.usb : hardware.usbAB;
-        ::usbHost = USB.Host(::usb, driverClassArray);
-        ::uart = impType == "imp005" ? hardware.uart1 : hardware.uartNU;
+        ::usb = hardware.usb;
+        ::uart = hardware.uart1;
+        ::usbHost = USB.Host(::usb, driverClassArray, true);
+        
         return "USB setup complete";
     }
 
@@ -69,42 +63,24 @@ class USBHubDriverTestCase2 extends ImpTestCase {
     // and device drivers instantiated are the correct ones.
     // NOTE: Requires manual action from a user to connect correct device before
     //       or during running the tests.
-    function testFTDIConnection() {
+    function testHubConnection() {
         local infoFunc = this.info.bindenv(this);
 
-        return _setUpHost().then(function(d) {
+        return _setUpHost().then(function(hubDrv) {
             return Promise(function(resolve, reject) {
-                // Prepare the UART to receive data
-                local rx_text = "";
-                ::uart.configure(115200, 8, PARITY_NONE, 1, NO_CTSRTS, function() {
-                    local byte = ::uart.read();
-                    local done = false;
-                    while (byte != -1) {
-                        // As long as UART read value is not -1, we're getting data
-                        if (byte.tochar() == "\n") {
-                            // Got the message end marker
-                            done = true;
-                            break;
-                        }
-                        rx_text += byte.tochar();
-                        byte = ::uart.read();
+                local ports = hubDrv.checkPorts();
+                local numberOfDevices = 0;
+                foreach (port, state in ports) {
+                    if (state == "connected") {
+                        state = "populated";
+                        numberOfDevices++;
                     }
 
-                    if (done) {
-                        infoFunc("READ: " + rx_text);
-                        this.assertEqual(TX_MESSAGE, rx_text);
-                        resolve();
-                    }
-                }.bindenv(this));
+                    infoFunc("Port " + port + " is " + state);
+                }
 
-                // Send data via FDTI
-                ::ftdiDriver.write(TX_MESSAGE + "\n", function(e, d, l) {
-                    if (e != null) {
-                        infoFunc("ERROR: " + e);
-                    } else {
-                        infoFunc("DATA SENT: " + l + " bytes");
-                    }
-                }.bindenv(this));
+                this.assertEqual(NUMBER_OF_DEVICES, numberOfDevices);
+                resolve();
             }.bindenv(this));
         }.bindenv(this));
     }
@@ -112,8 +88,7 @@ class USBHubDriverTestCase2 extends ImpTestCase {
     // Setup USB.Host and wait for to driver start
     function _setUpHost() {
         local infoFunc = this.info.bindenv(this);
-        local loadedFTDIDriver = false;
-        local loadedHubDriver = false;
+        local canSeeHub = false;
 
         // Reset USB
         ::usbHost.reset();
@@ -121,10 +96,10 @@ class USBHubDriverTestCase2 extends ImpTestCase {
         return Promise(function(resolve, reject) {
             // report error if no device is attached
             local timer = imp.wakeup(5, function() {
-                if (loadedFTDIDriver && loadedHubDriver) {
-                    resolve();
+                if (canSeeHub) {
+                    resolve(::hubDriver);
                 } else {
-                    reject("Drivers failed to load");
+                    reject("No USB Hub attached to this imp");
                 }
             });
 
@@ -134,16 +109,10 @@ class USBHubDriverTestCase2 extends ImpTestCase {
                     infoFunc("Driver of type '" + driverType + "' loaded " + data);
                     if (driverType == "HubUsbDriver") {
                         ::hubDriver = data;
-                        loadedHubDriver = true
-                    }
-
-                    if (driverType == "FT232RLFtdiUsbDriver") {
-                        ::ftdiDriver = data;
-                        loadedFTDIDriver = true
+                        canSeeHub = true;
                     }
                 }
             });
         }.bindenv(this));
     }
-
 }

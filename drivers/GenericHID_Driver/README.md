@@ -6,7 +6,7 @@ Please familiarize yourself with the [Device Class Definition for Human Interfac
 
 **Note** Please use this driver for reference only. It was tested with a limited number of devices and may not support all devices of that type.
 
-## Include The HID Driver Library ##
+## Include The HID Driver ##
 
 The driver depends on constants and classes within the [USB Drivers Framework](../../docs/DriverDevelopmentGuide.md#usb-drivers-framework-api-specification).
 
@@ -14,7 +14,7 @@ To add the Generic HID driver to your project, add `#require "USB.device.lib.nut
 
 ```squirrel
 #require "USB.device.lib.nut:1.1.0"
-@include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.lib.nut"
+@include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.nut"
 ```
 
 ## Basic Concepts ##
@@ -80,7 +80,7 @@ function usbEventListener(event, driver) {
     }
 }
 
-host <- USB.Host(hardware.usb, [HIDDriver]);
+host <- USB.Host(hardware.usb, [HIDDriver], true);
 host.setDriverListener(usbEventListener);
 server.log("USB initialization complete");
 ```

@@ -23,7 +23,6 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 
-@include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__+"/../UsbMock.nut"
 @include __PATH__+"/../CorrectDriver.nut"
 @include __PATH__+"/../DescriptorMock.nut"

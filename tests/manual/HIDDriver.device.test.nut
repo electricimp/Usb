@@ -34,8 +34,7 @@
 // Tests
 // ---------------------------------------------------------------------
 
-@include __PATH__+"/../../USB.device.lib.nut"
-@include __PATH__+"/../../USB.HID.device.lib.nut"
+@include __PATH__+"/../../USB.HID.device.nut"
 
 //
 class HIDDriverTest extends ImpTestCase {

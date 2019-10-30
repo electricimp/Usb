@@ -24,31 +24,42 @@
 //
 
 // This is an example of QL720NW driver usage that prints "Hello,World!" with Bold/Italic fonts.
+// NOTE: The code below should be built with Builder preprocessor, https://github.com/electricimp/builder
 
-@include __PATH__ + "./../../../../USB.device.lib.nut"
-@include __PATH__ + "./../QL720NWUartUsbDriver.device.lib.nut"
+// Hardware connected via a USB cable: 
+//      imp005 breakout board
+//      Brother QL-720NW
+
+
+// Add printer UART driver and USB libraries
+#require "QL720NW.device.lib.nut:1.0.0"
+#require "USB.device.lib.nut:1.1.0"
+
+// Include the example driver
+@include "github:electricimp/Usb/drivers/QL720NW_UART_USB_Driver/QL720NWUsbDriver.device.nut"
 
 log <- server.log.bindenv(server);
 
 ql720 <- null;
 
-function usbDriverListener(event, data) {
+function usbDriverListener(event, driver) {
     log("[App]: USB event: " + event);
 
     if (event == USB_DRIVER_STATE_STARTED) {
-        ql720 = data;
+        // Pass in usb driver instead of pre-configured UART
+        ql720 = QL720NW(driver);
 
         log("Printing \"Hello,World!\"");
 
-        local options = QL720NWUartUsbDriver.ITALIC |
-                        QL720NWUartUsbDriver.BOLD   |
-                        QL720NWUartUsbDriver.UNDERLINE;
+        local options = QL720NW_ITALIC |
+                        QL720NW_BOLD   |
+                        QL720NW_UNDERLINE;
 
         ql720.setFontSize(48).write("Hello,World!", options).print();
     }
 }
 
-usbHost <- USB.Host(hardware.usb, [QL720NWUartUsbDriver]);
+usbHost <- USB.Host(hardware.usb, [QL720NWUsbDriver], true);
 log("[App]: USB.Host setup initialized");
 
 usbHost.setDriverListener(usbDriverListener);

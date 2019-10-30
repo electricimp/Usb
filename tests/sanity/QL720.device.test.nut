@@ -22,63 +22,63 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-@include __PATH__+"/../../USB.device.lib.nut"
+@include "github:electricimp/QL720NW/QL720NW.device.lib.nut"
 @include __PATH__ + "/../UsbMock.nut"
-@include __PATH__ + "/../../drivers/QL720NW_UART_USB_Driver/QL720NWUartUsbDriver.device.lib.nut"
+@include __PATH__ + "/../../drivers/QL720NW_UART_USB_Driver/QL720NWUsbDriver.device.nut"
 
 // Below data is not real printer config, we only need VID/PID pair and interface with BulkOut
 
 bulkOut <- {
-    "address" : 0x2,
-    "attributes" : 0x2,
+    "address"       : 0x2,
+    "attributes"    : 0x2,
     "maxpacketsize" : 32,
-    "interval" : 0
+    "interval"      : 0
 }
 
 
 bulkIn <- {
-    "address" : 0x81,
-    "attributes" : 0x2,
+    "address"       : 0x81,
+    "attributes"    : 0x2,
     "maxpacketsize" : 32,
-    "interval" : 0
+    "interval"      : 0
 }
 
 printerInterface <- {
     "interfacenumber" : 0,
-    "altsetting" : 0,
-    "class" : 0xFF,
-    "subclass" : 0xFF,
-    "protocol" : 0xFF,
-    "interface" : 0,
-    "endpoints" : [bulkIn, bulkOut]
+    "altsetting"      : 0,
+    "class"           : 0xFF,
+    "subclass"        : 0xFF,
+    "protocol"        : 0xFF,
+    "interface"       : 0,
+    "endpoints"       : [bulkIn, bulkOut]
 }
 
 printerConfig <- {
-    "value" : 1,
+    "value"         : 1,
     "configuration" : 0,
-    "attributes" : 0,
-    "maxpower" : 100,
-    "interfaces" : [printerInterface]
+    "attributes"    : 0,
+    "maxpower"      : 100,
+    "interfaces"    : [printerInterface]
 }
 
 printerDescriptor <- {
-    "usb" : 0x0110,
-    "class" : 0xFF,
-    "subclass" : 0xFF,
-    "protocol" : 0xFF,
-    "maxpacketsize0" : 8,
-    "vendorid" : 0x04f9,
-    "productid" : 0x2044,
-    "device" : 0x1234,
-    "manufacturer" : 0,
-    "product" : 0,
-    "serial" : 0,
+    "usb"                 : 0x0110,
+    "class"               : 0xFF,
+    "subclass"            : 0xFF,
+    "protocol"            : 0xFF,
+    "maxpacketsize0"      : 8,
+    "vendorid"            : 0x04f9,
+    "productid"           : 0x2044,
+    "device"              : 0x1234,
+    "manufacturer"        : 0,
+    "product"             : 0,
+    "serial"              : 0,
     "numofconfigurations" : 1,
-    "configurations" : [printerConfig]
+    "configurations"      : [printerConfig]
 }
 
 printerDevice <- {
-    "speed" : 1.5,
+    "speed"       : 1.5,
     "descriptors" : printerDescriptor
 }
 
@@ -87,7 +87,7 @@ printerDevice <- {
 class QL720Sanity extends ImpTestCase {
 
     _usb        = null;
-    _drivers    = [QL720NWUartUsbDriver];
+    _drivers    = [QL720NWUsbDriver];
 
     function setUp() {
         _usb = UsbMock();
@@ -99,7 +99,7 @@ class QL720Sanity extends ImpTestCase {
             host.setDriverListener(function(eventType, eventObject) {
 
                 if (eventType == USB_DRIVER_STATE_STARTED) {
-                    if (typeof eventObject != "QL720NWUartUsbDriver") {
+                    if (typeof eventObject != "QL720NWUsbDriver") {
                         reject("Invalid event object: " + typeof eventObject);
                     } else {
                         _usb.triggerEvent(USB_DEVICE_DISCONNECTED, {"device" : 1});
@@ -107,7 +107,7 @@ class QL720Sanity extends ImpTestCase {
                 }
 
                 if (eventType == USB_DRIVER_STATE_STOPPED) {
-                    if (typeof eventObject == "QL720NWUartUsbDriver") {
+                    if (typeof eventObject == "QL720NWUsbDriver") {
                         resolve();
                     } else {
                         reject();
@@ -122,7 +122,7 @@ class QL720Sanity extends ImpTestCase {
 
     function test2SetOrientation() {
         return _configureDriver().then(function(drvInstance){
-           drvInstance.setOrientation("ORIENTATION");
+           drvInstance.setOrientation(QL720NW_PORTRAIT);
         }, null);
     }
 
@@ -142,7 +142,7 @@ class QL720Sanity extends ImpTestCase {
 
     function test5Write() {
         return _configureDriver().then(function(drvInstance){
-           drvInstance.write("Write test", QL720NWUartUsbDriver.ITALIC);
+           drvInstance.write("Write test", QL720NW_ITALIC);
            drvInstance.writen("Writen test");
            drvInstance.newline();
         }, null);
@@ -156,7 +156,7 @@ class QL720Sanity extends ImpTestCase {
 
     function test7Write2DBarcode() {
        return  _configureDriver().then(function(drvInstance){
-           drvInstance.write2dBarcode("Write 2D barcode test");
+           drvInstance.write2dBarcode("Write 2D barcode test", QL720NW_BARCODE_2D_QR);
         }, null);
     }
 
@@ -177,8 +177,8 @@ class QL720Sanity extends ImpTestCase {
             _getUsbHost().setDriverListener(function(eventType, eventObject) {
 
                 if (eventType == USB_DRIVER_STATE_STARTED &&
-                    typeof eventObject == "QL720NWUartUsbDriver") {
-                        resolve(eventObject);
+                    typeof eventObject == "QL720NWUsbDriver") {
+                        resolve(QL720NW(eventObject));
                 } else {
                     reject("Unexpected event or object");
                 }

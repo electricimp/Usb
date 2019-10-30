@@ -36,17 +36,15 @@
 // Tests
 // ---------------------------------------------------------------------
 
-@include __PATH__+"/../../USB.device.lib.nut"
-@include __PATH__+"/../../drivers/QL720NW_UART_USB_Driver/QL720NWUartUsbDriver.device.lib.nut"
+@include "github:electricimp/electricimp/QL720NW/QL720NW.device.lib.nut"
+@include __PATH__+ "/../../drivers/QL720NW_UART_USB_Driver/QL720NWUsbDriver.device.nut"
 
-class QL720NWUartUsbDriverTestCase extends ImpTestCase {
-    // UART on imp005
-    uart = null;
-    dataString = "";
-    usbHost = null;
-    loadPin = null;
-    _driver = null;
-    getInfo = "/x1B/x69/x53";
+class QL720NWUsbDriverTestCase extends ImpTestCase {
+
+    dataString  = "";
+    usbHost     = null;
+    _printer    = null;
+    getInfo     = "/x1B/x69/x53";
 
     // Test connection of valid device instantiated driver
     function test1_UartOverUsbConnection() {
@@ -56,17 +54,17 @@ class QL720NWUartUsbDriverTestCase extends ImpTestCase {
         this.info("Connect any Uart over Usb device to imp");
 
         return Promise(function(resolve, reject) {
-            usbHost = USB.Host(hardware.usb, [QL720NWUartUsbDriver]);
+            usbHost = USB.Host(hardware.usb, [QL720NWUsbDriver], true);
 
             // Register cb for connection event
             usbHost.setDriverListener(function(event, driver) {
 
                 if (event == USB_DRIVER_STATE_STARTED) {
-                    // Check the device is an instance of QL720NWUartUsbDriver
-                    if (typeof driver == "QL720NWUartUsbDriver") {
+                    // Check the device is an instance of QL720NWUsbDriver
+                    if (typeof driver == "QL720NWUsbDriver") {
 
                         // Store the driver for the next test
-                        _driver = driver;
+                        _printer = QL720NW(driver);
 
                         return resolve("Device was a Uart over Usb device");
                     }
@@ -85,29 +83,29 @@ class QL720NWUartUsbDriverTestCase extends ImpTestCase {
         return Promise(function(resolve, reject) {
 
             // Check there is a valid device driver
-            if (_driver != null) {
+            if (_printer != null) {
 
                 local testString = "I'm a Blob\n";
                 local dataString = "";
 
-                _driver
-                    .setOrientation(QL720NWUartUsbDriver.LANDSCAPE)
-                    .setFont(QL720NWUartUsbDriver.FONT_SAN_DIEGO)
-                    .setFontSize(QL720NWUartUsbDriver.FONT_SIZE_48)
+                _printer
+                    .setOrientation(QL720NW_LANDSCAPE)
+                    .setFont(QL720NW_FONT_SAN_DIEGO)
+                    .setFontSize(QL720NW_FONT_SIZE_48)
                     .write("San Diego 48 ")
                     .print();
 
                 // Configure Barcode
                 local barcodeConfig = {
-                    "type": QL720NWUartUsbDriver.BARCODE_CODE39,
+                    "type": QL720NW_BARCODE_CODE39,
                     "charsBelowBarcode": true,
-                    "width": QL720NWUartUsbDriver.BARCODE_WIDTH_M,
+                    "width": QL720NW_BARCODE_WIDTH_M,
                     "height": 1,
-                    "ratio": QL720NWUartUsbDriver.BARCODE_RATIO_3_1
+                    "ratio": QL720NW_BARCODE_RATIO_3_1
                 };
 
                 // Print bacode of the imp's mac address
-                _driver.writeBarcode(imp.getmacaddress(), barcodeConfig).print();
+                _printer.writeBarcode(imp.getmacaddress(), barcodeConfig).print();
 
                 // Requires manual validation
                 resolve("Printed data");

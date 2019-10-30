@@ -13,9 +13,10 @@ To add the HID Keyboard driver to your project, add `#require "USB.device.lib.nu
 ```squirrel
 #require "USB.device.lib.nut:1.1.0"
 
-@include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.lib.nut"
-@include "github:electricimp/usb/drivers/HIDKeyboard/HIDKeyboard.device.lib.nut"
+// The ASCII table definition should precede the HIDKeyboard driver implementation
 @include "github:electricimp/usb/drivers/HIDKeyboard/US-ASCII.table.nut"
+@include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.nut"
+@include "github:electricimp/usb/drivers/HIDKeyboard/HIDKeyboard.device.nut"
 ```
 
 **Note** The file [`US-ASCII.table.nut`](./US-ASCII.table.nut) defines the default keyboard [layout](#setlayoutnewlayout) for the driver.
@@ -107,9 +108,11 @@ It returns the converted code values
 
 ```squirrel
 #require "USB.device.lib.nut:1.1.0"
-#require "USB.HID.device.lib.nut:1.0.0"
-@include "github:electricimp/usb/drivers/HIDKeyboard/HIDKeyboard.device.lib.nut"
+
+// The ASCII table definition should precede the HIDKeyboard driver implementation
 @include "github:electricimp/usb/drivers/HIDKeyboard/US-ASCII.table.nut"
+@include "github:electricimp/usb/drivers/GenericHID_Driver/USB.HID.device.nut"
+@include "github:electricimp/usb/drivers/HIDKeyboard/HIDKeyboard.device.nut"
 
 kbrDrv <- null;
 

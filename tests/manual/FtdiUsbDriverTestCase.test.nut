@@ -36,8 +36,7 @@
 // Tests
 // ---------------------------------------------------------------------
 
-@include __PATH__+"/../../USB.device.lib.nut"
-@include __PATH__+"/../../drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.lib.nut"
+@include __PATH__+"/../../drivers/FT232RL_FTDI_USB_Driver/FT232RLFtdiUsbDriver.device.nut"
 
 class FT232RLFtdiUsbDriverTestCase extends ImpTestCase {
     // UART on imp005

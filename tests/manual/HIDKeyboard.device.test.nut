@@ -21,7 +21,6 @@
 // OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
-//
 
 // Setup
 // ---------------------------------------------------------------------
@@ -34,10 +33,8 @@
 // Tests
 // ---------------------------------------------------------------------
 
-
-@include __PATH__+"/../../USB.device.lib.nut"
-@include __PATH__+"/../../USB.HID.device.lib.nut"
-@include __PATH__+"/../../drivers/HIDKeyboard/HIDKeyboard.device.lib.nut"
+@include __PATH__+"/../../USB.HID.device.nut"
+@include __PATH__+"/../../drivers/HIDKeyboard/HIDKeyboard.device.nut"
 
 // HIDKeyboard driver test
 // NOTE: The keyboard MUST support IDLE time setting, e.g. generate reports periodically
