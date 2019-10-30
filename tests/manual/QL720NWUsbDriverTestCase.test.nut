@@ -37,7 +37,6 @@
 // ---------------------------------------------------------------------
 
 @include "github:electricimp/electricimp/QL720NW/QL720NW.device.lib.nut"
-@include __PATH__+ "/../../USB.device.lib.nut"
 @include __PATH__+ "/../../drivers/QL720NW_UART_USB_Driver/QL720NWUsbDriver.device.nut"
 
 class QL720NWUsbDriverTestCase extends ImpTestCase {

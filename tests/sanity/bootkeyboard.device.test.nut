@@ -23,7 +23,6 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 
-@include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__+"/../../drivers/BootKeyboard/BootKeyboard.device.nut"
 @include __PATH__+"/../UsbMock.nut"
 

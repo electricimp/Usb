@@ -23,7 +23,6 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 @include "github:electricimp/QL720NW/QL720NW.device.lib.nut"
-@include __PATH__+"/../../USB.device.lib.nut"
 @include __PATH__ + "/../UsbMock.nut"
 @include __PATH__ + "/../../drivers/QL720NW_UART_USB_Driver/QL720NWUsbDriver.device.nut"
 
