@@ -284,6 +284,11 @@ USB <- {
         // Creates new USB.Device instance, notifies application listener
         // with USB_DEVICE_STATE_CONNECTED event
         _onDeviceConnected = function(eventDetails) {
+            if (_address <= 0) {
+              USB.err("Maximum number of connected USB devices reached");
+              return;
+            }
+
             local speed = eventDetails.speed;
             local descr = eventDetails.descriptors;
             local device = USB.Device(_usb, this, speed, descr, _address);
@@ -292,8 +297,18 @@ USB <- {
             _devices[_address] <- device;
             USB.log("New device detected: " + device + ". Assigned address: " + _address);
 
-            // address for next device
-            _address++;
+            // no slot for a new device
+            if (_devices.len() >= 127) {
+              _address = -1;
+            } else {
+              // address for next device
+              do {
+                _address++;
+                if (_address >= 128) {
+                 _address = 1;
+                }
+              } while (_address in _devices);
+            }
 
             // maintain event sending sequence
             deviceListener && deviceListener(USB_DEVICE_STATE_CONNECTED, device);
@@ -310,6 +325,12 @@ USB <- {
                 if (address in _devices) {
                     local device = _devices[address];
                     delete _devices[address];
+
+                    // We were running out of USB addresses, this is the only
+                    //   free address now
+                    if (_address <= 0) {
+                      _address = address;
+                    }
 
                     try {
                         device._stop();

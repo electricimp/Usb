@@ -223,6 +223,63 @@ class UsbHostEventsSanity extends ImpTestCase {
         }.bindenv(this));
     }
 
+    function testDeviceAddressOverflowException() {
+        local counter = 0;
+        local host = getUsbHost();
+
+        local device_counter = 0;
+        return Promise.loop( @() ++device_counter < 128,
+                             function() {
+            return Promise( function(resolve, reject) {
+                host.setDeviceListener(function(type, payload) {
+                    if(USB_DEVICE_STATE_CONNECTED != type) {
+                        reject("Unexpected type of event:" + type + ". Need " + USB_DEVICE_STATE_CONNECTED) ;
+                        return;
+                    }
+                    // payload is description
+                    if ("USB.Device" !=  typeof payload) {
+                        reject("Unexpected device type: " + (typeof payload));
+                        return;
+                    }
+
+                    assertEqual(payload._address, device_counter);
+                    resolve();
+                }.bindenv(this));
+                _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
+            }.bindenv(this));
+        }.bindenv(this)).then(function(lastRes) {
+            host.setDeviceListener(function(type, payload) {
+              throw "Device added after no more USB addresses were left";
+            }.bindenv(this));
+            _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
+        }.bindenv(this)).then(function(lastRes) {
+            host.setDeviceListener(function(type, payload) {
+                if (USB_DEVICE_STATE_DISCONNECTED != type) {
+                    throw "Unexpected type of event:" + type + ". Need " + USB_DEVICE_STATE_DISCONNECTED;
+                }
+
+                if ("USB.Device" !=  typeof payload) {
+                    reject("Unexpected device type: " + (typeof payload));
+                    return;
+                }
+                assertEqual(payload._address, 63);
+            }.bindenv(this));
+            _usb.triggerEvent(USB_DEVICE_DISCONNECTED, {"device": 63});
+        }.bindenv(this)).then(function(lastRes) {
+            host.setDeviceListener(function(type, payload) {
+                if(USB_DEVICE_STATE_CONNECTED != type) {
+                    throw "Unexpected type of event:" + type + ". Need " + USB_DEVICE_STATE_CONNECTED;
+                }
+                // payload is description
+                if ("USB.Device" !=  typeof payload) {
+                    throw "Unexpected device type: " + (typeof payload);
+                }
+
+                assertEqual(payload._address, 63);
+            }.bindenv(this));
+            _usb.triggerEvent(USB_DEVICE_CONNECTED, correctDevice);
+        }.bindenv(this));
+    }
 
     function getUsbHost() {
         return USB.Host(_usb, _drivers, false);
