@@ -321,7 +321,7 @@ class HubUsbDriver extends USB.Driver {
                                                data);
                 }
 
-                local configuration = { "value": i + 1,
+                local configuration = { "value":         data[5],
                                         "configuration": data[6],
                                         "attributes":    data[7],
                                         "maxpower":      data[8],
@@ -333,8 +333,8 @@ class HubUsbDriver extends USB.Driver {
                 local offset = USB_HUB_DRIVER.INTERFACES_DATA_OFFSET;
                 for (local j = 0 ; j < numOfInterfaces ; j++) {
                     local interfaceLength = data[offset];
-                    local interface = { "interfacenumber": j,
-                                        "altsetting":      data[offset + 2],
+                    local interface = { "interfacenumber": data[offset + 2],
+                                        "altsetting":      data[offset + 3],
                                         "class":           data[offset + 5],
                                         "subclass":        data[offset + 6],
                                         "protocol":        data[offset + 7],
