@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2019 Electric Imp, Inc.
+// Copyright (c) 2019-2020 Electric Imp, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -48,7 +48,8 @@ enum USB_HUB_DRIVER {
     STATUS_REQUEST_VALUE     = 0,
     SPEED_MASK               = 512,
     INTERFACES_DATA_OFFSET   = 9,
-    ENDPOINTS_DATA_OFFSET    = 9
+    ENDPOINTS_DATA_OFFSET    = 9,
+    DESCRIPTOR_TYPE_ENDPOINT = 5
 }
 
 /**
@@ -70,7 +71,7 @@ class HubUsbDriver extends USB.Driver {
      * @property {string} VERSION - The library version.
      *
     */
-    static VERSION = "1.0.1";
+    static VERSION = "1.0.2";
 
     // ********** Private instance properties **********
     _host         = null;
@@ -345,17 +346,27 @@ class HubUsbDriver extends USB.Driver {
                     local numOfEndpoints = data[offset + 4];
                     _logDebug(format("Config %04i, interface %04i has %04i endpoints", i, j, numOfEndpoints));
                     offset += USB_HUB_DRIVER.ENDPOINTS_DATA_OFFSET;
-                    for (local k = 0 ; k < numOfEndpoints ; k++) {
-                        local endpointLen = data[offset];
-                        local endpoint = { "address":       data[offset + 2],
-                                           "attributes":    data[offset + 3],
-                                           "maxpacketsize": (data[offset + 5] << 8) | data[offset + 4],
-                                           "interval":      data[offset + 6] };
+                    for (local k = 0 ; k < numOfEndpoints && offset < configLength;) {
+                        local descriptorLen = data[offset];
+                        local descriptorType = data[offset + 1];
 
-                        // Append to endpoint to list & bump
-                        interface.endpoints.append(endpoint);
-                        offset += endpointLen;
+                        // Is this an EP descriptor? We're only looking for those
+                        // We may see HID entries in here, just skip them
+                        if (descriptorType == USB_HUB_DRIVER.DESCRIPTOR_TYPE_ENDPOINT) {
+                            local endpoint = { "address":       data[offset + 2],
+                                               "attributes":    data[offset + 3],
+                                               "maxpacketsize": (data[offset + 5] << 8) | data[offset + 4],
+                                               "interval":      data[offset + 6] };
+
+                            // Append to endpoint to list & bump
+                            interface.endpoints.append(endpoint);
+                            k++;
+                        }
+                        
+                        // Skip to next
+                        offset += descriptorLen;
                     }
+
 
                     // Append interface to list
                     configuration.interfaces.append(interface);
